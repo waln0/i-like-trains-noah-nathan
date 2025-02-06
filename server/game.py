@@ -1,15 +1,14 @@
 import pygame
+import random
 import os
 import importlib
+import socket
+import json
+import threading
 
 from train import Train
 from passenger import Passenger
 
-
-# Constants
-SCREEN_SIZE = 600
-GRID_SIZE = 20
-TICK_RATE = 10
 
 # Colors
 WHITE = (255, 255, 255)
@@ -17,42 +16,33 @@ BLACK = (0, 0, 0)
 RED = (255, 0, 0)
 BLUE = (0, 0, 255)
 
-# Directions
-UP = (0, -1)
-DOWN = (0, 1)
-LEFT = (-1, 0)
-RIGHT = (1, 0)
-
-
-
 class Game:
     def __init__(self):
         pygame.init()
-        self.screen = pygame.display.set_mode((SCREEN_SIZE, SCREEN_SIZE))
+        self.screen_with_x = 600
+        self.screen_with_y = 600
+        self.grid_size = 20
+        self.tick_rate = 10
+        self.screen = pygame.display.set_mode((self.screen_with_x, self.screen_with_y))
         self.clock = pygame.time.Clock()
         self.running = True
-        self.trains = []
-        self.passengers = [Passenger([])]
-        self.load_agents()
-    
-    def load_agents(self):
-        agents_folder = "agents"
-        if not os.path.exists(agents_folder):
-            os.makedirs(agents_folder)
-        for filename in os.listdir(agents_folder):
-            if filename.endswith(".py"):
-                module_name = filename[:-3]
-                module = importlib.import_module(f"agents.{module_name}")
-                agent_instance = module.Agent()
-                self.trains.append(Train(100, 100, BLUE, agent_instance))
+        self.trains = {} # {agent_name: Train}
+        self.passengers = []
     
     def run(self):
         while self.running:
             self.handle_events()
             self.update()
             self.draw()
-            self.clock.tick(TICK_RATE)
+            self.clock.tick(self.tick_rate)
         pygame.quit()
+
+    def add_train(self, agent_name):
+        self.trains[agent_name] = Train(random.randint(0, self.screen_with_x), random.randint(0, self.screen_with_y), RED, agent_name)
+
+    def remove_train(self, agent_name):
+        self.trains.pop(agent_name)
+                
     
     def handle_events(self):
         for event in pygame.event.get():
@@ -70,6 +60,3 @@ class Game:
         for passenger in self.passengers:
             passenger.draw(self.screen)
         pygame.display.flip()
-
-if __name__ == "__main__":
-    Game().run()
