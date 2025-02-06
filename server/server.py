@@ -16,6 +16,8 @@ DOWN = (0, 1)
 LEFT = (-1, 0)
 RIGHT = (1, 0)
 
+HOST = "128.178.17.112/24"
+
 class Server:
     """
     A class to represent a server for a multiplayer game.
@@ -35,7 +37,7 @@ class Server:
         A lock to synchronize access to shared resources.
     Methods
     -------
-    __init__(host="0.0.0.0", port=5555):
+    __init__(host="localhost", port=5555):
         Initializes the server with the given host and port.
     start_server():
         Starts the server and begins listening for client connections.
@@ -50,7 +52,7 @@ class Server:
     """
 
 
-    def __init__(self, host="0.0.0.0", port=5555):
+    def __init__(self, host=HOST, port=5555):
         self.host = host
         self.port = port
         self.running = True
@@ -75,9 +77,27 @@ class Server:
 
     def handle_client(self, client_socket):
         agent_name = client_socket.recv(1024).decode()
+        client_ip = client_socket.getpeername()[0]
+
         with self.lock:
+            # Check if the name of the agent already exists
+            if agent_name in self.game.trains:
+                error_message = json.dumps({"error": "Agent name already exists"})
+                client_socket.sendall(error_message.encode())
+                client_socket.close()
+                return
+
+            # Check if the IP address is already connected
+            for client in self.clients:
+                if client.getpeername()[0] == client_ip:
+                    error_message = json.dumps({"error": "IP address already connected"})
+                    client_socket.sendall(error_message.encode())
+                    client_socket.close()
+                    return
+
             self.game.add_train(agent_name)
-        
+            self.clients.append(client_socket)
+
         while self.running:
             try:
                 data = client_socket.recv(1024).decode()
@@ -88,10 +108,6 @@ class Server:
                     self.game.change_direction_of_train(agent_name, (action["direction"]))
             except:
                 break
-        
-        with self.lock:
-            self.game.remove_train(agent_name)
-        client_socket.close()
 
     def update(self):
         self.game.update()

@@ -19,8 +19,6 @@ class Passenger:
             Respawns the passenger at a new random position not occupied by trains or wagons.
     """
 
-
-
     def __init__(self, trains):
         self.position = self.get_random_position(trains)
     

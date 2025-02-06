@@ -42,17 +42,19 @@ class Client:
             Handles pygame events, including quitting the game.
     """
 
+    HOST = "128.178.17.112/24"
 
-
-    def __init__(self, agent_name, screen_with_x, screen_with_y, tick_rate, server_host="localhost", server_port=5555):
+    def __init__(self, agent_name, server_host=HOST, server_port=5555):
         self.agent_name = agent_name
-        self.agent = Agent()
+        self.agent = Agent(agent_name, self.send_action)
         self.server_host = server_host
         self.server_port = server_port
-        self.tick_rate = tick_rate
+
+        self.tick_rate = 10
         self.running = True
         self.trains = []
         self.passengers = []
+
         self.grid_size = 0
         self.screen_with_x = 0
         self.screen_with_y = 0
@@ -68,7 +70,6 @@ class Client:
 
     def init_game(self):
         pygame.init()
-        self.screen = pygame.display.set_mode((self.screen_with_x, self.screen_with_y))
         self.clock = pygame.time.Clock()
 
     def receive_game_state(self):
@@ -79,9 +80,11 @@ class Client:
                 self.trains = state["trains"]
                 self.passengers = state["passengers"]
                 self.grid_size = state["grid_size"]
-                self.screen_with_x = state["screen_width_x"]
-                self.screen_with_y = state["screen_width_y"]
                 self.agent.update(self.trains, self.passengers)
+                
+                # Update screen size if provided
+                if "screen_width_x" in state and "screen_width_y" in state:
+                    self.agent.update_screen_size(state["screen_width_x"], state["screen_width_y"])
             except:
                 break
 
@@ -92,7 +95,7 @@ class Client:
     def run(self):
         while self.running:
             self.handle_events()
-            draw_gui()
+            self.agent.draw_gui(self.grid_size)
             self.clock.tick(self.tick_rate)
         self.socket.close()
         pygame.quit()

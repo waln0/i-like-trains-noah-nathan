@@ -61,8 +61,8 @@ class Game:
 
     def __init__(self):
         pygame.init()
-        self.screen_with_x = 600
-        self.screen_with_y = 600
+        self.screen_with_x = 800
+        self.screen_with_y = 800
         self.grid_size = 20
         self.tick_rate = 10
         self.screen = pygame.display.set_mode((self.screen_with_x, self.screen_with_y))
@@ -70,6 +70,7 @@ class Game:
         self.running = True
         self.trains = {} # {agent_name: Train}
         self.passengers = []
+        self.screen_padding = 100
     
     def run(self):
         while self.running:
@@ -81,19 +82,41 @@ class Game:
 
     def add_train(self, agent_name):
         self.trains[agent_name] = Train(random.randint(0, self.screen_with_x), random.randint(0, self.screen_with_y), RED, agent_name)
-
+        self.update_screen_size()
+        
     def remove_train(self, agent_name):
         self.trains.pop(agent_name)
-                
+        self.update_screen_size()
     
     def handle_events(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
+
+    def can_reduce_padding(self):
+        for train in self.trains.values():
+            x, y = train["position"]
+            if x >= self.screen_with_x - self.screen_padding - 50 or y >= self.screen_with_y - self.screen_padding - 50:
+                return False
+            for wagon in train["wagons"]:
+                x, y = wagon
+                if x >= self.screen_with_x - self.screen_padding - 50 or y >= self.screen_with_y - self.screen_padding - 50:
+                    return False
+        return True
+
+    def reduce_padding(self):
+        if self.can_reduce_padding():
+            self.screen_with_x -= self.screen_padding
+            self.screen_with_y -= self.screen_padding
     
     def update(self):
         for train in self.trains:
             train.update(self.passengers)
+            
+
+    def update_screen_size(self):
+        self.screen_with_x += self.screen_padding
+        self.screen_with_y += self.screen_padding
     
     def draw(self):
         self.screen.fill(WHITE)

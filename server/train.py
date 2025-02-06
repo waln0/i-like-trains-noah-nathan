@@ -72,21 +72,32 @@ class Train:
         if not self.alive:
             return
         
-        # new_direction = self.agent.get_action(self.position, self.wagons, passengers) # To change
-        # if new_direction:
-        #     self.change_direction(new_direction)
+        
         
         if self.tick_count/len(self.wagons) == NB_TICKS_FOR_MOVING:
             self.tick_count = 0
             self.move()
 
-        # if the train touches a passenger ...
+    def add_wagon(self, position):
+        self.wagons.append(position)
 
-    def move(self, grid_size):
-        self.wagons.insert(0, self.position)
-        self.position = (self.position[0] + self.direction[0] * grid_size, self.position[1] + self.direction[1] * grid_size)
-        self.wagons.pop()
-        
+    def move(self, grid_size, passengers):
+        last_wagon_position = self.wagons[-1] if self.wagons else self.position
+        if self.wagons:
+            # Move each wagon to the position of the previous
+            for i in range(len(self.wagons) - 1, 0, -1):
+                self.wagons[i] = self.wagons[i - 1]
+            self.wagons[0] = self.position  # The first wagon takes the old position of the locomotive
+
+        # Move the locomotive
+        self.position = (self.position[0] + self.direction[0] * grid_size, 
+                        self.position[1] + self.direction[1] * grid_size)
+        # if train collides with passenger
+        for passenger in passengers:
+            if self.position == passenger.position:
+                self.add_wagon(last_wagon_position)
+                passenger.respawn()
+                break
     
     def draw(self, screen, grid_size):
         pygame.draw.rect(screen, self.color, (*self.position, grid_size, grid_size))
