@@ -17,6 +17,39 @@ LEFT = (-1, 0)
 RIGHT = (1, 0)
 
 class Server:
+    """
+    A class to represent a server for a multiplayer game.
+    Attributes
+    ----------
+    host : str
+        The hostname or IP address to bind the server to.
+    port : int
+        The port number to bind the server to.
+    running : bool
+        A flag to indicate if the server is running.
+    game : Game
+        An instance of the Game class to manage game state.
+    clients : list
+        A list to store connected client sockets.
+    lock : threading.Lock
+        A lock to synchronize access to shared resources.
+    Methods
+    -------
+    __init__(host="0.0.0.0", port=5555):
+        Initializes the server with the given host and port.
+    start_server():
+        Starts the server and begins listening for client connections.
+    accept_clients():
+        Accepts incoming client connections and starts a new thread to handle each client.
+    handle_client(client_socket):
+        Handles communication with a connected client.
+    update():
+        Updates the game state and broadcasts it to all connected clients.
+    broadcast():
+        Broadcasts the current game state to all connected clients.
+    """
+
+
     def __init__(self, host="0.0.0.0", port=5555):
         self.host = host
         self.port = port

@@ -17,6 +17,48 @@ RED = (255, 0, 0)
 BLUE = (0, 0, 255)
 
 class Game:
+    """
+    A class to represent the game.
+    Attributes
+    ----------
+    screen_with_x : int
+        The width of the game screen.
+    screen_with_y : int
+        The height of the game screen.
+    grid_size : int
+        The size of the grid cells.
+    tick_rate : int
+        The frame rate of the game.
+    screen : pygame.Surface
+        The display surface of the game.
+    clock : pygame.time.Clock
+        The clock object to control the frame rate.
+    running : bool
+        A flag to indicate if the game is running.
+    trains : dict
+        A dictionary to store the trains with agent names as keys.
+    passengers : list
+        A list to store the passengers.
+    Methods
+    -------
+    __init__():
+        Initializes the game.
+    run():
+        Runs the game loop.
+    add_train(agent_name):
+        Adds a train to the game.
+    remove_train(agent_name):
+        Removes a train from the game.
+    handle_events():
+        Handles the game events.
+    update():
+        Updates the game state.
+    draw():
+        Draws the game elements on the screen.
+    """
+
+
+
     def __init__(self):
         pygame.init()
         self.screen_with_x = 600

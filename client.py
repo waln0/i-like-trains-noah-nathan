@@ -8,6 +8,42 @@ import threading
 from agent import Agent
 
 class Client:
+    """
+    A client class to connect to a server, receive game state updates, and send actions.
+    Attributes:
+        agent_name (str): The name of the agent.
+        agent (Agent): An instance of the Agent class.
+        server_host (str): The server host address.
+        server_port (int): The server port number.
+        tick_rate (int): The tick rate for the game loop.
+        running (bool): A flag to indicate if the client is running.
+        trains (list): A list of trains in the game state.
+        passengers (list): A list of passengers in the game state.
+        grid_size (int): The size of the game grid.
+        screen_with_x (int): The width of the game screen.
+        screen_with_y (int): The height of the game screen.
+        socket (socket.socket): The socket object for server communication.
+        screen (pygame.Surface): The pygame screen surface.
+        clock (pygame.time.Clock): The pygame clock object.
+    Methods:
+        __init__(agent_name, screen_with_x, screen_with_y, tick_rate, server_host="localhost", server_port=5555):
+            Initializes the Client instance with the given parameters.
+        init_connection():
+            Initializes the connection to the server and starts the game state receiving thread.
+        init_game():
+            Initializes the pygame screen and clock.
+        receive_game_state():
+            Receives the game state from the server and updates the client state.
+        send_action(direction):
+            Sends an action to the server.
+        run():
+            Runs the main game loop, handling events and updating the screen.
+        handle_events():
+            Handles pygame events, including quitting the game.
+    """
+
+
+
     def __init__(self, agent_name, screen_with_x, screen_with_y, tick_rate, server_host="localhost", server_port=5555):
         self.agent_name = agent_name
         self.agent = Agent()

@@ -17,6 +17,41 @@ RIGHT = (1, 0)
 NB_TICKS_FOR_MOVING = 10
 
 class Train:
+    """
+    A class to represent a train in the game.
+    Attributes
+    ----------
+    position : tuple
+        The current position of the train (x, y).
+    wagons : list
+        A list of positions representing the wagons of the train.
+    direction : tuple
+        The current direction of the train.
+    alive : bool
+        A flag indicating whether the train is alive.
+    color : tuple
+        The color of the train.
+    agent : object
+        The agent controlling the train.
+    tick_count : int
+        A counter for the number of ticks since the last move.
+    Methods
+    -------
+    __init__(x, y, color, agent):
+        Initializes the train with a position, color, and agent.
+    get_position():
+        Returns the current position of the train.
+    change_direction(new_direction):
+        Changes the direction of the train if the new direction is not directly opposite to the current direction.
+    update(passengers):
+        Updates the state of the train, including moving it if necessary.
+    move(grid_size):
+        Moves the train in the current direction by the grid size.
+    draw(screen, grid_size):
+        Draws the train and its wagons on the screen.
+    """
+
+
     def __init__(self, x, y, color, agent):
         self.position = (x, y)
         self.wagons = []
