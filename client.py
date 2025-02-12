@@ -6,43 +6,25 @@ import socket
 import json
 import threading
 from agent import Agent
+import logging
+
+# Configure logging
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('game_debug.log'),
+        logging.StreamHandler()
+    ]
+)
+
+logger = logging.getLogger(__name__)
+
 
 class Client:
-    """
-    A client class to connect to a server, receive game state updates, and send actions.
-    Attributes:
-        agent_name (str): The name of the agent.
-        agent (Agent): An instance of the Agent class.
-        server_host (str): The server host address.
-        server_port (int): The server port number.
-        tick_rate (int): The tick rate for the game loop.
-        running (bool): A flag to indicate if the client is running.
-        trains (list): A list of trains in the game state.
-        passengers (list): A list of passengers in the game state.
-        grid_size (int): The size of the game grid.
-        screen_with_x (int): The width of the game screen.
-        screen_with_y (int): The height of the game screen.
-        socket (socket.socket): The socket object for server communication.
-        screen (pygame.Surface): The pygame screen surface.
-        clock (pygame.time.Clock): The pygame clock object.
-    Methods:
-        __init__(agent_name, screen_with_x, screen_with_y, tick_rate, server_host="localhost", server_port=5555):
-            Initializes the Client instance with the given parameters.
-        init_connection():
-            Initializes the connection to the server and starts the game state receiving thread.
-        init_game():
-            Initializes the pygame screen and clock.
-        receive_game_state():
-            Receives the game state from the server and updates the client state.
-        send_action(direction):
-            Sends an action to the server.
-        run():
-            Runs the main game loop, handling events and updating the screen.
-        handle_events():
-            Handles pygame events, including quitting the game.
-    """
 
-    HOST = "128.178.17.112/24"
+    HOST = "localhost"
+    # HOST = "128.179.179.187"
 
     def __init__(self, agent_name, server_host=HOST, server_port=5555):
         self.agent_name = agent_name
@@ -56,47 +38,97 @@ class Client:
         self.passengers = []
 
         self.grid_size = 0
-        self.screen_with_x = 0
-        self.screen_with_y = 0
+        self.screen_width = 0
+        self.screen_height = 0
 
         self.init_connection()
 
     def init_connection(self):
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket.connect((self.server_host, self.server_port))
-        self.socket.sendall(self.agent_name.encode())
-        threading.Thread(target=self.receive_game_state).start()
-        self.init_game()
+        try:
+            self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.socket.connect((self.server_host, self.server_port))
+            self.socket.sendall(self.agent_name.encode())
+            threading.Thread(target=self.receive_game_state).start()
+            self.init_game()
+        except ConnectionRefusedError:
+            logger.warning(f"Impossible de se connecter au serveur {self.server_host}:{self.server_port}")
+            logger.warning("Vérifiez que le serveur est en cours d'exécution et que l'adresse/port sont corrects")
+            raise
+        except Exception as e:
+            logger.warning(f"Une erreur est survenue lors de la tentative de connexion: {e}")
+            raise
 
     def init_game(self):
         pygame.init()
         self.clock = pygame.time.Clock()
 
     def receive_game_state(self):
+        buffer = ""
+        self.socket.settimeout(None)  # Pas de timeout pour la réception
         while self.running:
             try:
-                data = self.socket.recv(1024).decode()
-                state = json.loads(data)
-                self.trains = state["trains"]
-                self.passengers = state["passengers"]
-                self.grid_size = state["grid_size"]
-                self.agent.update(self.trains, self.passengers)
+                # Recevoir les données
+                data = self.socket.recv(4096).decode()
+                if not data:
+                    break
                 
-                # Update screen size if provided
-                if "screen_width_x" in state and "screen_width_y" in state:
-                    self.agent.update_screen_size(state["screen_width_x"], state["screen_width_y"])
-            except:
+                # Ajouter au buffer
+                buffer += data
+                
+                # Traiter chaque message complet (délimité par \n)
+                messages = buffer.split("\n")
+                # Garder le dernier message incomplet dans le buffer
+                buffer = messages[-1]
+                
+                # Traiter uniquement le dernier message complet
+                if len(messages) > 1:
+                    try:
+                        state = json.loads(messages[-2])  # Prendre le dernier message complet
+                        # logger.debug(f"Updating game state")
+                        
+                        # Mise à jour des données du jeu
+                        self.trains = state["trains"]
+                        self.passengers = state["passengers"]
+                        self.grid_size = state["grid_size"]
+                        self.screen_width = state.get("screen_width", 800)
+                        self.screen_height = state.get("screen_height", 800)
+                        
+                        # Mise à jour de l'agent
+                        self.agent.update(self.trains, self.passengers, self.grid_size, self.screen_width, self.screen_height)
+                        
+                    except json.JSONDecodeError as e:
+                        logger.error(f"Invalid JSON: {e}")
+                
+            except socket.timeout:
+                continue  # Continuer la boucle en cas de timeout
+            except Exception as e:
+                logger.error(f"Error in receive_game_state: {e}")
                 break
+        
+        logger.warning("Stopped receiving game state")
+        self.running = False
 
     def send_action(self, direction):
         action = json.dumps({"direction": direction})
         self.socket.sendall(action.encode())
 
     def run(self):
+        pygame.init()  # Initialisation de Pygame
+        self.screen = pygame.display.set_mode((self.screen_width, self.screen_height))  # Fenêtre par défaut
+        pygame.display.set_caption(f"Train Game - {self.agent_name}")
+        
         while self.running:
             self.handle_events()
-            self.agent.draw_gui(self.grid_size)
+            
+            # Mise à jour de la taille de l'écran si nécessaire
+            if self.screen_width != self.screen.get_width() or self.screen_height != self.screen.get_height():
+                self.screen = pygame.display.set_mode((self.screen_width, self.screen_height))
+            
+            # Appel du rendu du jeu via l'agent
+            self.agent.draw_gui(self.screen, self.grid_size)
             self.clock.tick(self.tick_rate)
+            
+        logger.warning("Client stopped")
         self.socket.close()
         pygame.quit()
 
@@ -106,6 +138,11 @@ class Client:
                 self.running = False
 
 if __name__ == "__main__":
-    agent_name = input("Enter agent name: ")
+    while True:
+        agent_name = input("Enter agent name: ")
+        if agent_name:
+            break
+        else:
+            logger.warning("Agent name cannot be empty")
     client = Client(agent_name)
     client.run()

@@ -3,7 +3,19 @@ import json
 import threading
 
 from game import Game
+import logging
 
+# Configure logging
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('game_debug.log'),
+        logging.StreamHandler()
+    ]
+)
+
+logger = logging.getLogger(__name__)
 # Colors
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
@@ -16,116 +28,119 @@ DOWN = (0, 1)
 LEFT = (-1, 0)
 RIGHT = (1, 0)
 
-HOST = "128.178.17.112/24"
+HOST = "localhost"
+
 
 class Server:
-    """
-    A class to represent a server for a multiplayer game.
-    Attributes
-    ----------
-    host : str
-        The hostname or IP address to bind the server to.
-    port : int
-        The port number to bind the server to.
-    running : bool
-        A flag to indicate if the server is running.
-    game : Game
-        An instance of the Game class to manage game state.
-    clients : list
-        A list to store connected client sockets.
-    lock : threading.Lock
-        A lock to synchronize access to shared resources.
-    Methods
-    -------
-    __init__(host="localhost", port=5555):
-        Initializes the server with the given host and port.
-    start_server():
-        Starts the server and begins listening for client connections.
-    accept_clients():
-        Accepts incoming client connections and starts a new thread to handle each client.
-    handle_client(client_socket):
-        Handles communication with a connected client.
-    update():
-        Updates the game state and broadcasts it to all connected clients.
-    broadcast():
-        Broadcasts the current game state to all connected clients.
-    """
 
 
-    def __init__(self, host=HOST, port=5555):
-        self.host = host
-        self.port = port
-        self.running = True
+    def __init__(self):
         self.game = Game()
-        self.clients = []
+        self.clients = {}  # {socket: agent_name}
         self.lock = threading.Lock()
-        self.start_server()
-
-    def start_server(self):
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.server_socket.bind((self.host, self.port))
-        self.server_socket.listen()
-        print(f"Server started on {self.host}:{self.port}")
+        self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.server_socket.bind(('localhost', 5555))
+        self.server_socket.listen(5)  # Accepte jusqu'à 5 connexions en attente
+        self.running = True
+        # Démarre un thread dédié à l'acceptation des clients
         threading.Thread(target=self.accept_clients).start()
+        logger.warning("Server started on localhost:5555")
 
     def accept_clients(self):
+        """Thread qui attend en permanence de nouvelles connexions"""
         while self.running:
-            client_socket, addr = self.server_socket.accept()
-            print(f"New client connected: {addr}")
-            self.clients.append(client_socket)
-            threading.Thread(target=self.handle_client, args=(client_socket,)).start()
+            try:
+                # Accepte une nouvelle connexion
+                client_socket, addr = self.server_socket.accept()
+                logger.warning(f"New client connected: {addr}")
+                # Crée un nouveau thread pour gérer ce client
+                threading.Thread(target=self.handle_client, args=(client_socket,)).start()
+            except Exception as e:
+                logger.error(f"Error accepting client: {e}")
 
     def handle_client(self, client_socket):
-        agent_name = client_socket.recv(1024).decode()
-        client_ip = client_socket.getpeername()[0]
+        """Thread dédié à un client spécifique"""
+        try:
+            # Première communication : le client envoie son nom
+            agent_name = client_socket.recv(1024).decode()
+            logger.warning(f"Tentative de connexion pour l'agent: {agent_name}")
 
-        with self.lock:
-            # Check if the name of the agent already exists
-            if agent_name in self.game.trains:
-                error_message = json.dumps({"error": "Agent name already exists"})
-                client_socket.sendall(error_message.encode())
-                client_socket.close()
-                return
-
-            # Check if the IP address is already connected
-            for client in self.clients:
-                if client.getpeername()[0] == client_ip:
-                    error_message = json.dumps({"error": "IP address already connected"})
+            with self.lock:
+                # Vérifier si le nom d'agent existe déjà
+                if any(name == agent_name for name in self.clients.values()):
+                    logger.warning(f"Agent name already exists: {agent_name}")
+                    error_message = json.dumps({"error": "Agent name already exists"}) + "\n"
                     client_socket.sendall(error_message.encode())
                     client_socket.close()
                     return
 
-            self.game.add_train(agent_name)
-            self.clients.append(client_socket)
+                # Ajouter le client et créer son train
+                self.clients[client_socket] = agent_name
+                logger.debug(f"Adding train for agent: {agent_name}")
+                self.game.add_train(agent_name)
 
-        while self.running:
-            try:
-                data = client_socket.recv(1024).decode()
-                if not data:
+            # Boucle principale de réception des commandes du client
+            while self.running:
+                try:
+                    data = client_socket.recv(1024).decode()
+                    if not data:  # Client déconnecté
+                        break
+                    
+                    # Traitement des commandes reçues (changement de direction)
+                    command = json.loads(data)
+                    if "direction" in command:
+                        self.game.change_direction_of_train(agent_name, command["direction"])
+                except json.JSONDecodeError as e:
+                    logger.warning(f"Erreur de décodage JSON pour {agent_name}: {e}")
                     break
-                action = json.loads(data)
-                if agent_name in self.trains:
-                    self.game.change_direction_of_train(agent_name, (action["direction"]))
-            except:
-                break
+                except Exception as e:
+                    logger.warning(f"Erreur pour {agent_name}: {e}")
+                    break
+
+        finally:
+            # Nettoyage à la déconnexion du client
+            with self.lock:
+                if client_socket in self.clients:
+                    agent_name = self.clients[client_socket]
+                    self.game.remove_train(agent_name)
+                    del self.clients[client_socket]
+                    logger.warning(f"Déconnexion du client: {agent_name}")
+            client_socket.close()
 
     def update(self):
         self.game.update()
         self.broadcast()
 
     def broadcast(self):
-        # Serialize the game state
-        state = {"trains": {name: train.serialize() for name, train in self.game.trains.items()},
-                 "passengers": [p.position for p in self.game.passengers], "grid_size": self.game.grid_size, "screen_with_x": self.game.screen_with_x, "screen_with_y": self.game.screen_with_y}
-        data = json.dumps(state)
-        for client in self.clients:
+        state = {
+            "trains": {name: train.serialize() for name, train in self.game.trains.items()},
+            "passengers": [p.position for p in self.game.passengers],
+            "grid_size": self.game.grid_size,
+            "screen_width": self.game.screen_width,
+            "screen_height": self.game.screen_height
+        }
+        data = json.dumps(state) + "\n"
+
+        with self.lock:
+            clients_to_update = list(self.clients.items())
+        
+        for client_socket, agent_name in clients_to_update:
             try:
-                client.sendall(data.encode())
+                client_socket.sendall(data.encode())
             except:
-                self.clients.remove(client)
+                logger.warning(f"Client déconnecté: {agent_name}")
+                with self.lock:
+                    self.clients.pop(client_socket, None)
+                    self.game.remove_train(agent_name)
 
 
 if __name__ == "__main__":
     server = Server()
+    # Démarrer le jeu dans un thread séparé
+    game_thread = threading.Thread(target=server.game.run)
+    game_thread.start()
+    
+    # Boucle principale du serveur
     while True:
         server.update()
