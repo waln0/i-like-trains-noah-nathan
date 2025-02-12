@@ -90,10 +90,12 @@ class Server:
                     # Traitement des commandes reçues (changement de direction)
                     command = json.loads(data)
                     if "direction" in command:
-                        self.game.change_direction_of_train(agent_name, command["direction"])
+                        # Convertir la direction en tuple
+                        direction = tuple(command["direction"])
+                        self.game.change_direction_of_train(agent_name, direction)
                 except json.JSONDecodeError as e:
                     logger.warning(f"Erreur de décodage JSON pour {agent_name}: {e}")
-                    break
+                    continue  # Continue instead of break to be more resilient
                 except Exception as e:
                     logger.warning(f"Erreur pour {agent_name}: {e}")
                     break

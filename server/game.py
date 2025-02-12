@@ -118,22 +118,44 @@ class Game:
                 y=start_y,
                 agent_name=agent_name
             )
+            
+            # Créer un nouveau passager pour ce train
+            new_passenger = Passenger(self)
+            self.passengers.append(new_passenger)
+            
         self.update_screen_size()
         
     def remove_train(self, agent_name):
+        """Supprime un train"""
         logger.debug(f"Removing train for agent: {agent_name}")
-        self.trains.pop(agent_name)
-        self.update_screen_size()
+        
+        # Supprimer le train
+        if agent_name in self.trains:
+            self.trains.pop(agent_name)
+        
+        # Mettre à jour la taille de l'écran
+        if len(self.trains) > 0:
+            # Réduire la taille si possible
+            if self.can_reduce_padding():
+                self.reduce_padding()
+        else:
+            # Réinitialiser la taille si plus aucun train
+            self.screen_width = 200  # Taille initiale
+            self.screen_height = 200
+        
+        logger.debug(f"Remaining trains: {len(self.trains)}, passengers: {len(self.passengers)}")
+        logger.debug(f"New screen size: {self.screen_width}x{self.screen_height}")
 
     def can_reduce_padding(self):
+        """Vérifie si on peut réduire la taille de l'écran"""
         logger.debug("Checking if padding can be reduced")
         for train in self.trains.values():
-            x, y = train["position"]
+            x, y = train.position  # Accès direct à l'attribut position de l'objet Train
 
             if x >= self.screen_width - self.screen_padding - 50 or y >= self.screen_height - self.screen_padding - 50:
                 return False
-            for wagon in train["wagons"]:
-                x, y = wagon
+            for wagon_pos in train.wagons:  # Accès direct à l'attribut wagons
+                x, y = wagon_pos
                 if x >= self.screen_width - self.screen_padding - 50 or y >= self.screen_height - self.screen_padding - 50:
                     return False
         return True
@@ -158,11 +180,7 @@ class Game:
             # Update all trains
             for train_name, train in self.trains.items():
                 train.update(self.passengers, self.grid_size)
-
-            # Update all passengers
-            for passenger in self.passengers:
-                passenger.update()
-            
+                
     def update_screen_size(self):
         logger.debug("Updating screen size")
         self.screen_width += self.screen_padding
