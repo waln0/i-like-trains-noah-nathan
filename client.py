@@ -109,7 +109,7 @@ class Client:
         self.running = False
 
     def send_action(self, direction):
-        action = json.dumps({"direction": direction})
+        action = json.dumps({"direction": list(direction)})
         self.socket.sendall(action.encode())
 
     def run(self):

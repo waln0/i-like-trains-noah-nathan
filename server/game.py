@@ -31,12 +31,15 @@ RED = (255, 0, 0)
 BLUE = (0, 0, 255)
 DARK_GREEN = (0, 100, 0)
 
+ORIGINAL_SCREEN_WIDTH = 200
+ORIGINAL_SCREEN_HEIGHT = 200
+
 class Game:
     def __init__(self):
-        self.screen_width = 200
-        self.screen_height = 200
+        self.screen_width = ORIGINAL_SCREEN_WIDTH
+        self.screen_height = ORIGINAL_SCREEN_HEIGHT
         self.grid_size = 20
-        self.tick_rate = 60  # Augmentation pour plus de fluidité
+        self.tick_rate = 100  # Augmentation pour plus de fluidité
         self.running = True
         self.trains = {} # {agent_name: Train}
         self.passengers = []
@@ -140,8 +143,11 @@ class Game:
                 self.reduce_padding()
         else:
             # Réinitialiser la taille si plus aucun train
-            self.screen_width = 200  # Taille initiale
-            self.screen_height = 200
+            self.screen_width = ORIGINAL_SCREEN_WIDTH  # Taille initiale
+            self.screen_height = ORIGINAL_SCREEN_HEIGHT
+            # Réinitialiser la liste des passagers quand il n'y a plus de trains
+            self.passengers.clear()
+            logger.debug("Plus de trains actifs, liste des passagers réinitialisée")
         
         logger.debug(f"Remaining trains: {len(self.trains)}, passengers: {len(self.passengers)}")
         logger.debug(f"New screen size: {self.screen_width}x{self.screen_height}")

@@ -13360,3 +13360,352 @@ au mur à la position (500, 300) depuis (500, 300)
 2025-02-12 12:18:08,552 - game - DEBUG - Remaining trains: 0, passengers: 1
 2025-02-12 12:18:08,552 - game - DEBUG - New screen size: 200x200
 2025-02-12 12:18:08,571 - __main__ - WARNING - Erreur pour y: [WinError 10054] Une connexion existante a dû être fermée par l’hôte distant
+2025-02-13 11:10:08,119 - game - DEBUG - Game initialized with tick rate: 60
+2025-02-13 11:10:08,119 - __main__ - WARNING - Server started on localhost:5555
+2025-02-13 11:10:08,134 - game - INFO - Game loop started
+2025-02-13 11:10:15,752 - __main__ - WARNING - New client connected: ('127.0.0.1', 61659)
+2025-02-13 11:10:15,814 - __main__ - WARNING - Tentative de connexion pour l'agent: i
+2025-02-13 11:10:15,862 - __main__ - DEBUG - Adding train for agent: i
+2025-02-13 11:10:15,862 - game - DEBUG - Adding train for agent: i
+2025-02-13 11:10:15,862 - game - DEBUG - Found safe spawn position at (120, 120)
+2025-02-13 11:10:15,862 - train - DEBUG - Initializing train at position: 120, 120
+2025-02-13 11:10:15,862 - passenger - DEBUG - Passager spawné à la position (20, 20)
+2025-02-13 11:10:15,862 - game - DEBUG - Updating screen size
+2025-02-13 11:10:17,805 - train - DEBUG - Moving train
+2025-02-13 11:10:19,514 - train - DEBUG - Moving train
+2025-02-13 11:10:21,229 - train - DEBUG - Moving train
+2025-02-13 11:10:22,949 - train - DEBUG - Moving train
+2025-02-13 11:10:24,673 - train - DEBUG - Moving train
+2025-02-13 11:10:26,385 - train - DEBUG - Moving train
+2025-02-13 11:10:28,109 - train - DEBUG - Moving train
+2025-02-13 11:10:29,832 - train - DEBUG - Moving train
+2025-02-13 11:10:29,832 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:10:29,833 - agent - DEBUG - Nouvelle direction choisie pour éviter le mur: (0, 1)
+2025-02-13 11:10:29,833 - game - DEBUG - Changing direction of train i to (0, 1)
+s la direction (1, 0)
+2025-02-13 11:10:29,833 - agent - DEBUG - Nouvelle direction choisie pour éviter le mur: (-1, 0)
+2025-02-13 11:10:29,834 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:10:29,834 - train - DEBUG - Attempting to change direction from (1, 0) to (0, 1)
+2025-02-13 11:10:29,834 - agent - DEBUG - Nouvelle direction choisie pour éviter le mur: (0, -1)
+2025-02-13 11:10:29,834 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:10:29,834 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:10:29,834 - agent - DEBUG - Nouvelle direction choisie pour éviter le mur: (-1, 0)
+2025-02-13 11:10:29,834 - train - DEBUG - Current direction: (1, 0)
+2025-02-13 11:10:29,834 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:10:29,834 - agent - DEBUG - Nouvelle direction choisie pour éviter le mur: (0, -1)
+2025-02-13 11:10:29,835 - train - DEBUG - New direction: (0, 1)
+on (300, 120) dans la direction (1, 0)
+2025-02-13 11:10:29,835 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:10:29,835 - train - DEBUG - Opposite direction: (-1, 0)
+2025-02-13 11:10:29,835 - agent - DEBUG - Nouvelle direction choisie pour éviter le mur: (-1, 0)
+2025-02-13 11:10:29,835 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:10:29,835 - agent - DEBUG - Nouvelle direction choisie pour éviter le mur: (0, -1)
+2025-02-13 11:10:29,835 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:10:29,836 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:10:29,836 - agent - DEBUG - Nouvelle direction choisie pour éviter le mur: (-1, 0)
+2025-02-13 11:10:29,836 - train - DEBUG - Has moved: True (current: (280, 120), last: (260, 120))
+2025-02-13 11:10:29,836 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:10:29,836 - train - DEBUG - Changing direction to: (0, 1)
+2025-02-13 11:10:29,836 - agent - DEBUG - Nouvelle direction choisie pour éviter le mur: (0, -1)
+2025-02-13 11:10:29,836 - __main__ - WARNING - Erreur de décodage JSON pour i: Extra data: line 1 column 23 (char 22)
+2025-02-13 11:10:29,837 - game - DEBUG - Changing direction of train i to (0, -1)
+2025-02-13 11:10:29,837 - train - DEBUG - Attempting to change direction from (0, 1) to (0, -1)
+2025-02-13 11:10:29,838 - train - DEBUG - Current direction: (0, 1)
+2025-02-13 11:10:29,838 - train - DEBUG - New direction: (0, -1)
+2025-02-13 11:10:29,838 - train - DEBUG - Opposite direction: (0, -1)
+2025-02-13 11:10:29,838 - train - DEBUG - Cannot change to opposite direction
+2025-02-13 11:10:31,545 - train - DEBUG - Moving train
+2025-02-13 11:10:33,266 - train - DEBUG - Moving train
+2025-02-13 11:10:34,994 - train - DEBUG - Moving train
+2025-02-13 11:10:36,718 - train - DEBUG - Moving train
+2025-02-13 11:10:38,443 - train - DEBUG - Moving train
+2025-02-13 11:10:40,169 - train - DEBUG - Moving train
+2025-02-13 11:10:41,306 - __main__ - WARNING - Stopped receiving game state
+2025-02-13 11:10:41,311 - __main__ - WARNING - Client stopped
+2025-02-13 11:10:41,322 - __main__ - WARNING - Client déconnecté: i
+2025-02-13 11:10:41,324 - __main__ - WARNING - Erreur pour i: [WinError 10054] Une connexion existante a dû être fermée par l’hôte distant
+2025-02-13 11:10:41,326 - game - DEBUG - Removing train for agent: i
+2025-02-13 11:10:41,326 - game - DEBUG - Remaining trains: 0, passengers: 1
+2025-02-13 11:10:41,326 - game - DEBUG - New screen size: 200x200
+2025-02-13 11:11:33,885 - __main__ - WARNING - New client connected: ('127.0.0.1', 61710)
+2025-02-13 11:11:33,949 - __main__ - WARNING - Tentative de connexion pour l'agent: p
+2025-02-13 11:11:33,965 - __main__ - DEBUG - Adding train for agent: p
+2025-02-13 11:11:33,966 - game - DEBUG - Adding train for agent: p
+2025-02-13 11:11:33,966 - game - DEBUG - Found safe spawn position at (80, 100)
+2025-02-13 11:11:33,967 - train - DEBUG - Initializing train at position: 80, 100
+2025-02-13 11:11:33,967 - passenger - DEBUG - Passager spawné à la position (120, 20)
+2025-02-13 11:11:33,968 - game - DEBUG - Updating screen size
+2025-02-13 11:11:35,955 - train - DEBUG - Moving train
+2025-02-13 11:11:37,677 - train - DEBUG - Moving train
+2025-02-13 11:11:39,401 - train - DEBUG - Moving train
+2025-02-13 11:11:41,129 - train - DEBUG - Moving train
+2025-02-13 11:11:42,852 - train - DEBUG - Moving train
+2025-02-13 11:11:44,572 - train - DEBUG - Moving train
+2025-02-13 11:11:46,297 - train - DEBUG - Moving train
+2025-02-13 11:11:48,023 - train - DEBUG - Moving train
+2025-02-13 11:11:49,406 - __main__ - WARNING - Client stopped
+2025-02-13 11:11:49,407 - __main__ - WARNING - Stopped receiving game state
+2025-02-13 11:11:49,408 - __main__ - WARNING - Client déconnecté: p
+2025-02-13 11:11:49,409 - __main__ - WARNING - Erreur pour p: [WinError 10054] Une connexion existante a dû être fermée par l’hôte distant
+2025-02-13 11:11:49,411 - game - DEBUG - Removing train for agent: p
+2025-02-13 11:11:49,413 - game - DEBUG - Remaining trains: 0, passengers: 2
+2025-02-13 11:11:49,413 - game - DEBUG - New screen size: 200x200
+2025-02-13 11:13:57,454 - __main__ - WARNING - New client connected: ('127.0.0.1', 61859)
+2025-02-13 11:13:57,502 - __main__ - WARNING - Tentative de connexion pour l'agent: p
+2025-02-13 11:13:57,503 - __main__ - DEBUG - Adding train for agent: p
+2025-02-13 11:13:57,503 - game - DEBUG - Adding train for agent: p
+2025-02-13 11:13:57,504 - game - DEBUG - Found safe spawn position at (120, 100)
+2025-02-13 11:13:57,505 - train - DEBUG - Initializing train at position: 120, 100
+2025-02-13 11:13:57,505 - passenger - DEBUG - Passager spawné à la position (140, 0)
+2025-02-13 11:13:57,506 - game - DEBUG - Updating screen size
+2025-02-13 11:13:59,494 - train - DEBUG - Moving train
+2025-02-13 11:14:01,219 - train - DEBUG - Moving train
+2025-02-13 11:14:01,724 - __main__ - WARNING - Stopped receiving game state
+2025-02-13 11:14:01,726 - __main__ - WARNING - Client stopped
+2025-02-13 11:14:01,727 - __main__ - WARNING - Client déconnecté: p
+2025-02-13 11:14:01,728 - __main__ - WARNING - Erreur pour p: [WinError 10054] Une connexion existante a dû être fermée par l’hôte distant
+2025-02-13 11:14:01,729 - game - DEBUG - Removing train for agent: p
+2025-02-13 11:14:01,730 - game - DEBUG - Remaining trains: 0, passengers: 3
+2025-02-13 11:14:01,730 - game - DEBUG - New screen size: 200x200
+2025-02-13 11:14:08,879 - game - DEBUG - Game initialized with tick rate: 100
+2025-02-13 11:14:08,894 - __main__ - WARNING - Server started on localhost:5555
+2025-02-13 11:14:08,894 - game - INFO - Game loop started
+2025-02-13 11:14:14,294 - __main__ - WARNING - New client connected: ('127.0.0.1', 61861)
+2025-02-13 11:14:14,372 - __main__ - WARNING - Tentative de connexion pour l'agent: p
+2025-02-13 11:14:14,403 - __main__ - DEBUG - Adding train for agent: p
+2025-02-13 11:14:14,403 - game - DEBUG - Adding train for agent: p
+2025-02-13 11:14:14,403 - game - DEBUG - Found safe spawn position at (80, 120)
+2025-02-13 11:14:14,403 - train - DEBUG - Initializing train at position: 80, 120
+2025-02-13 11:14:14,404 - passenger - DEBUG - Passager spawné à la position (140, 40)
+2025-02-13 11:14:14,404 - game - DEBUG - Updating screen size
+2025-02-13 11:14:15,592 - train - DEBUG - Moving train
+2025-02-13 11:14:16,639 - train - DEBUG - Moving train
+2025-02-13 11:14:17,684 - train - DEBUG - Moving train
+2025-02-13 11:14:18,724 - train - DEBUG - Moving train
+2025-02-13 11:14:19,770 - train - DEBUG - Moving train
+2025-02-13 11:14:20,817 - train - DEBUG - Moving train
+2025-02-13 11:14:21,864 - train - DEBUG - Moving train
+2025-02-13 11:14:22,915 - train - DEBUG - Moving train
+2025-02-13 11:14:23,961 - train - DEBUG - Moving train
+2025-02-13 11:14:25,011 - train - DEBUG - Moving train
+2025-02-13 11:14:25,011 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:14:25,013 - agent - DEBUG - Nouvelle direction choisie pour éviter le mur: (0, 1)
+2025-02-13 11:14:25,013 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:14:25,013 - agent - DEBUG - Nouvelle direction choisie pour éviter le mur: (-1, 0)
+2025-02-13 11:14:25,013 - train - DEBUG - Attempting to change direction from (1, 0) to (0, 1)
+ (1, 0)
+2025-02-13 11:14:25,014 - agent - DEBUG - Nouvelle direction choisie pour éviter le mur: (0, -1)
+2025-02-13 11:14:25,014 - train - DEBUG - Current direction: (1, 0)
+2025-02-13 11:14:25,014 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:14:25,014 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:14:25,015 - agent - DEBUG - Nouvelle direction choisie pour éviter le mur: (-1, 0)
+2025-02-13 11:14:25,015 - train - DEBUG - New direction: (0, 1)
+2025-02-13 11:14:25,016 - train - DEBUG - Opposite direction: (-1, 0)
+2025-02-13 11:14:25,016 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:14:25,016 - agent - DEBUG - Nouvelle direction choisie pour éviter le mur: (0, -1)
+2025-02-13 11:14:25,016 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:14:25,016 - train - DEBUG - Has moved: True (current: (280, 120), last: (260, 120))
+2025-02-13 11:14:25,016 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:14:25,016 - agent - DEBUG - Nouvelle direction choisie pour éviter le mur: (-1, 0)
+2025-02-13 11:14:25,017 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:14:25,017 - agent - DEBUG - Nouvelle direction choisie pour éviter le mur: (0, -1)
+2025-02-13 11:14:25,017 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:14:25,017 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:14:25,017 - agent - DEBUG - Nouvelle direction choisie pour éviter le mur: (-1, 0)
+2025-02-13 11:14:25,017 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:14:25,017 - agent - DEBUG - Nouvelle direction choisie pour éviter le mur: (0, -1)
+2025-02-13 11:14:25,017 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:14:25,017 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:14:25,018 - agent - DEBUG - Nouvelle direction choisie pour éviter le mur: (-1, 0)
+2025-02-13 11:14:25,018 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:14:25,018 - agent - DEBUG - Nouvelle direction choisie pour éviter le mur: (0, -1)
+2025-02-13 11:14:25,018 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:14:25,018 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:14:25,018 - agent - DEBUG - Nouvelle direction choisie pour éviter le mur: (-1, 0)
+2025-02-13 11:14:25,018 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:14:25,018 - agent - DEBUG - Nouvelle direction choisie pour éviter le mur: (0, -1)
+2025-02-13 11:14:25,018 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:14:25,018 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:14:25,018 - agent - DEBUG - Nouvelle direction choisie pour éviter le mur: (-1, 0)
+2025-02-13 11:14:25,019 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:14:25,019 - agent - DEBUG - Nouvelle direction choisie pour éviter le mur: (0, -1)
+2025-02-13 11:14:25,019 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:14:25,019 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:14:25,019 - agent - DEBUG - Nouvelle direction choisie pour éviter le mur: (-1, 0)
+2025-02-13 11:14:25,019 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:14:25,019 - agent - DEBUG - Nouvelle direction choisie pour éviter le mur: (0, -1)
+2025-02-13 11:14:25,019 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:14:25,020 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:14:25,020 - agent - DEBUG - Nouvelle direction choisie pour éviter le mur: (-1, 0)
+2025-02-13 11:14:25,020 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:14:25,020 - agent - DEBUG - Nouvelle direction choisie pour éviter le mur: (0, -1)
+2025-02-13 11:14:25,022 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:14:25,023 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:14:25,023 - agent - DEBUG - Nouvelle direction choisie pour éviter le mur: (-1, 0)
+2025-02-13 11:14:25,023 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:14:25,023 - agent - DEBUG - Nouvelle direction choisie pour éviter le mur: (0, -1)
+2025-02-13 11:14:25,023 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:14:25,023 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:14:25,023 - agent - DEBUG - Nouvelle direction choisie pour éviter le mur: (-1, 0)
+2025-02-13 11:14:25,023 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:14:25,024 - agent - DEBUG - Nouvelle direction choisie pour éviter le mur: (0, -1)
+2025-02-13 11:14:25,024 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:14:25,024 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:14:25,024 - agent - DEBUG - Nouvelle direction choisie pour éviter le mur: (-1, 0)
+2025-02-13 11:14:25,024 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:14:25,024 - agent - DEBUG - Nouvelle direction choisie pour éviter le mur: (0, -1)
+2025-02-13 11:14:25,024 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:14:25,024 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:14:25,024 - agent - DEBUG - Nouvelle direction choisie pour éviter le mur: (-1, 0)
+2025-02-13 11:14:25,025 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:14:25,025 - agent - DEBUG - Nouvelle direction choisie pour éviter le mur: (0, -1)
+2025-02-13 11:14:25,025 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:14:25,025 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:14:25,025 - agent - DEBUG - Nouvelle direction choisie pour éviter le mur: (-1, 0)
+2025-02-13 11:14:25,025 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:14:25,025 - agent - DEBUG - Nouvelle direction choisie pour éviter le mur: (0, -1)
+2025-02-13 11:14:25,025 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:14:25,025 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:14:25,026 - agent - DEBUG - Nouvelle direction choisie pour éviter le mur: (-1, 0)
+2025-02-13 11:14:25,026 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:14:25,026 - agent - DEBUG - Nouvelle direction choisie pour éviter le mur: (0, -1)
+2025-02-13 11:14:25,026 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:14:25,026 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:14:25,026 - agent - DEBUG - Nouvelle direction choisie pour éviter le mur: (-1, 0)
+2025-02-13 11:14:25,026 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:14:25,026 - agent - DEBUG - Nouvelle direction choisie pour éviter le mur: (0, -1)
+2025-02-13 11:14:25,026 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:14:25,026 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:14:25,026 - agent - DEBUG - Nouvelle direction choisie pour éviter le mur: (-1, 0)
+2025-02-13 11:14:25,026 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:14:25,026 - agent - DEBUG - Nouvelle direction choisie pour éviter le mur: (0, -1)
+2025-02-13 11:14:25,026 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:14:25,028 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:14:25,028 - agent - DEBUG - Nouvelle direction choisie pour éviter le mur: (-1, 0)
+2025-02-13 11:14:25,028 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:14:25,028 - agent - DEBUG - Nouvelle direction choisie pour éviter le mur: (0, -1)
+2025-02-13 11:14:25,028 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:14:25,028 - train - DEBUG - Changing direction to: (0, 1)
+ 120) dans la direction (1, 0)
+2025-02-13 11:14:25,028 - agent - DEBUG - Nouvelle direction choisie pour éviter le mur: (-1, 0)
+2025-02-13 11:14:25,028 - __main__ - WARNING - Erreur de décodage JSON pour p: Extra data: line 1 column 23 (char 22)
+2025-02-13 11:14:25,029 - game - DEBUG - Changing direction of train p to (-1, 0)
+2025-02-13 11:14:25,029 - train - DEBUG - Attempting to change direction from (0, 1) to (-1, 0)
+2025-02-13 11:14:25,030 - train - DEBUG - Current direction: (0, 1)
+2025-02-13 11:14:25,030 - train - DEBUG - New direction: (-1, 0)
+2025-02-13 11:14:25,030 - train - DEBUG - Opposite direction: (0, -1)
+2025-02-13 11:14:25,030 - train - DEBUG - Has moved: False (current: (280, 120), last: (280, 120))
+2025-02-13 11:14:25,031 - train - DEBUG - Train hasn't moved since last direction change
+2025-02-13 11:14:26,059 - train - DEBUG - Moving train
+2025-02-13 11:14:26,871 - __main__ - WARNING - Stopped receiving game state
+2025-02-13 11:14:26,874 - __main__ - WARNING - Client stopped
+2025-02-13 11:14:26,875 - __main__ - WARNING - Erreur pour p: [WinError 10054] Une connexion existante a dû être fermée par l’hôte distant
+2025-02-13 11:14:26,876 - __main__ - WARNING - Client déconnecté: p
+2025-02-13 11:14:26,876 - game - DEBUG - Removing train for agent: p
+2025-02-13 11:14:26,877 - game - DEBUG - Plus de trains actifs, liste des passagers réinitialisée
+2025-02-13 11:14:26,878 - game - DEBUG - Remaining trains: 0, passengers: 0
+2025-02-13 11:14:26,879 - game - DEBUG - New screen size: 200x200
+2025-02-13 11:14:26,879 - __main__ - WARNING - Déconnexion du client: p
+2025-02-13 11:14:26,879 - game - DEBUG - Removing train for agent: p
+2025-02-13 11:14:26,879 - game - DEBUG - Plus de trains actifs, liste des passagers réinitialisée
+2025-02-13 11:14:26,879 - game - DEBUG - Remaining trains: 0, passengers: 0
+2025-02-13 11:14:26,880 - game - DEBUG - New screen size: 200x200
+2025-02-13 11:14:35,463 - __main__ - WARNING - New client connected: ('127.0.0.1', 61868)
+2025-02-13 11:14:35,495 - __main__ - WARNING - Tentative de connexion pour l'agent: o
+2025-02-13 11:14:35,527 - __main__ - DEBUG - Adding train for agent: o
+2025-02-13 11:14:35,528 - game - DEBUG - Adding train for agent: o
+2025-02-13 11:14:35,528 - game - DEBUG - Found safe spawn position at (120, 100)
+2025-02-13 11:14:35,529 - train - DEBUG - Initializing train at position: 120, 100
+2025-02-13 11:14:35,529 - passenger - DEBUG - Passager spawné à la position (80, 140)
+2025-02-13 11:14:35,530 - game - DEBUG - Updating screen size
+2025-02-13 11:14:36,697 - train - DEBUG - Moving train
+2025-02-13 11:14:37,742 - train - DEBUG - Moving train
+2025-02-13 11:14:38,785 - train - DEBUG - Moving train
+2025-02-13 11:14:39,829 - train - DEBUG - Moving train
+2025-02-13 11:14:40,515 - __main__ - WARNING - Stopped receiving game state
+2025-02-13 11:14:40,518 - __main__ - WARNING - Client stopped
+2025-02-13 11:14:40,520 - __main__ - WARNING - Client déconnecté: o
+2025-02-13 11:14:40,520 - __main__ - WARNING - Erreur pour o: [WinError 10054] Une connexion existante a dû être fermée par l’hôte distant
+2025-02-13 11:14:40,522 - game - DEBUG - Removing train for agent: o
+2025-02-13 11:14:40,522 - game - DEBUG - Plus de trains actifs, liste des passagers réinitialisée
+2025-02-13 11:14:40,523 - game - DEBUG - Remaining trains: 0, passengers: 0
+2025-02-13 11:14:40,523 - game - DEBUG - New screen size: 200x200
+2025-02-13 11:15:55,701 - game - DEBUG - Game initialized with tick rate: 100
+2025-02-13 11:15:55,717 - __main__ - WARNING - Server started on localhost:5555
+2025-02-13 11:15:55,717 - game - INFO - Game loop started
+2025-02-13 11:16:00,611 - __main__ - WARNING - New client connected: ('127.0.0.1', 61899)
+2025-02-13 11:16:00,642 - __main__ - WARNING - Tentative de connexion pour l'agent: o
+2025-02-13 11:16:00,658 - __main__ - DEBUG - Adding train for agent: o
+2025-02-13 11:16:00,658 - game - DEBUG - Adding train for agent: o
+2025-02-13 11:16:00,659 - game - DEBUG - Found safe spawn position at (120, 120)
+2025-02-13 11:16:00,659 - train - DEBUG - Initializing train at position: 120, 120
+2025-02-13 11:16:00,659 - passenger - DEBUG - Passager spawné à la position (160, 0)
+2025-02-13 11:16:00,659 - game - DEBUG - Updating screen size
+2025-02-13 11:16:01,912 - train - DEBUG - Moving train
+2025-02-13 11:16:02,960 - train - DEBUG - Moving train
+2025-02-13 11:16:04,007 - train - DEBUG - Moving train
+2025-02-13 11:16:05,053 - train - DEBUG - Moving train
+2025-02-13 11:16:06,098 - train - DEBUG - Moving train
+2025-02-13 11:16:07,143 - train - DEBUG - Moving train
+2025-02-13 11:16:08,192 - train - DEBUG - Moving train
+2025-02-13 11:16:09,237 - train - DEBUG - Moving train
+2025-02-13 11:16:09,237 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:16:09,238 - agent - DEBUG - Nouvelle direction choisie pour éviter le mur: (0, 1)
+2025-02-13 11:16:09,238 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:16:09,238 - agent - DEBUG - Nouvelle direction choisie pour éviter le mur: (-1, 0)
+2025-02-13 11:16:09,238 - game - DEBUG - Changing direction of train o to (0, 1)
+2025-02-13 11:16:09,240 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:16:09,240 - agent - DEBUG - Nouvelle direction choisie pour éviter le mur: (0, -1)
+2025-02-13 11:16:09,240 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:16:09,240 - train - DEBUG - Attempting to change direction from (1, 0) to (0, 1)
+ (1, 0)
+2025-02-13 11:16:09,240 - agent - DEBUG - Nouvelle direction choisie pour éviter le mur: (-1, 0)
+2025-02-13 11:16:09,240 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:16:09,240 - agent - DEBUG - Nouvelle direction choisie pour éviter le mur: (0, -1)
+2025-02-13 11:16:09,240 - train - DEBUG - Current direction: (1, 0)
+2025-02-13 11:16:09,241 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:16:09,241 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:16:09,241 - agent - DEBUG - Nouvelle direction choisie pour éviter le mur: (-1, 0)
+2025-02-13 11:16:09,241 - train - DEBUG - New direction: (0, 1)
+2025-02-13 11:16:09,241 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:16:09,242 - agent - DEBUG - Nouvelle direction choisie pour éviter le mur: (0, -1)
+2025-02-13 11:16:09,242 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:16:09,242 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:16:09,242 - agent - DEBUG - Nouvelle direction choisie pour éviter le mur: (-1, 0)
+2025-02-13 11:16:09,242 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:16:09,242 - agent - DEBUG - Nouvelle direction choisie pour éviter le mur: (0, -1)
+2025-02-13 11:16:09,242 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:16:09,242 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:16:09,243 - agent - DEBUG - Nouvelle direction choisie pour éviter le mur: (-1, 0)
+2025-02-13 11:16:09,243 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:16:09,243 - train - DEBUG - Has moved: True (current: (280, 120), last: (260, 120))
+2025-02-13 11:16:09,243 - agent - DEBUG - Nouvelle direction choisie pour éviter le mur: (0, -1)
+2025-02-13 11:16:09,243 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:16:09,243 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:16:09,243 - train - DEBUG - Changing direction to: (0, 1)
+2025-02-13 11:16:09,243 - agent - DEBUG - Nouvelle direction choisie pour éviter le mur: (-1, 0)
+2025-02-13 11:16:09,243 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:16:09,243 - agent - DEBUG - Nouvelle direction choisie pour éviter le mur: (0, -1)
+2025-02-13 11:16:09,244 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:16:09,244 - agent - DEBUG - Mur détecté à la position (300, 120) dans la direction (1, 0)
+2025-02-13 11:16:09,244 - agent - DEBUG - Nouvelle direction choisie pour éviter le mur: (-1, 0)
+2025-02-13 11:16:09,244 - __main__ - WARNING - Erreur de décodage JSON pour o: Extra data: line 1 column 23 (char 22)
+2025-02-13 11:16:09,244 - game - DEBUG - Changing direction of train o to (-1, 0)
+2025-02-13 11:16:09,244 - train - DEBUG - Attempting to change direction from (0, 1) to (-1, 0)
+2025-02-13 11:16:09,244 - train - DEBUG - Current direction: (0, 1)
+2025-02-13 11:16:09,245 - train - DEBUG - New direction: (-1, 0)
+2025-02-13 11:16:09,248 - train - DEBUG - Opposite direction: (0, -1)
+2025-02-13 11:16:09,248 - train - DEBUG - Has moved: False (current: (280, 120), last: (280, 120))
+2025-02-13 11:16:09,248 - train - DEBUG - Train hasn't moved since last direction change
+2025-02-13 11:16:10,280 - train - DEBUG - Moving train
+2025-02-13 11:16:11,320 - train - DEBUG - Moving train
+2025-02-13 11:16:12,359 - train - DEBUG - Moving train
+2025-02-13 11:16:13,409 - train - DEBUG - Moving train
+2025-02-13 11:16:13,621 - __main__ - WARNING - Client stopped
+2025-02-13 11:16:13,623 - __main__ - WARNING - Stopped receiving game state
+2025-02-13 11:16:13,623 - __main__ - WARNING - Client déconnecté: o
+2025-02-13 11:16:13,624 - __main__ - WARNING - Erreur pour o: [WinError 10054] Une connexion existante a dû être fermée par l’hôte distant
+2025-02-13 11:16:13,625 - game - DEBUG - Removing train for agent: o
+2025-02-13 11:16:13,626 - game - DEBUG - Plus de trains actifs, liste des passagers réinitialisée
+2025-02-13 11:16:13,626 - game - DEBUG - Remaining trains: 0, passengers: 0
+2025-02-13 11:16:13,627 - game - DEBUG - New screen size: 200x200
