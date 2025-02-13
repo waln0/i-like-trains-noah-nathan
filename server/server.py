@@ -63,7 +63,7 @@ class Server:
         """Thread dédié à un client spécifique"""
         try:
             # Première communication : le client envoie son nom
-            agent_name = client_socket.recv(1024).decode()
+            agent_name = client_socket.recv(1024).decode().strip()  # strip() pour enlever les espaces et \n
             logger.warning(f"Tentative de connexion pour l'agent: {agent_name}")
 
             with self.lock:
@@ -80,24 +80,31 @@ class Server:
                 logger.debug(f"Adding train for agent: {agent_name}")
                 self.game.add_train(agent_name)
 
-            # Boucle principale de réception des commandes du client
+            buffer = ""  # Buffer pour accumuler les données
             while self.running:
                 try:
                     data = client_socket.recv(1024).decode()
                     if not data:  # Client déconnecté
                         break
                     
-                    # Traitement des commandes reçues (changement de direction)
-                    command = json.loads(data)
-                    if "direction" in command:
-                        # Convertir la direction en tuple
-                        direction = tuple(command["direction"])
-                        self.game.change_direction_of_train(agent_name, direction)
-                except json.JSONDecodeError as e:
-                    logger.warning(f"Erreur de décodage JSON pour {agent_name}: {e}")
-                    continue  # Continue instead of break to be more resilient
+                    buffer += data  # Ajouter les nouvelles données au buffer
+                    
+                    # Traiter tous les messages complets dans le buffer
+                    while "\n" in buffer:
+                        message, buffer = buffer.split("\n", 1)  # Séparer le premier message complet
+                        if message:  # Ignorer les messages vides
+                            try:
+                                command = json.loads(message)
+                                if "direction" in command:
+                                    direction = tuple(command["direction"])
+                                    self.game.change_direction_of_train(agent_name, direction)
+                            except json.JSONDecodeError as e:
+                                logger.warning(f"Erreur de décodage JSON pour {agent_name}: {e}")
+                            except Exception as e:
+                                logger.warning(f"Erreur pour {agent_name}: {e}")
+                            
                 except Exception as e:
-                    logger.warning(f"Erreur pour {agent_name}: {e}")
+                    logger.warning(f"Erreur de connexion pour {agent_name}: {e}")
                     break
 
         finally:

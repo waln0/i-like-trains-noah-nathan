@@ -109,8 +109,13 @@ class Client:
         self.running = False
 
     def send_action(self, direction):
-        action = json.dumps({"direction": list(direction)})
-        self.socket.sendall(action.encode())
+        """Envoie une action au serveur après conversion en format JSON"""
+        try:
+            # Convertir le tuple en liste pour le JSON et ajouter un délimiteur
+            action = json.dumps({"direction": list(direction)}) + "\n"
+            self.socket.sendall(action.encode())
+        except Exception as e:
+            logger.error(f"Erreur lors de l'envoi de l'action: {e}")
 
     def run(self):
         pygame.init()  # Initialisation de Pygame
