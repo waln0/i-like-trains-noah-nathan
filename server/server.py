@@ -1,21 +1,51 @@
 import socket
 import json
 import threading
+import time
 
 from game import Game
 import logging
 
-# Configure logging
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('game_debug.log'),
-        logging.StreamHandler()
-    ]
-)
+# Configuration du logger pour le serveur
+def setup_server_logger():
+    # Supprimer les handlers existants
+    for handler in logging.root.handlers[:]:
+        logging.root.removeHandler(handler)
+    
+    # Configurer le logger du serveur
+    logger = logging.getLogger('server')
+    logger.setLevel(logging.DEBUG)
+    
+    # Important: désactiver la propagation vers le root logger
+    logger.propagate = False
+    
+    # Créer un handler pour la console
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.DEBUG)
+    
+    # Définir le format
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    console_handler.setFormatter(formatter)
+    
+    # Ajouter le handler au logger
+    logger.addHandler(console_handler)
+    
+    # Configurer aussi les loggers des sous-modules du serveur
+    game_logger = logging.getLogger('server.game')
+    game_logger.setLevel(logging.DEBUG)
+    game_logger.propagate = False
+    game_logger.addHandler(console_handler)
+    
+    train_logger = logging.getLogger('server.train')
+    train_logger.setLevel(logging.DEBUG)
+    train_logger.propagate = False
+    train_logger.addHandler(console_handler)
+    
+    return logger
 
-logger = logging.getLogger(__name__)
+# Configurer le logger du serveur
+logger = setup_server_logger()
+
 # Colors
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
@@ -30,6 +60,8 @@ RIGHT = (1, 0)
 
 HOST = "localhost"
 
+MAX_FREQUENCY = 30 # Fréquence de transfert des données
+
 
 class Server:
 
@@ -43,6 +75,10 @@ class Server:
         self.server_socket.bind(('localhost', 5555))
         self.server_socket.listen(5)  # Accepte jusqu'à 5 connexions en attente
         self.running = True
+        
+        # Ajout du compteur de ticks
+        # self.tick_counter = 0
+        
         # Démarre un thread dédié à l'acceptation des clients
         threading.Thread(target=self.accept_clients).start()
         logger.warning("Server started on localhost:5555")
@@ -117,10 +153,6 @@ class Server:
                     logger.warning(f"Déconnexion du client: {agent_name}")
             client_socket.close()
 
-    def update(self):
-        self.game.update()
-        self.broadcast()
-
     def broadcast(self):
         state = {
             "trains": {name: train.serialize() for name, train in self.game.trains.items()},
@@ -152,4 +184,5 @@ if __name__ == "__main__":
     
     # Boucle principale du serveur
     while True:
-        server.update()
+        server.broadcast()
+        time.sleep(1/MAX_FREQUENCY)

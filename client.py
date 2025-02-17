@@ -8,18 +8,40 @@ import threading
 from agent import Agent
 import logging
 
-# Configure logging
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('game_debug.log'),
-        logging.StreamHandler()
-    ]
-)
+# Configuration du logger pour le client et l'agent
+def setup_client_logger():
+    # Supprimer les handlers existants
+    for handler in logging.root.handlers[:]:
+        logging.root.removeHandler(handler)
+    
+    # Configurer le logger principal
+    logger = logging.getLogger('client')
+    logger.setLevel(logging.DEBUG)
+    
+    # S'assurer que les logs sont propagés aux parents
+    logger.propagate = False
+    
+    # Créer un handler pour la console
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.DEBUG)
+    
+    # Définir le format
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    console_handler.setFormatter(formatter)
+    
+    # Ajouter le handler au logger
+    logger.addHandler(console_handler)
+    
+    # Configurer aussi le logger de l'agent
+    agent_logger = logging.getLogger('client.agent')
+    agent_logger.setLevel(logging.DEBUG)
+    agent_logger.addHandler(console_handler)
+    agent_logger.propagate = False
+    
+    return logger
 
-logger = logging.getLogger(__name__)
-
+# Configurer le logger avant de créer l'agent
+logger = setup_client_logger()
 
 class Client:
 
@@ -32,7 +54,7 @@ class Client:
         self.server_host = server_host
         self.server_port = server_port
 
-        self.tick_rate = 10
+        # self.tick_rate = 10
         self.running = True
         self.trains = []
         self.passengers = []
@@ -131,8 +153,8 @@ class Client:
             
             # Appel du rendu du jeu via l'agent
             self.agent.draw_gui(self.screen, self.grid_size)
-            self.clock.tick(self.tick_rate)
-            
+            # self.clock.tick(self.tick_rate)  # Supprimé car le timing est géré par le serveur
+        
         logger.warning("Client stopped")
         self.socket.close()
         pygame.quit()

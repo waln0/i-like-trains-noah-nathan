@@ -34,20 +34,22 @@ DARK_GREEN = (0, 100, 0)
 ORIGINAL_SCREEN_WIDTH = 200
 ORIGINAL_SCREEN_HEIGHT = 200
 
+PASSENGERS_RATIO = 0.5  # Nombre de passagers par train (peut être décimal)
+
 class Game:
     def __init__(self):
         self.screen_width = ORIGINAL_SCREEN_WIDTH
         self.screen_height = ORIGINAL_SCREEN_HEIGHT
         self.grid_size = 20
-        self.tick_rate = 100  # Augmentation pour plus de fluidité
+        self.tick_rate = 200  # Augmentation pour plus de fluidité
         self.running = True
-        self.trains = {} # {agent_name: Train}
+        self.trains = {}
         self.passengers = []
         self.screen_padding = 100
         self.lock = threading.Lock()
         self.spawn_safe_zone = 4  # Zone de sécurité en nombre de cases
         self.last_update = time.time()
-        self.update_interval = 1.0 / self.tick_rate  # Intervalle fixe entre les updates
+        # self.update_interval = 0.0 / self.tick_rate  # Intervalle fixe entre les updates
         logger.debug(f"Game initialized with tick rate: {self.tick_rate}")
     
     def run(self):
@@ -112,6 +114,24 @@ class Game:
         logger.warning(f"Using default center position: ({center_x}, {center_y})")
         return center_x, center_y
 
+    def update_passengers_count(self):
+        """Met à jour le nombre de passagers en fonction du ratio"""
+        desired_passengers = max(1, int(len(self.trains) * PASSENGERS_RATIO))
+        current_passengers = len(self.passengers)
+        
+        logger.debug(f"Updating passengers count. Current: {current_passengers}, Desired: {desired_passengers}")
+        
+        # Ajouter des passagers si nécessaire
+        while len(self.passengers) < desired_passengers:
+            new_passenger = Passenger(self)
+            self.passengers.append(new_passenger)
+            logger.debug("Added new passenger")
+            
+        # Retirer des passagers si nécessaire
+        while len(self.passengers) > desired_passengers:
+            self.passengers.pop()
+            logger.debug("Removed passenger")
+
     def add_train(self, agent_name):
         with self.lock:
             logger.debug(f"Adding train for agent: {agent_name}")
@@ -122,9 +142,8 @@ class Game:
                 agent_name=agent_name
             )
             
-            # Créer un nouveau passager pour ce train
-            new_passenger = Passenger(self)
-            self.passengers.append(new_passenger)
+            # Mettre à jour le nombre de passagers
+            self.update_passengers_count()
             
         self.update_screen_size()
         
@@ -132,9 +151,11 @@ class Game:
         """Supprime un train"""
         logger.debug(f"Removing train for agent: {agent_name}")
         
-        # Supprimer le train
         if agent_name in self.trains:
             self.trains.pop(agent_name)
+        
+        # Mettre à jour le nombre de passagers
+        self.update_passengers_count()
         
         # Mettre à jour la taille de l'écran
         if len(self.trains) > 0:
@@ -177,16 +198,27 @@ class Game:
         elapsed = current_time - self.last_update
 
         # Si pas assez de temps écoulé, on attend
-        if elapsed < self.update_interval:
-            return
+        # if elapsed < self.update_interval:
+        #     return
 
-        self.last_update = current_time
+        # self.last_update = current_time
 
         with self.lock:
-            # Update all trains
+            # Update all trains and check for death conditions
+            trains_to_remove = []
             for train_name, train in self.trains.items():
                 train.update(self.passengers, self.grid_size)
                 
+                # Vérifier les conditions de mort
+                if (train.check_collisions(self.trains) or 
+                    train.check_out_of_bounds(self.screen_width, self.screen_height)):
+                    logger.info(f"Train {train_name} died!")
+                    trains_to_remove.append(train_name)
+            
+            # Supprimer les trains morts
+            for train_name in trains_to_remove:
+                self.remove_train(train_name)
+
     def update_screen_size(self):
         logger.debug("Updating screen size")
         self.screen_width += self.screen_padding
@@ -199,5 +231,5 @@ class Game:
         logger.debug(f"Changing direction of train {agent_name} to {new_direction}")
         if agent_name in self.trains:
             self.trains[agent_name].change_direction(new_direction)
-        else:
-            logger.warning(f"Train {agent_name} not found")
+        # else:
+        #     logger.warning(f"Train {agent_name} not found")

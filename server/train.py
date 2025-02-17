@@ -26,6 +26,8 @@ DOWN = (0, 1)
 LEFT = (-1, 0)
 RIGHT = (1, 0)
 
+SPEED_DECREMENT = 2
+
 class Train:
 
     def __init__(self, x, y, agent_name):
@@ -35,9 +37,12 @@ class Train:
         self.alive = True
         self.agent_name = agent_name
         self.move_timer = 0
-        self.move_interval = 100  # Intervalle fixe entre chaque déplacement
+        self.speed = 60
         self.last_position = (x, y)
-        logger.debug(f"Initializing train at position: {x}, {y}")
+        # Utiliser à la fois le logger serveur et client
+        self.server_logger = logging.getLogger('server.train')
+        self.client_logger = logging.getLogger('client.train')
+        self.server_logger.debug(f"Initializing train at position: {x}, {y}")
 
     def get_position(self):
         return self.position
@@ -85,7 +90,8 @@ class Train:
             return
             
         self.move_timer += 1
-        if self.move_timer >= self.move_interval:
+        # if self.move_timer >= self.move_interval:
+        if self.move_timer >= 1000/self.speed:
             self.move_timer = 0
             old_position = self.position
             self.move(grid_size, passengers)
@@ -94,6 +100,7 @@ class Train:
 
     def add_wagon(self, position):
         logger.debug(f"Adding wagon at position: {position}")
+        self.speed -= SPEED_DECREMENT
         self.wagons.append(position)
 
     def move(self, grid_size, passengers):
@@ -133,3 +140,40 @@ class Train:
             "alive": self.alive,
             "agent_name": self.agent_name
         }
+
+    def check_collisions(self, all_trains):
+        for wagon_pos in self.wagons:
+            if self.position == wagon_pos:
+                collision_msg = f"Train {self.agent_name} collided with its own wagon at {wagon_pos}"
+                self.server_logger.warning(collision_msg)
+                self.client_logger.warning(collision_msg)
+                return True
+
+        for train in all_trains.values():
+            if train.agent_name == self.agent_name:
+                continue
+            
+            # Vérifier la collision avec la tête du train
+            if self.position == train.position:
+                collision_msg = f"Train {self.agent_name} collided with train {train.agent_name}"
+                self.server_logger.warning(collision_msg)
+                self.client_logger.warning(collision_msg)
+                return True
+            
+            # Vérifier la collision avec les wagons
+            for wagon_pos in train.wagons:
+                if self.position == wagon_pos:
+                    collision_msg = f"Train {self.agent_name} collided with wagon of train {train.agent_name}"
+                    self.server_logger.warning(collision_msg)
+                    self.client_logger.warning(collision_msg)
+                    return True
+        
+        return False
+
+    def check_out_of_bounds(self, screen_width, screen_height):
+        """Vérifie si le train est sorti de l'écran"""
+        x, y = self.position
+        if (x < 0 or x >= screen_width or y < 0 or y >= screen_height):
+            logger.debug(f"Train {self.agent_name} went out of bounds at {self.position}")
+            return True
+        return False
