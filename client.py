@@ -115,8 +115,9 @@ class Client:
                         self.screen_width = state.get("screen_width", 800)
                         self.screen_height = state.get("screen_height", 800)
                         
-                        # Mise à jour de l'agent
-                        self.agent.update(self.trains, self.passengers, self.grid_size, self.screen_width, self.screen_height)
+                        # Mise à jour de l'agent si le train est vivant
+                        if self.agent_name in self.trains:
+                            self.agent.update(self.trains, self.passengers, self.grid_size, self.screen_width, self.screen_height)
                         
                     except json.JSONDecodeError as e:
                         logger.error(f"Invalid JSON: {e}")
@@ -131,11 +132,17 @@ class Client:
         self.running = False
 
     def send_action(self, direction):
-        """Envoie une action au serveur après conversion en format JSON"""
         try:
-            # Convertir le tuple en liste pour le JSON et ajouter un délimiteur
-            action = json.dumps({"direction": list(direction)}) + "\n"
-            self.socket.sendall(action.encode())
+            # Ne pas envoyer d'action si le train est mort
+            if self.agent_name not in self.agent.all_trains:
+                logger.debug("Train mort, pas d'envoi d'action")
+                return
+                
+            action = {
+                "action": "direction",
+                "direction": list(direction)
+            }
+            self.socket.sendall((json.dumps(action) + "\n").encode())
         except Exception as e:
             logger.error(f"Erreur lors de l'envoi de l'action: {e}")
 

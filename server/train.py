@@ -26,7 +26,19 @@ DOWN = (0, 1)
 LEFT = (-1, 0)
 RIGHT = (1, 0)
 
-SPEED_DECREMENT = 2
+INITIAL_SPEED = 50
+SPEED_DECREMENT_COEFFICIENT = 0.95
+
+def generate_random_non_blue_color():
+    """Génère une couleur RGB aléatoire en évitant les nuances de bleu"""
+    while True:
+        r = random.randint(100, 255)  # Plus lumineux pour les trains
+        g = random.randint(100, 255)
+        b = random.randint(0, 100)    # Limiter le bleu
+        
+        # Si ce n'est pas une nuance de bleu (plus de rouge ou vert que de bleu)
+        if r > b + 50 or g > b + 50:
+            return (r, g, b)
 
 class Train:
 
@@ -34,15 +46,17 @@ class Train:
         self.position = (x, y)
         self.wagons = []
         self.direction = (1, 0)  # Commence vers la droite
-        self.alive = True
+        self.previous_direction = (1, 0)  # Commence avec la même direction
         self.agent_name = agent_name
         self.move_timer = 0
-        self.speed = 60
+        self.speed = INITIAL_SPEED
         self.last_position = (x, y)
+        self.color = generate_random_non_blue_color()  # Couleur du train
+        self.wagon_color = tuple(min(c + 50, 255) for c in self.color)  # Wagons plus clairs
         # Utiliser à la fois le logger serveur et client
         self.server_logger = logging.getLogger('server.train')
         self.client_logger = logging.getLogger('client.train')
-        self.server_logger.debug(f"Initializing train at position: {x}, {y}")
+        self.server_logger.debug(f"Initializing train at position: {x}, {y} with color {self.color}")
 
     def get_position(self):
         return self.position
@@ -51,43 +65,44 @@ class Train:
         """Retourne la direction opposée"""
         return (-direction[0], -direction[1])
 
-    def is_opposite_direction(self, new_direction):
-        """Vérifie si la nouvelle direction est opposée à la direction actuelle"""
-        opposite = self.get_opposite_direction(self.direction)
-        logger.debug(f"Current direction: {self.direction}")
-        logger.debug(f"New direction: {new_direction}")
-        logger.debug(f"Opposite direction: {opposite}")
-        return tuple(new_direction) == opposite
-
     def has_moved(self):
         """Vérifie si le train a bougé depuis sa dernière position"""
         has_moved = self.position != self.last_position
-        logger.debug(f"Has moved: {has_moved} (current: {self.position}, last: {self.last_position})")
+        # logger.debug(f"Has moved: {has_moved} (current: {self.position}, last: {self.last_position})")
         return has_moved
 
+    def is_opposite_direction(self, new_direction):
+        """Vérifie si la nouvelle direction est opposée à la direction précédente"""
+        opposite = (-self.previous_direction[0], -self.previous_direction[1])
+        # self.server_logger.debug(f"Previous direction: {self.previous_direction}")
+        # self.server_logger.debug(f"Opposite direction: {opposite}")
+        return tuple(new_direction) == opposite
+
     def change_direction(self, new_direction):
-        """Change la direction du train si les conditions sont respectées"""
-        logger.debug(f"Attempting to change direction from {self.direction} to {new_direction}")
+        """Change la direction du train si c'est possible"""
+        current_direction = self.direction
+        # self.server_logger.debug(f"Attempting to change direction from {current_direction} to {new_direction}")
         
         # Convertir new_direction en tuple pour la comparaison
         new_direction = tuple(new_direction)
         
+        # Vérifier si c'est une direction opposée
         if self.is_opposite_direction(new_direction):
-            logger.debug("Cannot change to opposite direction")
+            self.server_logger.debug("Cannot change direction: would be opposite direction")
             return False
             
-        if not self.has_moved() and new_direction != self.direction:
-            logger.debug("Train hasn't moved since last direction change")
-            return False
+        # Si la direction est la même, pas besoin de changer
+        if new_direction == current_direction:
+            # self.server_logger.debug("Already moving in this direction")
+            return True
             
-        logger.debug(f"Changing direction to: {new_direction}")
+        # Appliquer le changement de direction
+        # self.server_logger.debug(f"Changing direction to: {new_direction}")
         self.direction = new_direction
-        self.last_position = self.position
         return True
 
     def update(self, passengers, grid_size):
-        if not self.alive:
-            return
+        """Met à jour la position du train"""
             
         self.move_timer += 1
         # if self.move_timer >= self.move_interval:
@@ -97,18 +112,21 @@ class Train:
             self.move(grid_size, passengers)
             if self.position != old_position:
                 self.last_position = old_position
+                # self.server_logger.debug(f"Train moved from {old_position} to {self.position}")
 
     def add_wagon(self, position):
-        logger.debug(f"Adding wagon at position: {position}")
-        self.speed -= SPEED_DECREMENT
+        self.speed = self.speed * SPEED_DECREMENT_COEFFICIENT
         self.wagons.append(position)
 
     def move(self, grid_size, passengers):
         """Déplacement à intervalle régulier"""
-        logger.debug("Moving train")
+        self.server_logger.debug(f"Moving train from {self.position} in direction {self.direction}")
         
         # Sauvegarder la dernière position du dernier wagon pour un possible nouveau wagon
         last_wagon_position = self.wagons[-1] if self.wagons else self.position
+        
+        # Mettre à jour la direction précédente avant le mouvement
+        self.previous_direction = self.direction
         
         # Déplacer les wagons
         if self.wagons:
@@ -117,10 +135,15 @@ class Train:
             self.wagons[0] = self.position
         
         # Déplacer la locomotive
-        self.position = (
+        new_position = (
             self.position[0] + self.direction[0] * grid_size,
             self.position[1] + self.direction[1] * grid_size
         )
+        
+        self.last_position = self.position
+        self.position = new_position
+        
+        self.server_logger.debug(f"Train moved to {self.position}")
         
         # Vérifier collision avec passager
         for passenger in passengers:
@@ -137,8 +160,10 @@ class Train:
             "position": self.position,
             "wagons": self.wagons,
             "direction": self.direction,
-            "alive": self.alive,
-            "agent_name": self.agent_name
+            "previous_direction": self.previous_direction,
+            "name": self.agent_name,
+            "color": self.color,
+            "wagon_color": self.wagon_color
         }
 
     def check_collisions(self, all_trains):

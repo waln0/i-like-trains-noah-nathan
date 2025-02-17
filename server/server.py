@@ -154,6 +154,9 @@ class Server:
             client_socket.close()
 
     def broadcast(self):
+        if not self.clients:  # Ne broadcast que s'il y a des clients
+            return
+            
         state = {
             "trains": {name: train.serialize() for name, train in self.game.trains.items()},
             "passengers": [p.position for p in self.game.passengers],
@@ -175,6 +178,24 @@ class Server:
                     self.clients.pop(client_socket, None)
                     self.game.remove_train(agent_name)
 
+    def run_game(self):
+        last_update = time.time()
+        update_interval = 1.0 / self.game.tick_rate
+
+        while self.running:
+            current_time = time.time()
+            elapsed = current_time - last_update
+
+            # Update le jeu seulement s'il y a des trains
+            if elapsed >= update_interval and self.game.trains:
+                self.game.update()
+                last_update = current_time
+                
+                # Broadcast seulement s'il y a des clients
+                if self.clients:
+                    self.broadcast()
+            
+            time.sleep(1/MAX_FREQUENCY)
 
 if __name__ == "__main__":
     server = Server()

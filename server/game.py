@@ -36,12 +36,13 @@ ORIGINAL_SCREEN_HEIGHT = 200
 
 PASSENGERS_RATIO = 0.5  # Nombre de passagers par train (peut être décimal)
 
+TICK_RATE = 60
+
 class Game:
     def __init__(self):
         self.screen_width = ORIGINAL_SCREEN_WIDTH
         self.screen_height = ORIGINAL_SCREEN_HEIGHT
         self.grid_size = 20
-        self.tick_rate = 200  # Augmentation pour plus de fluidité
         self.running = True
         self.trains = {}
         self.passengers = []
@@ -50,14 +51,14 @@ class Game:
         self.spawn_safe_zone = 4  # Zone de sécurité en nombre de cases
         self.last_update = time.time()
         # self.update_interval = 0.0 / self.tick_rate  # Intervalle fixe entre les updates
-        logger.debug(f"Game initialized with tick rate: {self.tick_rate}")
+        logger.info(f"Game initialized with tick rate: {TICK_RATE}")
     
     def run(self):
         logger.info("Game loop started")
         while self.running:
             self.update()
             import time
-            time.sleep(1/self.tick_rate)
+            time.sleep(1/TICK_RATE)
 
     def is_position_safe(self, x, y):
         """
@@ -194,15 +195,10 @@ class Game:
             self.screen_height -= self.screen_padding
 
     def update(self):
-        current_time = time.time()
-        elapsed = current_time - self.last_update
-
-        # Si pas assez de temps écoulé, on attend
-        # if elapsed < self.update_interval:
-        #     return
-
-        # self.last_update = current_time
-
+        """Update game state"""
+        if not self.trains:  # Ne update que s'il y a des trains
+            return
+            
         with self.lock:
             # Update all trains and check for death conditions
             trains_to_remove = []
