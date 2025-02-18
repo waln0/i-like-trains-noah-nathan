@@ -26,7 +26,7 @@ DOWN = (0, 1)
 LEFT = (-1, 0)
 RIGHT = (1, 0)
 
-INITIAL_SPEED = 50
+INITIAL_SPEED = 300 # max 380
 SPEED_DECREMENT_COEFFICIENT = 0.95
 
 def generate_random_non_blue_color():
@@ -46,6 +46,7 @@ class Train:
         self.position = (x, y)
         self.wagons = []
         self.direction = (1, 0)  # Commence vers la droite
+        self.alive = True
         self.previous_direction = (1, 0)  # Commence avec la même direction
         self.agent_name = agent_name
         self.move_timer = 0
@@ -120,7 +121,7 @@ class Train:
 
     def move(self, grid_size, passengers):
         """Déplacement à intervalle régulier"""
-        self.server_logger.debug(f"Moving train from {self.position} in direction {self.direction}")
+        # self.server_logger.debug(f"Moving train from {self.position} in direction {self.direction}")
         
         # Sauvegarder la dernière position du dernier wagon pour un possible nouveau wagon
         last_wagon_position = self.wagons[-1] if self.wagons else self.position
@@ -143,7 +144,7 @@ class Train:
         self.last_position = self.position
         self.position = new_position
         
-        self.server_logger.debug(f"Train moved to {self.position}")
+        # self.server_logger.debug(f"Train moved to {self.position}")
         
         # Vérifier collision avec passager
         for passenger in passengers:
@@ -172,6 +173,7 @@ class Train:
                 collision_msg = f"Train {self.agent_name} collided with its own wagon at {wagon_pos}"
                 self.server_logger.warning(collision_msg)
                 self.client_logger.warning(collision_msg)
+                self.alive = False
                 return True
 
         for train in all_trains.values():
@@ -183,6 +185,8 @@ class Train:
                 collision_msg = f"Train {self.agent_name} collided with train {train.agent_name}"
                 self.server_logger.warning(collision_msg)
                 self.client_logger.warning(collision_msg)
+                self.alive = False
+                train.alive = False  # Les deux trains meurent en collision frontale
                 return True
             
             # Vérifier la collision avec les wagons
@@ -191,6 +195,7 @@ class Train:
                     collision_msg = f"Train {self.agent_name} collided with wagon of train {train.agent_name}"
                     self.server_logger.warning(collision_msg)
                     self.client_logger.warning(collision_msg)
+                    self.alive = False
                     return True
         
         return False
@@ -199,6 +204,7 @@ class Train:
         """Vérifie si le train est sorti de l'écran"""
         x, y = self.position
         if (x < 0 or x >= screen_width or y < 0 or y >= screen_height):
-            logger.debug(f"Train {self.agent_name} went out of bounds at {self.position}")
+            self.server_logger.warning(f"Train {self.agent_name} est mort: sortie de l'écran. Coordonnées: {self.position}")
+            self.alive = False
             return True
         return False

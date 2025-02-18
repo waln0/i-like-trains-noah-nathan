@@ -70,14 +70,32 @@ class Client:
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.socket.connect((self.server_host, self.server_port))
             self.socket.sendall(self.agent_name.encode())
-            threading.Thread(target=self.receive_game_state).start()
-            self.init_game()
-        except ConnectionRefusedError:
-            logger.warning(f"Impossible de se connecter au serveur {self.server_host}:{self.server_port}")
-            logger.warning("Vérifiez que le serveur est en cours d'exécution et que l'adresse/port sont corrects")
+            
+            # Attendre la réponse du serveur pour vérifier si le nom est accepté
+            response = self.socket.recv(1024).decode()
+            try:
+                response_data = json.loads(response)
+                if "error" in response_data:
+                    logger.error(f"Erreur de connexion: {response_data['error']}")
+                    self.socket.close()
+                    pygame.quit()
+                    print(f"Erreur: {response_data['error']}")
+                    exit(1)
+                elif response_data.get("status") == "ok":
+                    logger.info("Connexion acceptée")
+                    threading.Thread(target=self.receive_game_state).start()
+                    self.init_game()
+            except json.JSONDecodeError as e:
+                logger.error(f"Erreur de décodage de la réponse du serveur: {e}")
+                self.socket.close()
+                raise
+            
+        except ConnectionRefusedError as e:
+            logger.error(f"Impossible de se connecter au serveur {self.server_host}:{self.server_port}")
+            logger.error(str(e))
             raise
         except Exception as e:
-            logger.warning(f"Une erreur est survenue lors de la tentative de connexion: {e}")
+            logger.error(f"Une erreur est survenue lors de la tentative de connexion: {e}")
             raise
 
     def init_game(self):
@@ -116,8 +134,7 @@ class Client:
                         self.screen_height = state.get("screen_height", 800)
                         
                         # Mise à jour de l'agent si le train est vivant
-                        if self.agent_name in self.trains:
-                            self.agent.update(self.trains, self.passengers, self.grid_size, self.screen_width, self.screen_height)
+                        self.agent.update(self.trains, self.passengers, self.grid_size, self.screen_width, self.screen_height)
                         
                     except json.JSONDecodeError as e:
                         logger.error(f"Invalid JSON: {e}")
@@ -134,14 +151,18 @@ class Client:
     def send_action(self, direction):
         try:
             # Ne pas envoyer d'action si le train est mort
-            if self.agent_name not in self.agent.all_trains:
-                logger.debug("Train mort, pas d'envoi d'action")
-                return
+            # if self.agent_name not in self.agent.all_trains:
+            #     logger.debug("Train mort, pas d'envoi d'action")
+            #     return
                 
-            action = {
-                "action": "direction",
-                "direction": list(direction)
-            }
+            # Si c'est un dictionnaire (cas du respawn), l'envoyer directement
+            if isinstance(direction, dict):
+                action = direction
+            else:
+                action = {
+                    "action": "direction",
+                    "direction": list(direction)
+                }
             self.socket.sendall((json.dumps(action) + "\n").encode())
         except Exception as e:
             logger.error(f"Erreur lors de l'envoi de l'action: {e}")
@@ -152,7 +173,14 @@ class Client:
         pygame.display.set_caption(f"Train Game - {self.agent_name}")
         
         while self.running:
-            self.handle_events()
+            # Traiter les événements en premier
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.running = False
+                # Ignorer les événements de fenêtre active/inactive
+                elif event.type in (pygame.WINDOWFOCUSLOST, pygame.WINDOWMOVED, 
+                                  pygame.WINDOWENTER, pygame.WINDOWLEAVE):
+                    continue
             
             # Mise à jour de la taille de l'écran si nécessaire
             if self.screen_width != self.screen.get_width() or self.screen_height != self.screen.get_height():
@@ -160,16 +188,13 @@ class Client:
             
             # Appel du rendu du jeu via l'agent
             self.agent.draw_gui(self.screen, self.grid_size)
-            # self.clock.tick(self.tick_rate)  # Supprimé car le timing est géré par le serveur
+            
+            # Petit délai pour éviter une utilisation CPU excessive
+            pygame.time.delay(10)
         
         logger.warning("Client stopped")
         self.socket.close()
         pygame.quit()
-
-    def handle_events(self):
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                self.running = False
 
 if __name__ == "__main__":
     while True:

@@ -48,7 +48,7 @@ class Game:
         self.passengers = []
         self.screen_padding = 100
         self.lock = threading.Lock()
-        self.spawn_safe_zone = 4  # Zone de sécurité en nombre de cases
+        self.spawn_safe_zone = 3  # Zone de sécurité en nombre de cases
         self.last_update = time.time()
         # self.update_interval = 0.0 / self.tick_rate  # Intervalle fixe entre les updates
         logger.info(f"Game initialized with tick rate: {TICK_RATE}")
@@ -102,8 +102,8 @@ class Game:
         """
         for _ in range(max_attempts):
             # Position alignée sur la grille
-            x = random.randint(2, (self.screen_width // self.grid_size) - 3) * self.grid_size
-            y = random.randint(2, (self.screen_height // self.grid_size) - 3) * self.grid_size
+            x = random.randint(self.spawn_safe_zone, (self.screen_width // self.grid_size) - self.spawn_safe_zone) * self.grid_size
+            y = random.randint(self.spawn_safe_zone, (self.screen_height // self.grid_size) - self.spawn_safe_zone) * self.grid_size
             
             if self.is_position_safe(x, y):
                 logger.debug(f"Found safe spawn position at ({x}, {y})")
@@ -207,7 +207,8 @@ class Game:
                 
                 # Vérifier les conditions de mort
                 if (train.check_collisions(self.trains) or 
-                    train.check_out_of_bounds(self.screen_width, self.screen_height)):
+                    train.check_out_of_bounds(self.screen_width, self.screen_height) or
+                    not train.alive):  # Ajout de la vérification de l'état alive
                     logger.info(f"Train {train_name} died!")
                     trains_to_remove.append(train_name)
             

@@ -99,7 +99,7 @@ class Server:
         """Thread dédié à un client spécifique"""
         try:
             # Première communication : le client envoie son nom
-            agent_name = client_socket.recv(1024).decode().strip()  # strip() pour enlever les espaces et \n
+            agent_name = client_socket.recv(1024).decode().strip()
             logger.warning(f"Tentative de connexion pour l'agent: {agent_name}")
 
             with self.lock:
@@ -110,6 +110,9 @@ class Server:
                     client_socket.sendall(error_message.encode())
                     client_socket.close()
                     return
+                
+                # Si le nom est disponible, envoyer une confirmation
+                client_socket.sendall(json.dumps({"status": "ok"}).encode())
 
                 # Ajouter le client et créer son train
                 self.clients[client_socket] = agent_name
@@ -134,6 +137,8 @@ class Server:
                                 if "direction" in command:
                                     direction = tuple(command["direction"])
                                     self.game.change_direction_of_train(agent_name, direction)
+                                elif "action" in command:
+                                    self.handle_client_message(client_socket, command)
                             except json.JSONDecodeError as e:
                                 logger.warning(f"Erreur de décodage JSON pour {agent_name}: {e}")
                             except Exception as e:
@@ -153,10 +158,23 @@ class Server:
                     logger.warning(f"Déconnexion du client: {agent_name}")
             client_socket.close()
 
+    def handle_client_message(self, client_socket, message):
+        """Gère les messages reçus du client"""
+        agent_name = self.clients[client_socket]  # Récupérer le nom de l'agent
+        
+        if message.get("action") == "respawn":
+            logger.debug(f"Received respawn from {agent_name}")
+            if agent_name not in self.game.trains:
+                self.game.add_train(agent_name)
+                logger.info(f"Train {agent_name} respawned")
+        # elif message.get("action") == "direction":
+        #     logger.debug(f"Received direction from {agent_name}: {message['direction']}")
+
     def broadcast(self):
         if not self.clients:  # Ne broadcast que s'il y a des clients
             return
             
+        start_time = time.time()
         state = {
             "trains": {name: train.serialize() for name, train in self.game.trains.items()},
             "passengers": [p.position for p in self.game.passengers],
@@ -164,14 +182,25 @@ class Server:
             "screen_width": self.game.screen_width,
             "screen_height": self.game.screen_height
         }
+        serialize_time = time.time() - start_time
+        if serialize_time > 0.01:  # Log si plus de 10ms
+            logger.warning(f"Serialization took {serialize_time*1000:.2f}ms")
+
         data = json.dumps(state) + "\n"
+        json_time = time.time() - start_time - serialize_time
+        if json_time > 0.01:
+            logger.warning(f"JSON encoding took {json_time*1000:.2f}ms")
 
         with self.lock:
             clients_to_update = list(self.clients.items())
         
         for client_socket, agent_name in clients_to_update:
+            send_start = time.time()
             try:
                 client_socket.sendall(data.encode())
+                send_time = time.time() - send_start
+                if send_time > 0.01:
+                    logger.warning(f"Sending to {agent_name} took {send_time*1000:.2f}ms")
             except:
                 logger.warning(f"Client déconnecté: {agent_name}")
                 with self.lock:
