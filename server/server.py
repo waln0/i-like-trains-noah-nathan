@@ -6,44 +6,37 @@ import time
 from game import Game
 import logging
 
-# Configuration du logger pour le serveur
+#   
 def setup_server_logger():
-    # Supprimer les handlers existants
+    # Delete existing handlers
     for handler in logging.root.handlers[:]:
         logging.root.removeHandler(handler)
     
-    # Configurer le logger du serveur
-    logger = logging.getLogger('server')
-    logger.setLevel(logging.DEBUG)
-    
-    # Important: désactiver la propagation vers le root logger
-    logger.propagate = False
-    
-    # Créer un handler pour la console
+    # Create a handler for the console
     console_handler = logging.StreamHandler()
     console_handler.setLevel(logging.DEBUG)
     
-    # Définir le format
+    # Define the format
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     console_handler.setFormatter(formatter)
     
-    # Ajouter le handler au logger
-    logger.addHandler(console_handler)
+    # Configure the main server logger
+    server_logger = logging.getLogger('server')
+    server_logger.setLevel(logging.DEBUG)
+    server_logger.propagate = False
+    server_logger.addHandler(console_handler)
     
-    # Configurer aussi les loggers des sous-modules du serveur
-    game_logger = logging.getLogger('server.game')
-    game_logger.setLevel(logging.DEBUG)
-    game_logger.propagate = False
-    game_logger.addHandler(console_handler)
+    # Configure the loggers of the sub-modules
+    modules = ['server.game', 'server.train', 'server.passenger']
+    for module in modules:
+        logger = logging.getLogger(module)
+        logger.setLevel(logging.DEBUG)
+        logger.propagate = False
+        logger.addHandler(console_handler)
     
-    train_logger = logging.getLogger('server.train')
-    train_logger.setLevel(logging.DEBUG)
-    train_logger.propagate = False
-    train_logger.addHandler(console_handler)
-    
-    return logger
+    return server_logger
 
-# Configurer le logger du serveur
+# Configure the server logger
 logger = setup_server_logger()
 
 # Colors
@@ -60,7 +53,7 @@ RIGHT = (1, 0)
 
 HOST = "localhost"
 
-MAX_FREQUENCY = 30 # Fréquence de transfert des données
+MAX_FREQUENCY = 30 # Transfer frequency
 
 
 class Server:
@@ -76,34 +69,34 @@ class Server:
         self.server_socket.listen(5)  # Accepte jusqu'à 5 connexions en attente
         self.running = True
         
-        # Ajout du compteur de ticks
+        # Add the tick counter
         # self.tick_counter = 0
         
-        # Démarre un thread dédié à l'acceptation des clients
+        # Start a thread dedicated to accepting clients
         threading.Thread(target=self.accept_clients).start()
         logger.warning("Server started on localhost:5555")
 
     def accept_clients(self):
-        """Thread qui attend en permanence de nouvelles connexions"""
+        """Thread that waits for new connections"""
         while self.running:
             try:
-                # Accepte une nouvelle connexion
+                # Accept a new connection
                 client_socket, addr = self.server_socket.accept()
                 logger.warning(f"New client connected: {addr}")
-                # Crée un nouveau thread pour gérer ce client
+                # Create a new thread to handle this client
                 threading.Thread(target=self.handle_client, args=(client_socket,)).start()
             except Exception as e:
                 logger.error(f"Error accepting client: {e}")
 
     def handle_client(self, client_socket):
-        """Thread dédié à un client spécifique"""
+        """Thread dedicated to a specific client"""
         try:
-            # Première communication : le client envoie son nom
+            # First communication: the client sends its name
             agent_name = client_socket.recv(1024).decode().strip()
-            logger.warning(f"Tentative de connexion pour l'agent: {agent_name}")
+            logger.warning(f"Attempting to connect for agent: {agent_name}")
 
             with self.lock:
-                # Vérifier si le nom d'agent existe déjà
+                # Check if the agent name already exists
                 if any(name == agent_name for name in self.clients.values()):
                     logger.warning(f"Agent name already exists: {agent_name}")
                     error_message = json.dumps({"error": "Agent name already exists"}) + "\n"
@@ -111,67 +104,63 @@ class Server:
                     client_socket.close()
                     return
                 
-                # Si le nom est disponible, envoyer une confirmation
+                # If the name is available, send a confirmation
                 client_socket.sendall(json.dumps({"status": "ok"}).encode())
 
-                # Ajouter le client et créer son train
+                # Add the client WITHOUT creating a train
                 self.clients[client_socket] = agent_name
-                logger.debug(f"Adding train for agent: {agent_name}")
-                self.game.add_train(agent_name)
+                logger.debug(f"Client {agent_name} connected, waiting for spawn request")
 
-            buffer = ""  # Buffer pour accumuler les données
+            buffer = ""
             while self.running:
                 try:
                     data = client_socket.recv(1024).decode()
-                    if not data:  # Client déconnecté
+                    if not data:
                         break
                     
-                    buffer += data  # Ajouter les nouvelles données au buffer
+                    buffer += data
                     
-                    # Traiter tous les messages complets dans le buffer
                     while "\n" in buffer:
-                        message, buffer = buffer.split("\n", 1)  # Séparer le premier message complet
-                        if message:  # Ignorer les messages vides
+                        message, buffer = buffer.split("\n", 1)
+                        if message:
                             try:
                                 command = json.loads(message)
-                                if "direction" in command:
-                                    direction = tuple(command["direction"])
-                                    self.game.change_direction_of_train(agent_name, direction)
-                                elif "action" in command:
-                                    self.handle_client_message(client_socket, command)
+                                self.handle_client_message(client_socket, command)
                             except json.JSONDecodeError as e:
-                                logger.warning(f"Erreur de décodage JSON pour {agent_name}: {e}")
-                            except Exception as e:
-                                logger.warning(f"Erreur pour {agent_name}: {e}")
+                                logger.warning(f"Invalid JSON from {agent_name}: {e}")
                             
                 except Exception as e:
-                    logger.warning(f"Erreur de connexion pour {agent_name}: {e}")
+                    logger.warning(f"Error receiving from {agent_name}: {e}")
                     break
 
         finally:
-            # Nettoyage à la déconnexion du client
             with self.lock:
                 if client_socket in self.clients:
                     agent_name = self.clients[client_socket]
-                    self.game.remove_train(agent_name)
+                    if agent_name in self.game.trains:  # Check if the train exists
+                        self.game.remove_train(agent_name)
                     del self.clients[client_socket]
-                    logger.warning(f"Déconnexion du client: {agent_name}")
+                    logger.warning(f"Client disconnected: {agent_name}")
             client_socket.close()
 
     def handle_client_message(self, client_socket, message):
-        """Gère les messages reçus du client"""
-        agent_name = self.clients[client_socket]  # Récupérer le nom de l'agent
+        """Handles messages received from the client"""
+        agent_name = self.clients[client_socket]  # Get the agent name
         
         if message.get("action") == "respawn":
             logger.debug(f"Received respawn from {agent_name}")
             if agent_name not in self.game.trains:
                 self.game.add_train(agent_name)
                 logger.info(f"Train {agent_name} respawned")
-        # elif message.get("action") == "direction":
-        #     logger.debug(f"Received direction from {agent_name}: {message['direction']}")
+        elif message.get("action") == "direction":
+            logger.debug(f"Received direction from {agent_name}: {message['direction']}")
+            if agent_name in self.game.trains:
+                self.game.trains[agent_name].change_direction(message["direction"])
+            else:
+                logger.warning(f"Train {agent_name} not found")
 
     def broadcast(self):
-        if not self.clients:  # Ne broadcast que s'il y a des clients
+        if not self.clients:  # Broadcast only if there are clients
             return
             
         start_time = time.time()
@@ -183,7 +172,7 @@ class Server:
             "screen_height": self.game.screen_height
         }
         serialize_time = time.time() - start_time
-        if serialize_time > 0.01:  # Log si plus de 10ms
+        if serialize_time > 0.01:  # Log if more than 10ms
             logger.warning(f"Serialization took {serialize_time*1000:.2f}ms")
 
         data = json.dumps(state) + "\n"
@@ -202,7 +191,7 @@ class Server:
                 if send_time > 0.01:
                     logger.warning(f"Sending to {agent_name} took {send_time*1000:.2f}ms")
             except:
-                logger.warning(f"Client déconnecté: {agent_name}")
+                logger.warning(f"Client disconnected: {agent_name}")
                 with self.lock:
                     self.clients.pop(client_socket, None)
                     self.game.remove_train(agent_name)
@@ -215,12 +204,12 @@ class Server:
             current_time = time.time()
             elapsed = current_time - last_update
 
-            # Update le jeu seulement s'il y a des trains
+            # Update the game only if there are trains
             if elapsed >= update_interval and self.game.trains:
                 self.game.update()
                 last_update = current_time
                 
-                # Broadcast seulement s'il y a des clients
+                # Broadcast only if there are clients
                 if self.clients:
                     self.broadcast()
             
@@ -228,11 +217,11 @@ class Server:
 
 if __name__ == "__main__":
     server = Server()
-    # Démarrer le jeu dans un thread séparé
+    # Start the game in a separate thread
     game_thread = threading.Thread(target=server.game.run)
     game_thread.start()
     
-    # Boucle principale du serveur
+    # Main server loop
     while True:
         server.broadcast()
         time.sleep(1/MAX_FREQUENCY)

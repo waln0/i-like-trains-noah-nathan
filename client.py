@@ -8,31 +8,31 @@ import threading
 from agent import Agent
 import logging
 
-# Configuration du logger pour le client et l'agent
+# Logger configuration for the customer and agent
 def setup_client_logger():
-    # Supprimer les handlers existants
+    # Delete existing handlers
     for handler in logging.root.handlers[:]:
         logging.root.removeHandler(handler)
     
-    # Configurer le logger principal
+    # Configure the main logger
     logger = logging.getLogger('client')
     logger.setLevel(logging.DEBUG)
     
-    # S'assurer que les logs sont propagés aux parents
+    # Ensure logs are propagated to parents
     logger.propagate = False
     
-    # Créer un handler pour la console
+    # Create a handler for the console
     console_handler = logging.StreamHandler()
     console_handler.setLevel(logging.DEBUG)
     
-    # Définir le format
+    # Define the format
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     console_handler.setFormatter(formatter)
     
-    # Ajouter le handler au logger
+    # Add the handler to the logger
     logger.addHandler(console_handler)
     
-    # Configurer aussi le logger de l'agent
+    # Also configure the agent logger
     agent_logger = logging.getLogger('client.agent')
     agent_logger.setLevel(logging.DEBUG)
     agent_logger.addHandler(console_handler)
@@ -40,7 +40,7 @@ def setup_client_logger():
     
     return logger
 
-# Configurer le logger avant de créer l'agent
+# Configure the logger before creating the agent
 logger = setup_client_logger()
 
 class Client:
@@ -71,31 +71,31 @@ class Client:
             self.socket.connect((self.server_host, self.server_port))
             self.socket.sendall(self.agent_name.encode())
             
-            # Attendre la réponse du serveur pour vérifier si le nom est accepté
+            # Wait for the server response to check if the name is accepted
             response = self.socket.recv(1024).decode()
             try:
                 response_data = json.loads(response)
                 if "error" in response_data:
-                    logger.error(f"Erreur de connexion: {response_data['error']}")
+                    logger.error(f"Connection error: {response_data['error']}")
                     self.socket.close()
                     pygame.quit()
-                    print(f"Erreur: {response_data['error']}")
+                    print(f"Error: {response_data['error']}")
                     exit(1)
                 elif response_data.get("status") == "ok":
-                    logger.info("Connexion acceptée")
+                    logger.info("Connection accepted")
                     threading.Thread(target=self.receive_game_state).start()
                     self.init_game()
             except json.JSONDecodeError as e:
-                logger.error(f"Erreur de décodage de la réponse du serveur: {e}")
+                logger.error(f"Server response decoding error: {e}")
                 self.socket.close()
                 raise
             
         except ConnectionRefusedError as e:
-            logger.error(f"Impossible de se connecter au serveur {self.server_host}:{self.server_port}")
+            logger.error(f"Unable to connect to server {self.server_host}:{self.server_port}")
             logger.error(str(e))
             raise
         except Exception as e:
-            logger.error(f"Une erreur est survenue lors de la tentative de connexion: {e}")
+            logger.error(f"An error occurred while trying to connect: {e}")
             raise
 
     def init_game(self):
@@ -104,43 +104,42 @@ class Client:
 
     def receive_game_state(self):
         buffer = ""
-        self.socket.settimeout(None)  # Pas de timeout pour la réception
+        self.socket.settimeout(None)  # No timeout for reception
         while self.running:
             try:
-                # Recevoir les données
+                # Receive the data
                 data = self.socket.recv(4096).decode()
                 if not data:
                     break
                 
-                # Ajouter au buffer
+                # Add to the buffer
                 buffer += data
                 
-                # Traiter chaque message complet (délimité par \n)
+                # Process each complete message (delimited by \n)
                 messages = buffer.split("\n")
-                # Garder le dernier message incomplet dans le buffer
+                # Keep the last incomplete message in the buffer
                 buffer = messages[-1]
                 
-                # Traiter uniquement le dernier message complet
+                # Process only the last complete message
                 if len(messages) > 1:
                     try:
-                        state = json.loads(messages[-2])  # Prendre le dernier message complet
-                        # logger.debug(f"Updating game state")
-                        
-                        # Mise à jour des données du jeu
+                        state = json.loads(messages[-2])  # Take the last complete message
+
+                        # Update the game data
                         self.trains = state["trains"]
                         self.passengers = state["passengers"]
                         self.grid_size = state["grid_size"]
                         self.screen_width = state.get("screen_width", 800)
                         self.screen_height = state.get("screen_height", 800)
                         
-                        # Mise à jour de l'agent si le train est vivant
+                        # Update the agent if the train is alive
                         self.agent.update(self.trains, self.passengers, self.grid_size, self.screen_width, self.screen_height)
                         
                     except json.JSONDecodeError as e:
                         logger.error(f"Invalid JSON: {e}")
                 
             except socket.timeout:
-                continue  # Continuer la boucle en cas de timeout
+                continue  # Continue the loop in case of timeout
             except Exception as e:
                 logger.error(f"Error in receive_game_state: {e}")
                 break
@@ -150,12 +149,7 @@ class Client:
 
     def send_action(self, direction):
         try:
-            # Ne pas envoyer d'action si le train est mort
-            # if self.agent_name not in self.agent.all_trains:
-            #     logger.debug("Train mort, pas d'envoi d'action")
-            #     return
-                
-            # Si c'est un dictionnaire (cas du respawn), l'envoyer directement
+            # If it's a dictionary (case of respawn), send it directly
             if isinstance(direction, dict):
                 action = direction
             else:
@@ -165,32 +159,32 @@ class Client:
                 }
             self.socket.sendall((json.dumps(action) + "\n").encode())
         except Exception as e:
-            logger.error(f"Erreur lors de l'envoi de l'action: {e}")
+            logger.error(f"Error sending action: {e}")
 
     def run(self):
-        pygame.init()  # Initialisation de Pygame
-        self.screen = pygame.display.set_mode((self.screen_width, self.screen_height))  # Fenêtre par défaut
+        pygame.init()  # Pygame initialization
+        self.screen = pygame.display.set_mode((self.screen_width, self.screen_height))  # Default window
         pygame.display.set_caption(f"Train Game - {self.agent_name}")
         
         while self.running:
-            # Traiter les événements en premier
+            # Process events first
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.running = False
-                # Ignorer les événements de fenêtre active/inactive
+                # Ignore window active/inactive events
                 elif event.type in (pygame.WINDOWFOCUSLOST, pygame.WINDOWMOVED, 
                                   pygame.WINDOWENTER, pygame.WINDOWLEAVE):
                     continue
             
-            # Mise à jour de la taille de l'écran si nécessaire
+            # Update the screen size if necessary
             if self.screen_width != self.screen.get_width() or self.screen_height != self.screen.get_height():
                 self.screen = pygame.display.set_mode((self.screen_width, self.screen_height))
             
-            # Appel du rendu du jeu via l'agent
+            # Call the game rendering via the agent
             self.agent.draw_gui(self.screen, self.grid_size)
             
-            # Petit délai pour éviter une utilisation CPU excessive
-            pygame.time.delay(10)
+            # Small delay to avoid excessive CPU usage
+            pygame.time.delay(1)
         
         logger.warning("Client stopped")
         self.socket.close()

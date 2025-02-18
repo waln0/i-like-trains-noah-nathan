@@ -11,18 +11,8 @@ from train import Train
 from passenger import Passenger
 import logging
 
-# Configure logging
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('game_debug.log'),
-        logging.StreamHandler()
-    ]
-)
-
-logger = logging.getLogger(__name__)
-
+# Use the logger configured in server.py
+logger = logging.getLogger('server.game')
 
 # Colors
 WHITE = (255, 255, 255)
@@ -34,7 +24,7 @@ DARK_GREEN = (0, 100, 0)
 ORIGINAL_SCREEN_WIDTH = 200
 ORIGINAL_SCREEN_HEIGHT = 200
 
-PASSENGERS_RATIO = 0.5  # Nombre de passagers par train (peut être décimal)
+PASSENGERS_RATIO = 0.5  # Number of passengers per train (can be decimal)
 
 TICK_RATE = 60
 
@@ -48,7 +38,7 @@ class Game:
         self.passengers = []
         self.screen_padding = 100
         self.lock = threading.Lock()
-        self.spawn_safe_zone = 3  # Zone de sécurité en nombre de cases
+        self.spawn_safe_zone = 3  # Safe zone in number of cases
         self.last_update = time.time()
         # self.update_interval = 0.0 / self.tick_rate  # Intervalle fixe entre les updates
         logger.info(f"Game initialized with tick rate: {TICK_RATE}")
@@ -62,9 +52,9 @@ class Game:
 
     def is_position_safe(self, x, y):
         """
-        Vérifie si une position est sûre pour le spawn
+        Check if a position is safe for the spawn
         """
-        # Vérification des bordures
+        # Check the borders
         safe_distance = self.grid_size * self.spawn_safe_zone
         if (x < safe_distance or 
             y < safe_distance or 
@@ -72,15 +62,15 @@ class Game:
             y > self.screen_height - safe_distance):
             return False
 
-        # Vérification des autres trains et wagons
+        # Check the other trains and wagons
         for train in self.trains.values():
-            # Distance au train
+            # Distance to the train
             train_x, train_y = train.position
             if (abs(train_x - x) < safe_distance and 
                 abs(train_y - y) < safe_distance):
                 return False
             
-            # Distance aux wagons
+            # Distance to the wagons
             for wagon_x, wagon_y in train.wagons:
                 if (abs(wagon_x - x) < safe_distance and 
                     abs(wagon_y - y) < safe_distance):
@@ -90,7 +80,7 @@ class Game:
 
     def get_random_grid_position(self):
         """
-        Retourne une position aléatoire alignée sur la grille
+        Return a random grid position
         """
         x = random.randint(0, (self.screen_width // self.grid_size) - 1) * self.grid_size
         y = random.randint(0, (self.screen_height // self.grid_size) - 1) * self.grid_size
@@ -98,10 +88,10 @@ class Game:
 
     def get_safe_spawn_position(self, max_attempts=100):
         """
-        Trouve une position de spawn sûre
+        Find a safe spawn position
         """
         for _ in range(max_attempts):
-            # Position alignée sur la grille
+            # Position aligned on the grid
             x = random.randint(self.spawn_safe_zone, (self.screen_width // self.grid_size) - self.spawn_safe_zone) * self.grid_size
             y = random.randint(self.spawn_safe_zone, (self.screen_height // self.grid_size) - self.spawn_safe_zone) * self.grid_size
             
@@ -109,26 +99,26 @@ class Game:
                 logger.debug(f"Found safe spawn position at ({x}, {y})")
                 return x, y
 
-        # Position par défaut au centre
+        # Default position at the center
         center_x = (self.screen_width // 2) // self.grid_size * self.grid_size
         center_y = (self.screen_height // 2) // self.grid_size * self.grid_size
         logger.warning(f"Using default center position: ({center_x}, {center_y})")
         return center_x, center_y
 
     def update_passengers_count(self):
-        """Met à jour le nombre de passagers en fonction du ratio"""
+        """Update the number of passengers based on the ratio"""
         desired_passengers = max(1, int(len(self.trains) * PASSENGERS_RATIO))
         current_passengers = len(self.passengers)
         
         logger.debug(f"Updating passengers count. Current: {current_passengers}, Desired: {desired_passengers}")
         
-        # Ajouter des passagers si nécessaire
+        # Add passengers if necessary
         while len(self.passengers) < desired_passengers:
             new_passenger = Passenger(self)
             self.passengers.append(new_passenger)
             logger.debug("Added new passenger")
             
-        # Retirer des passagers si nécessaire
+        # Remove passengers if necessary
         while len(self.passengers) > desired_passengers:
             self.passengers.pop()
             logger.debug("Removed passenger")
@@ -143,46 +133,46 @@ class Game:
                 agent_name=agent_name
             )
             
-            # Mettre à jour le nombre de passagers
+            # Update the number of passengers
             self.update_passengers_count()
             
         self.update_screen_size()
         
     def remove_train(self, agent_name):
-        """Supprime un train"""
+        """Remove a train"""
         logger.debug(f"Removing train for agent: {agent_name}")
         
         if agent_name in self.trains:
             self.trains.pop(agent_name)
         
-        # Mettre à jour le nombre de passagers
+        # Update the number of passengers
         self.update_passengers_count()
         
-        # Mettre à jour la taille de l'écran
+        # Update the screen size
         if len(self.trains) > 0:
-            # Réduire la taille si possible
+            # Reduce the size if possible
             if self.can_reduce_padding():
                 self.reduce_padding()
         else:
-            # Réinitialiser la taille si plus aucun train
-            self.screen_width = ORIGINAL_SCREEN_WIDTH  # Taille initiale
+            # Reset the size if no train
+            self.screen_width = ORIGINAL_SCREEN_WIDTH  # Initial size
             self.screen_height = ORIGINAL_SCREEN_HEIGHT
-            # Réinitialiser la liste des passagers quand il n'y a plus de trains
+            # Reset the passengers list when there are no trains
             self.passengers.clear()
-            logger.debug("Plus de trains actifs, liste des passagers réinitialisée")
+            logger.debug("No active trains, passengers list reset")
         
         logger.debug(f"Remaining trains: {len(self.trains)}, passengers: {len(self.passengers)}")
         logger.debug(f"New screen size: {self.screen_width}x{self.screen_height}")
 
     def can_reduce_padding(self):
-        """Vérifie si on peut réduire la taille de l'écran"""
+        """Check if the screen size can be reduced"""
         logger.debug("Checking if padding can be reduced")
         for train in self.trains.values():
-            x, y = train.position  # Accès direct à l'attribut position de l'objet Train
+            x, y = train.position  # Direct access to the position attribute of the Train object
 
             if x >= self.screen_width - self.screen_padding - 50 or y >= self.screen_height - self.screen_padding - 50:
                 return False
-            for wagon_pos in train.wagons:  # Accès direct à l'attribut wagons
+            for wagon_pos in train.wagons:  # Direct access to the wagons attribute
                 x, y = wagon_pos
                 if x >= self.screen_width - self.screen_padding - 50 or y >= self.screen_height - self.screen_padding - 50:
                     return False
@@ -196,7 +186,7 @@ class Game:
 
     def update(self):
         """Update game state"""
-        if not self.trains:  # Ne update que s'il y a des trains
+        if not self.trains:  # Update only if there are trains
             return
             
         with self.lock:
@@ -205,14 +195,14 @@ class Game:
             for train_name, train in self.trains.items():
                 train.update(self.passengers, self.grid_size)
                 
-                # Vérifier les conditions de mort
+                # Check the death conditions
                 if (train.check_collisions(self.trains) or 
                     train.check_out_of_bounds(self.screen_width, self.screen_height) or
-                    not train.alive):  # Ajout de la vérification de l'état alive
+                    not train.alive):  # Add the check of the alive state
                     logger.info(f"Train {train_name} died!")
                     trains_to_remove.append(train_name)
             
-            # Supprimer les trains morts
+            # Remove the dead trains
             for train_name in trains_to_remove:
                 self.remove_train(train_name)
 
@@ -223,10 +213,8 @@ class Game:
 
     def change_direction_of_train(self, agent_name, new_direction):
         """
-        Change la direction d'un train spécifique
+        Change the direction of a specific train
         """
         logger.debug(f"Changing direction of train {agent_name} to {new_direction}")
         if agent_name in self.trains:
             self.trains[agent_name].change_direction(new_direction)
-        # else:
-        #     logger.warning(f"Train {agent_name} not found")
