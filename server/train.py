@@ -66,12 +66,6 @@ class Train:
         """Retourne la direction opposée"""
         return (-direction[0], -direction[1])
 
-    def has_moved(self):
-        """Vérifie si le train a bougé depuis sa dernière position"""
-        has_moved = self.position != self.last_position
-        # logger.debug(f"Has moved: {has_moved} (current: {self.position}, last: {self.last_position})")
-        return has_moved
-
     def is_opposite_direction(self, new_direction):
         """Vérifie si la nouvelle direction est opposée à la direction précédente"""
         opposite = (-self.previous_direction[0], -self.previous_direction[1])
@@ -102,7 +96,7 @@ class Train:
         self.direction = new_direction
         return True
 
-    def update(self, passengers, grid_size):
+    def update(self, passengers, trains, screen_width, screen_height, grid_size):
         """Met à jour la position du train"""
             
         self.move_timer += 1
@@ -110,7 +104,7 @@ class Train:
         if self.move_timer >= 1000/self.speed:
             self.move_timer = 0
             old_position = self.position
-            self.move(grid_size, passengers)
+            self.move(passengers, trains, screen_width, screen_height, grid_size)
             if self.position != old_position:
                 self.last_position = old_position
                 # self.server_logger.debug(f"Train moved from {old_position} to {self.position}")
@@ -119,7 +113,7 @@ class Train:
         self.speed = self.speed * SPEED_DECREMENT_COEFFICIENT
         self.wagons.append(position)
 
-    def move(self, grid_size, passengers):
+    def move(self, passengers, trains, screen_width, screen_height, grid_size):
         """Déplacement à intervalle régulier"""
         # self.server_logger.debug(f"Moving train from {self.position} in direction {self.direction}")
         
@@ -140,6 +134,9 @@ class Train:
             self.position[0] + self.direction[0] * grid_size,
             self.position[1] + self.direction[1] * grid_size
         )
+
+        self.check_collisions(new_position, trains)
+        self.check_out_of_bounds(new_position, screen_width, screen_height)
         
         self.last_position = self.position
         self.position = new_position
@@ -167,9 +164,9 @@ class Train:
             "wagon_color": self.wagon_color
         }
 
-    def check_collisions(self, all_trains):
+    def check_collisions(self, new_position, all_trains):
         for wagon_pos in self.wagons:
-            if self.position == wagon_pos:
+            if new_position == wagon_pos:
                 collision_msg = f"Train {self.agent_name} collided with its own wagon at {wagon_pos}"
                 self.server_logger.info(collision_msg)
                 self.client_logger.info(collision_msg)
@@ -180,20 +177,11 @@ class Train:
             if train.agent_name == self.agent_name:
                 continue
             
-            if self.position == train.position:
-                # Si les deux trains viennent de bouger à cette position
-                if self.has_moved() and train.has_moved():
-                    collision_msg = f"Train {self.agent_name} collided with train {train.agent_name} (both died)"
-                    self.server_logger.info(collision_msg)
-                    self.client_logger.info(collision_msg)
-                    self.alive = False
-                    train.alive = False  # Les deux trains meurent
-                # Si l'autre train était déjà là
-                elif not train.has_moved():
-                    collision_msg = f"Train {self.agent_name} collided with stationary train {train.agent_name}"
-                    self.server_logger.info(collision_msg)
-                    self.client_logger.info(collision_msg)
-                    self.alive = False  # Seul le train en mouvement meurt
+            if new_position == train.position:                
+                collision_msg = f"Train {self.agent_name} collided with stationary train {train.agent_name}"
+                self.server_logger.info(collision_msg)
+                self.client_logger.info(collision_msg)
+                self.alive = False  # Seul le train en mouvement meurt
                 return True
             
             # Vérification de collision avec les wagons
@@ -207,11 +195,11 @@ class Train:
         
         return False
 
-    def check_out_of_bounds(self, screen_width, screen_height):
+    def check_out_of_bounds(self, new_position, screen_width, screen_height):
         """Vérifie si le train est sorti de l'écran"""
-        x, y = self.position
+        x, y = new_position
         if (x < 0 or x >= screen_width or y < 0 or y >= screen_height):
-            self.server_logger.warning(f"Train {self.agent_name} est mort: sortie de l'écran. Coordonnées: {self.position}")
+            self.server_logger.warning(f"Train {self.agent_name} est mort: sortie de l'écran. Coordonnées: {new_position}")
             self.alive = False
             return True
         return False
