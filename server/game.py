@@ -21,11 +21,11 @@ RED = (255, 0, 0)
 BLUE = (0, 0, 255)
 DARK_GREEN = (0, 100, 0)
 
-ORIGINAL_SCREEN_WIDTH = 200
-ORIGINAL_SCREEN_HEIGHT = 200
+ORIGINAL_SCREEN_WIDTH = 400
+ORIGINAL_SCREEN_HEIGHT = 400
 SCREEN_SIZE_INCREMENT = 50 # Incrément par train
 
-PASSENGERS_RATIO = 0.5  # Number of passengers per train (can be decimal)
+TRAINS_PASSENGER_RATIO = 2  # Number of train per passenger
 
 TICK_RATE = 60
 
@@ -112,11 +112,10 @@ class Game:
         return center_x, center_y
 
     def update_passengers_count(self):
-        """Update the number of passengers based on the ratio"""
-        desired_passengers = max(1, int(len(self.trains) * PASSENGERS_RATIO))
-        current_passengers = len(self.passengers)
+        """Update the number of passengers based on the number of trains"""
+        desired_passengers = (len(self.trains) + 1) // TRAINS_PASSENGER_RATIO
         
-        logger.debug(f"Updating passengers count. Current: {current_passengers}, Desired: {desired_passengers}")
+        logger.debug(f"Updating passengers count. Current: {len(self.passengers)}, Desired: {desired_passengers}")
         
         # Add passengers if necessary
         while len(self.passengers) < desired_passengers:
