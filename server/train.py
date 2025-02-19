@@ -82,7 +82,7 @@ class Train:
     def change_direction(self, new_direction):
         """Change la direction du train si c'est possible"""
         current_direction = self.direction
-        self.server_logger.debug(f"Attempting to change direction from {current_direction} to {new_direction}")
+        # self.server_logger.debug(f"Attempting to change direction from {current_direction} to {new_direction}")
         
         # Convertir new_direction en tuple pour la comparaison
         new_direction = tuple(new_direction)
