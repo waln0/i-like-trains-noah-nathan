@@ -8,9 +8,6 @@ import threading
 from agent import Agent
 import logging
 
-HOST = "localhost"
-AUTO_SPAWN = True
-
 # Logger configuration for the customer and agent
 def setup_client_logger():
     # Delete existing handlers
@@ -48,16 +45,20 @@ logger = setup_client_logger()
 
 class Client:
 
+    HOST = "localhost"
     # HOST = "128.179.179.187"
 
-    def __init__(self, agent_name, server_host=HOST, server_port=5555, auto_spawn=AUTO_SPAWN):
+    def __init__(self, agent_name, server_host=HOST, server_port=5555):
         self.agent_name = agent_name
-        self.agent = Agent(agent_name, self.send_action, auto_spawn)
+        self.agent = Agent(agent_name, self.send_action)
         self.server_host = server_host
         self.server_port = server_port
+
+        # self.tick_rate = 10
         self.running = True
         self.trains = []
         self.passengers = []
+
         self.grid_size = 0
         self.screen_width = 0
         self.screen_height = 0

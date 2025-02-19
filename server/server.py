@@ -55,7 +55,6 @@ HOST = "localhost"
 
 MAX_FREQUENCY = 30 # Transfer frequency
 
-AUTO_SPAWN = True  # Assuming AUTO_SPAWN is defined in the original file
 
 class Server:
 
@@ -108,13 +107,9 @@ class Server:
                 # If the name is available, send a confirmation
                 client_socket.sendall(json.dumps({"status": "ok"}).encode())
 
-                # Add the client
+                # Add the client WITHOUT creating a train
                 self.clients[client_socket] = agent_name
-                
-                # If AUTO_SPAWN is activated, create the train immediately
-                if AUTO_SPAWN:
-                    logger.debug(f"Auto-spawning train for agent: {agent_name}")
-                    self.game.add_train(agent_name)
+                logger.debug(f"Client {agent_name} connected, waiting for spawn request")
 
             buffer = ""
             while self.running:
@@ -130,9 +125,7 @@ class Server:
                         if message:
                             try:
                                 command = json.loads(message)
-                                # Only process respawn if AUTO_SPAWN is False
-                                if not AUTO_SPAWN or command.get("action") != "respawn":
-                                    self.handle_client_message(client_socket, command)
+                                self.handle_client_message(client_socket, command)
                             except json.JSONDecodeError as e:
                                 logger.warning(f"Invalid JSON from {agent_name}: {e}")
                             
@@ -144,7 +137,7 @@ class Server:
             with self.lock:
                 if client_socket in self.clients:
                     agent_name = self.clients[client_socket]
-                    if agent_name in self.game.trains:
+                    if agent_name in self.game.trains:  # Check if the train exists
                         self.game.remove_train(agent_name)
                     del self.clients[client_socket]
                     logger.warning(f"Client disconnected: {agent_name}")
@@ -160,7 +153,7 @@ class Server:
                 self.game.add_train(agent_name)
                 logger.info(f"Train {agent_name} respawned")
         elif message.get("action") == "direction":
-            # logger.debug(f"Received direction from {agent_name}: {message['direction']}")
+            logger.debug(f"Received direction from {agent_name}: {message['direction']}")
             if agent_name in self.game.trains:
                 self.game.trains[agent_name].change_direction(message["direction"])
             else:
