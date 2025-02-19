@@ -171,8 +171,8 @@ class Train:
         for wagon_pos in self.wagons:
             if self.position == wagon_pos:
                 collision_msg = f"Train {self.agent_name} collided with its own wagon at {wagon_pos}"
-                self.server_logger.warning(collision_msg)
-                self.client_logger.warning(collision_msg)
+                self.server_logger.info(collision_msg)
+                self.client_logger.info(collision_msg)
                 self.alive = False
                 return True
 
@@ -184,15 +184,15 @@ class Train:
                 # Si les deux trains viennent de bouger à cette position
                 if self.has_moved() and train.has_moved():
                     collision_msg = f"Train {self.agent_name} collided with train {train.agent_name} (both died)"
-                    self.server_logger.warning(collision_msg)
-                    self.client_logger.warning(collision_msg)
+                    self.server_logger.info(collision_msg)
+                    self.client_logger.info(collision_msg)
                     self.alive = False
                     train.alive = False  # Les deux trains meurent
                 # Si l'autre train était déjà là
                 elif not train.has_moved():
                     collision_msg = f"Train {self.agent_name} collided with stationary train {train.agent_name}"
-                    self.server_logger.warning(collision_msg)
-                    self.client_logger.warning(collision_msg)
+                    self.server_logger.info(collision_msg)
+                    self.client_logger.info(collision_msg)
                     self.alive = False  # Seul le train en mouvement meurt
                 return True
             
@@ -200,8 +200,8 @@ class Train:
             for wagon_pos in train.wagons:
                 if self.position == wagon_pos:
                     collision_msg = f"Train {self.agent_name} collided with wagon of train {train.agent_name}"
-                    self.server_logger.warning(collision_msg)
-                    self.client_logger.warning(collision_msg)
+                    self.server_logger.info(collision_msg)
+                    self.client_logger.info(collision_msg)
                     self.alive = False
                     return True
         

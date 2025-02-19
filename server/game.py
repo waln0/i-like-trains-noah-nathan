@@ -254,7 +254,7 @@ class Game:
                 if (train.check_collisions(self.trains) or 
                     train.check_out_of_bounds(self.screen_width, self.screen_height) or
                     not train.alive):
-                    logger.info(f"Train {train_name} died!")
+                    # logger.info(f"Train {train_name} died!")
                     trains_to_remove.append(train_name)
             
             # Remove the dead trains
