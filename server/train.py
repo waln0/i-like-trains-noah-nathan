@@ -82,7 +82,7 @@ class Train:
     def change_direction(self, new_direction):
         """Change la direction du train si c'est possible"""
         current_direction = self.direction
-        self.server_logger.debug(f"Attempting to change direction from {current_direction} to {new_direction}")
+        # self.server_logger.debug(f"Attempting to change direction from {current_direction} to {new_direction}")
         
         # Convertir new_direction en tuple pour la comparaison
         new_direction = tuple(new_direction)
@@ -171,8 +171,8 @@ class Train:
         for wagon_pos in self.wagons:
             if self.position == wagon_pos:
                 collision_msg = f"Train {self.agent_name} collided with its own wagon at {wagon_pos}"
-                self.server_logger.warning(collision_msg)
-                self.client_logger.warning(collision_msg)
+                self.server_logger.info(collision_msg)
+                self.client_logger.info(collision_msg)
                 self.alive = False
                 return True
 
@@ -180,21 +180,28 @@ class Train:
             if train.agent_name == self.agent_name:
                 continue
             
-            # Vérifier la collision avec la tête du train
             if self.position == train.position:
-                collision_msg = f"Train {self.agent_name} collided with train {train.agent_name}"
-                self.server_logger.warning(collision_msg)
-                self.client_logger.warning(collision_msg)
-                self.alive = False
-                train.alive = False  # Les deux trains meurent en collision frontale
+                # Si les deux trains viennent de bouger à cette position
+                if self.has_moved() and train.has_moved():
+                    collision_msg = f"Train {self.agent_name} collided with train {train.agent_name} (both died)"
+                    self.server_logger.info(collision_msg)
+                    self.client_logger.info(collision_msg)
+                    self.alive = False
+                    train.alive = False  # Les deux trains meurent
+                # Si l'autre train était déjà là
+                elif not train.has_moved():
+                    collision_msg = f"Train {self.agent_name} collided with stationary train {train.agent_name}"
+                    self.server_logger.info(collision_msg)
+                    self.client_logger.info(collision_msg)
+                    self.alive = False  # Seul le train en mouvement meurt
                 return True
             
-            # Vérifier la collision avec les wagons
+            # Vérification de collision avec les wagons
             for wagon_pos in train.wagons:
                 if self.position == wagon_pos:
                     collision_msg = f"Train {self.agent_name} collided with wagon of train {train.agent_name}"
-                    self.server_logger.warning(collision_msg)
-                    self.client_logger.warning(collision_msg)
+                    self.server_logger.info(collision_msg)
+                    self.client_logger.info(collision_msg)
                     self.alive = False
                     return True
         

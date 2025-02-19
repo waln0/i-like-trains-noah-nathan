@@ -20,8 +20,8 @@ class Passenger:
         
         for _ in range(max_attempts):
             # Position aligned on the grid
-            x = random.randint(0, (self.game.screen_width // grid_size) - 1) * grid_size
-            y = random.randint(0, (self.game.screen_height // grid_size) - 1) * grid_size
+            x = random.randint(0, (self.game.new_screen_width // grid_size) - 1) * grid_size
+            y = random.randint(0, (self.game.new_screen_height // grid_size) - 1) * grid_size
             
             position_is_safe = True
             
