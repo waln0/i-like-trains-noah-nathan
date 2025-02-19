@@ -23,7 +23,7 @@ DARK_GREEN = (0, 100, 0)
 
 ORIGINAL_SCREEN_WIDTH = 400
 ORIGINAL_SCREEN_HEIGHT = 400
-SCREEN_SIZE_INCREMENT = 50 # Incrément par train
+SCREEN_SIZE_INCREMENT = 50 # Increment per train
 
 TRAINS_PASSENGER_RATIO = 2  # Number of train per passenger
 
@@ -132,11 +132,11 @@ class Game:
         """Update screen size based on number of trains"""
         num_trains = len(self.trains)
         
-        # Calculer la nouvelle taille
+        # Calculate the new size
         new_width = ORIGINAL_SCREEN_WIDTH + (num_trains * SCREEN_SIZE_INCREMENT)
         new_height = ORIGINAL_SCREEN_HEIGHT + (num_trains * SCREEN_SIZE_INCREMENT)
         
-        # Mettre à jour les dimensions
+        # Update the dimensions
         if new_width != self.screen_width or new_height != self.screen_height:
             self.screen_width = new_width
             self.screen_height = new_height
@@ -144,7 +144,7 @@ class Game:
 
     def add_train(self, agent_name):
         """Add a new train to the game"""
-        # Vérifier le cooldown
+        # Check the cooldown
         if agent_name in self.dead_trains:
             elapsed = time.time() - self.dead_trains[agent_name]
             if elapsed < RESPAWN_COOLDOWN:
@@ -153,7 +153,7 @@ class Game:
             else:
                 del self.dead_trains[agent_name]
         
-        # Créer le nouveau train
+        # Create the new train
         logger.debug(f"Adding train for agent: {agent_name}")
         spawn_pos = self.get_safe_spawn_position()
         if spawn_pos:
@@ -167,11 +167,11 @@ class Game:
         """Remove a train and update screen size"""
         logger.debug(f"Removing train for agent: {agent_name}")
         if agent_name in self.trains:
-            # Enregistrer le temps de mort
+            # Register the death time
             self.dead_trains[agent_name] = time.time()
             logger.info(f"Train {agent_name} entered {RESPAWN_COOLDOWN}s cooldown")
             
-            # Supprimer le train
+            # Delete the train
             del self.trains[agent_name]
             
             logger.debug(f"New screen size set to: {self.screen_width}x{self.screen_height}")
@@ -213,7 +213,7 @@ class Game:
     def check_screen_size(self):
         """Check and update screen size if necessary"""
 
-        # Mettre à jour la taille de l'écran
+        # Update the screen size
         len_current_trains = len(self.trains)
         self.new_screen_width = ORIGINAL_SCREEN_WIDTH + (len_current_trains * SCREEN_SIZE_INCREMENT)
         self.new_screen_height = ORIGINAL_SCREEN_HEIGHT + (len_current_trains * SCREEN_SIZE_INCREMENT)
@@ -221,15 +221,15 @@ class Game:
         if (self.new_screen_width < self.screen_width or 
             self.new_screen_height < self.screen_height):
             
-            # Calculer le padding nécessaire
+            # Calculate the necessary padding
             screen_padding = self.screen_width - self.new_screen_width
             
-            # Vérifier si on peut réduire en toute sécurité
+            # Check if we can shrink safely
             if self.is_shrink_safe(screen_padding):
                 self.screen_width = self.new_screen_width
                 self.screen_height = self.new_screen_height
                 logger.debug(f"Screen size safely reduced to: {self.screen_width}x{self.screen_height}")
-            # Si la zone peut être réduite de grid_size, réduire la taille de la grille
+            # If the zone can be reduced by grid_size, reduce the grid size
             elif self.is_shrink_safe(self.grid_size):
                 self.screen_width = self.screen_width - self.grid_size
                 self.screen_height = self.screen_height - self.grid_size
@@ -259,7 +259,7 @@ class Game:
                 self.remove_train(train_name)
             
             
-            # Vérifier et mettre à jour la taille de l'écran si nécessaire
+            # Check and update the screen size if necessary
             self.check_screen_size()
 
     def change_direction_of_train(self, agent_name, new_direction):
