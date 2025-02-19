@@ -40,6 +40,8 @@ class Game:
         self.lock = threading.Lock()
         self.spawn_safe_zone = 3  # Safe zone in number of cases
         self.last_update = time.time()
+        self.dead_trains = {}  # {agent_name: death_time}
+        self.respawn_cooldown = 10.0  # 10 secondes de cooldown
         # self.update_interval = 0.0 / self.tick_rate  # Intervalle fixe entre les updates
         logger.info(f"Game initialized with tick rate: {TICK_RATE}")
     
@@ -124,45 +126,55 @@ class Game:
             logger.debug("Removed passenger")
 
     def add_train(self, agent_name):
-        with self.lock:
-            logger.debug(f"Adding train for agent: {agent_name}")
-            start_x, start_y = self.get_safe_spawn_position()
-            self.trains[agent_name] = Train(
-                x=start_x,
-                y=start_y,
-                agent_name=agent_name
-            )
+        """Add a new train to the game"""
+        # Vérifier si le train est en cooldown
+        if agent_name in self.dead_trains:
+            elapsed = time.time() - self.dead_trains[agent_name]
+            if elapsed < self.respawn_cooldown:
+                logger.debug(f"Train {agent_name} still in cooldown for {self.respawn_cooldown - elapsed:.1f}s")
+                return False
+            else:
+                # Cooldown terminé, on peut retirer le train de la liste des morts
+                del self.dead_trains[agent_name]
+        
+        # Créer le nouveau train
+        logger.debug(f"Adding train for agent: {agent_name}")
+        spawn_pos = self.get_safe_spawn_position()
+        if spawn_pos:
+            self.trains[agent_name] = Train(spawn_pos[0], spawn_pos[1], agent_name)
+            self.update_passengers_count()
+            self.update_screen_size()
+            logger.info(f"Train {agent_name} spawned at position {spawn_pos}")
+            return True
+        return False
+
+    def remove_train(self, agent_name):
+        """Remove a train and start its cooldown"""
+        logger.debug(f"Removing train for agent: {agent_name}")
+        if agent_name in self.trains:
+            # Enregistrer le temps de mort
+            self.dead_trains[agent_name] = time.time()
+            logger.info(f"Train {agent_name} entered {self.respawn_cooldown}s cooldown")
             
-            # Update the number of passengers
+            # Supprimer le train
+            del self.trains[agent_name]
             self.update_passengers_count()
             
-        self.update_screen_size()
-        
-    def remove_train(self, agent_name):
-        """Remove a train"""
-        logger.debug(f"Removing train for agent: {agent_name}")
-        
-        if agent_name in self.trains:
-            self.trains.pop(agent_name)
-        
-        # Update the number of passengers
-        self.update_passengers_count()
-        
-        # Update the screen size
-        if len(self.trains) > 0:
-            # Reduce the size if possible
-            if self.can_reduce_padding():
-                self.reduce_padding()
-        else:
-            # Reset the size if no train
-            self.screen_width = ORIGINAL_SCREEN_WIDTH  # Initial size
-            self.screen_height = ORIGINAL_SCREEN_HEIGHT
-            # Reset the passengers list when there are no trains
-            self.passengers.clear()
-            logger.debug("No active trains, passengers list reset")
+            if not self.trains:
+                logger.debug("No active trains, passengers list reset")
+                self.passengers.clear()
+            
+            self.update_screen_size()
         
         logger.debug(f"Remaining trains: {len(self.trains)}, passengers: {len(self.passengers)}")
-        logger.debug(f"New screen size: {self.screen_width}x{self.screen_height}")
+
+    def get_train_cooldown(self, agent_name):
+        """Get remaining cooldown time for a train"""
+        if agent_name in self.dead_trains:
+            elapsed = time.time() - self.dead_trains[agent_name]
+            remaining = max(0, self.respawn_cooldown - elapsed)
+            return remaining
+        return 0
 
     def can_reduce_padding(self):
         """Check if the screen size can be reduced"""

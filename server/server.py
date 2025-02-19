@@ -145,15 +145,30 @@ class Server:
 
     def handle_client_message(self, client_socket, message):
         """Handles messages received from the client"""
-        agent_name = self.clients[client_socket]  # Get the agent name
+        agent_name = self.clients[client_socket]
         
         if message.get("action") == "respawn":
-            logger.debug(f"Received respawn from {agent_name}")
-            if agent_name not in self.game.trains:
-                self.game.add_train(agent_name)
-                logger.info(f"Train {agent_name} respawned")
+            logger.debug(f"Received respawn request from {agent_name}")
+            cooldown = self.game.get_train_cooldown(agent_name)
+            
+            if cooldown > 0:
+                # Informer le client du temps de cooldown restant
+                response = {
+                    "type": "cooldown",
+                    "remaining": cooldown
+                }
+                try:
+                    client_socket.sendall((json.dumps(response) + "\n").encode())
+                except:
+                    logger.warning(f"Failed to send cooldown to {agent_name}")
+            else:
+                # Tenter le spawn
+                if self.game.add_train(agent_name):
+                    logger.info(f"Train {agent_name} respawned")
+                else:
+                    logger.warning(f"Failed to spawn train {agent_name}")
+        
         elif message.get("action") == "direction":
-            logger.debug(f"Received direction from {agent_name}: {message['direction']}")
             if agent_name in self.game.trains:
                 self.game.trains[agent_name].change_direction(message["direction"])
             else:
