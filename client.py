@@ -167,8 +167,8 @@ class Client:
                             else:
                                 self.grid_size = 20  # Valeur par défaut
                                 logger.warning("Received game state without 'grid_size' key, using default value")
-                            self.screen_width = state.get("screen_width", 800)
-                            self.screen_height = state.get("screen_height", 800)
+                            self.screen_width = state.get("screen_width", 0)
+                            self.screen_height = state.get("screen_height", 0)
                             
                             # Update the agent if the train is alive
                             self.agent.update(self.trains, self.passengers, self.grid_size, self.screen_width, self.screen_height)
