@@ -8,6 +8,7 @@ import threading
 from agent import Agent
 import logging
 import sys
+import platform
 
 # Default host
 HOST = "localhost"
@@ -54,15 +55,12 @@ logger.info(f"The client listens on {HOST}")
 
 class Client:
 
-    # HOST = "128.179.179.187"
-
     def __init__(self, agent_name, server_host=HOST, server_port=5555):
         self.agent_name = agent_name
         self.agent = Agent(agent_name, self.send_action)
         self.server_host = server_host
         self.server_port = server_port
 
-        # self.tick_rate = 10
         self.running = True
         self.trains = []
         self.passengers = []
@@ -70,6 +68,8 @@ class Client:
         self.grid_size = 0
         self.screen_width = 0
         self.screen_height = 0
+
+        self.is_initialized = False  # Track initialization state
 
         self.init_connection()
 
@@ -91,7 +91,6 @@ class Client:
                     exit(1)
                 elif response_data.get("status") == "ok":
                     logger.info("Connection accepted")
-                    threading.Thread(target=self.receive_game_state).start()
                     self.init_game()
             except json.JSONDecodeError as e:
                 logger.error(f"Server response decoding error: {e}")
@@ -107,8 +106,25 @@ class Client:
             raise
 
     def init_game(self):
-        pygame.init()
-        self.clock = pygame.time.Clock()
+        """Initialize pygame only if it hasn't been initialized yet."""
+        if not self.is_initialized:
+            try:
+                # Check if DISPLAY is set (Linux/macOS) or running on Windows
+                if 'DISPLAY' in os.environ or platform.system() == 'Windows':
+                    pygame.init()
+                    self.screen = pygame.display.set_mode((self.screen_width, self.screen_height))
+                    pygame.display.set_caption(f"Train Game - {self.agent_name}")
+                else:
+                    # Use a headless video driver if no display is available
+                    os.environ["SDL_VIDEODRIVER"] = "dummy"
+                    pygame.init()
+                    pygame.display.set_mode((1, 1))  # Create a dummy surface
+                    logger.warning("No display found, running in headless mode")
+                self.clock = pygame.time.Clock()
+                self.is_initialized = True
+            except pygame.error as e:
+                logger.error(f"Failed to initialize pygame: {e}")
+                self.running = False
 
     def receive_game_state(self):
         buffer = ""
@@ -188,10 +204,8 @@ class Client:
             logger.error(f"Error sending action: {e}")
 
     def run(self):
-        pygame.init()  # Pygame initialization
-        self.screen = pygame.display.set_mode((self.screen_width, self.screen_height))  # Default window
-        pygame.display.set_caption(f"Train Game - {self.agent_name}")
-        
+        threading.Thread(target=self.receive_game_state).start()
+
         while self.running:
             # Process events first
             for event in pygame.event.get():
@@ -210,7 +224,7 @@ class Client:
             self.agent.draw_gui(self.screen, self.grid_size)
             
             # Small delay to avoid excessive CPU usage
-            pygame.time.delay(1)
+            pygame.time.delay(10)
         
         logger.warning("Client stopped")
         self.socket.close()
