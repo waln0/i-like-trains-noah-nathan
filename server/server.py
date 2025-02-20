@@ -2,11 +2,34 @@ import socket
 import json
 import threading
 import time
-
-from game import Game
+import sys
 import logging
 
-#   
+from game import Game
+
+
+# Transfer frequency
+MAX_FREQUENCY = 30 
+
+# Colors
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+RED = (255, 0, 0)
+BLUE = (0, 0, 255)
+
+# Directions
+UP = (0, -1)
+DOWN = (0, 1)
+LEFT = (-1, 0)
+RIGHT = (1, 0)
+
+# Default host
+HOST = "localhost"
+
+# Check if an IP address has argued in argument
+if len(sys.argv) > 1:
+    HOST = sys.argv[1]
+
 def setup_server_logger():
     # Delete existing handlers
     for handler in logging.root.handlers[:]:
@@ -38,22 +61,7 @@ def setup_server_logger():
 
 # Configure the server logger
 logger = setup_server_logger()
-
-# Colors
-WHITE = (255, 255, 255)
-BLACK = (0, 0, 0)
-RED = (255, 0, 0)
-BLUE = (0, 0, 255)
-
-# Directions
-UP = (0, -1)
-DOWN = (0, 1)
-LEFT = (-1, 0)
-RIGHT = (1, 0)
-
-HOST = "localhost"
-
-MAX_FREQUENCY = 30 # Transfer frequency
+logger.info(f"The server starts on {HOST}")
 
 
 class Server:
@@ -65,7 +73,7 @@ class Server:
         self.lock = threading.Lock()
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.server_socket.bind(('localhost', 5555))
+        self.server_socket.bind((HOST, 5555))
         self.server_socket.listen(5)  # Accepte jusqu'à 5 connexions en attente
         self.running = True
         

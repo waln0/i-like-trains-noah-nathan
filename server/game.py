@@ -165,7 +165,7 @@ class Game:
 
     def remove_train(self, agent_name):
         """Remove a train and update screen size"""
-        logger.debug(f"Removing train for agent: {agent_name}")
+        # logger.debug(f"Removing train for agent: {agent_name}")
         if agent_name in self.trains:
             # Register the death time
             self.dead_trains[agent_name] = time.time()
@@ -262,10 +262,10 @@ class Game:
             # Check and update the screen size if necessary
             self.check_screen_size()
 
-    def change_direction_of_train(self, agent_name, new_direction):
-        """
-        Change the direction of a specific train
-        """
-        logger.debug(f"Changing direction of train {agent_name} to {new_direction}")
-        if agent_name in self.trains:
-            self.trains[agent_name].change_direction(new_direction)
+    # def change_direction_of_train(self, agent_name, new_direction):
+    #     """
+    #     Change the direction of a specific train
+    #     """
+    #     logger.debug(f"Changing direction of train {agent_name} to {new_direction}")
+    #     if agent_name in self.trains:
+    #         self.trains[agent_name].change_direction(new_direction)
