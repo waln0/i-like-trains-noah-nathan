@@ -40,11 +40,11 @@ $keys = @(0x41..0x5A)  # A à Z (codes virtuels)
 $VK_ENTER = 0x0D
 
 # Démarrer le serveur
-Start-Process powershell -ArgumentList "-NoExit", "-Command `"cd ..\..\programs\i_like_trains\; ./venv/Scripts/activate; python server/server.py`""
-Start-Sleep -Seconds 3
+# Start-Process powershell -ArgumentList "-NoExit", "-Command `"./venv/Scripts/activate; python server/server.py`""
+# Start-Sleep -Seconds 3
 
 # Ouvrir les clients et envoyer les touches
-$scriptPath = "cd ..\..\programs\i_like_trains\; ./venv/Scripts/activate; python client.py"
+$scriptPath = "python client.py"
 for ($i = 0; $i -lt $numClients; $i++) {
     $key = $keys[$i % $keys.Length]  # Boucle sur les lettres si plus de 26 clients
 
