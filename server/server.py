@@ -25,6 +25,7 @@ RIGHT = (1, 0)
 
 # Default host
 HOST = "localhost"
+ALLOW_MULTIPLE_CONNECTIONS = False
 
 # Check if an IP address has argued in argument
 if len(sys.argv) > 1:
@@ -65,8 +66,6 @@ logger.info(f"The server starts on {HOST}")
 
 
 class Server:
-
-
     def __init__(self):
         self.game = Game()
         self.clients = {}  # {socket: agent_name}
@@ -112,6 +111,15 @@ class Server:
                     client_socket.close()
                     return
                 
+                # Check if the client's IP address is already connected
+                client_ip, _ = client_socket.getpeername()
+                if any(addr[0] == client_ip for addr in [sock.getpeername() for sock in self.clients.keys()]) and not ALLOW_MULTIPLE_CONNECTIONS:
+                    logger.warning(f"Client IP already connected: {client_ip}")
+                    error_message = json.dumps({"error": "IP address already connected"}) + "\n"
+                    client_socket.sendall(error_message.encode())
+                    client_socket.close()
+                    return
+
                 # If the name is available, send a confirmation
                 client_socket.sendall(json.dumps({"status": "ok"}).encode())
 
