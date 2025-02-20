@@ -152,7 +152,7 @@ class Server:
             cooldown = self.game.get_train_cooldown(agent_name)
             
             if cooldown > 0:
-                # Informer le client du temps de cooldown restant
+                # Inform the client of the remaining cooldown
                 response = {
                     "type": "cooldown",
                     "remaining": cooldown
@@ -162,7 +162,7 @@ class Server:
                 except:
                     logger.warning(f"Failed to send cooldown to {agent_name}")
             else:
-                # Tenter le spawn
+                # Try to spawn the train
                 if self.game.add_train(agent_name):
                     logger.info(f"Train {agent_name} respawned")
                 else:
