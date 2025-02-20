@@ -7,6 +7,14 @@ import json
 import threading
 from agent import Agent
 import logging
+import sys
+
+# Default host
+HOST = "localhost"
+
+# Check if an IP address has argued in argument
+if len(sys.argv) > 1:
+    HOST = sys.argv[1]
 
 # Logger configuration for the customer and agent
 def setup_client_logger():
@@ -42,10 +50,10 @@ def setup_client_logger():
 
 # Configure the logger before creating the agent
 logger = setup_client_logger()
+logger.info(f"The client listens on {HOST}")
 
 class Client:
 
-    HOST = "localhost"
     # HOST = "128.179.179.187"
 
     def __init__(self, agent_name, server_host=HOST, server_port=5555):
@@ -125,16 +133,32 @@ class Client:
                     try:
                         state = json.loads(messages[-2])  # Take the last complete message
 
-                        # Update the game data
-                        self.trains = state["trains"]
-                        self.passengers = state["passengers"]
-                        self.grid_size = state["grid_size"]
-                        self.screen_width = state.get("screen_width", 800)
-                        self.screen_height = state.get("screen_height", 800)
-                        
-                        # Update the agent if the train is alive
-                        self.agent.update(self.trains, self.passengers, self.grid_size, self.screen_width, self.screen_height)
-                        
+                        # Check if the state is a dictionary
+                        if isinstance(state, dict):
+                            # Update the game data
+                            if "trains" in state:
+                                self.trains = state["trains"]
+                            else:
+                                self.trains = {}
+                                logger.warning("Received game state without 'trains' key")
+                            if "passengers" in state:
+                                self.passengers = state["passengers"]
+                            else:
+                                self.passengers = []
+                                logger.warning("Received game state without 'passengers' key")
+                            if "grid_size" in state:
+                                self.grid_size = state["grid_size"]
+                            else:
+                                self.grid_size = 20  # Valeur par défaut
+                                logger.warning("Received game state without 'grid_size' key, using default value")
+                            self.screen_width = state.get("screen_width", 800)
+                            self.screen_height = state.get("screen_height", 800)
+                            
+                            # Update the agent if the train is alive
+                            self.agent.update(self.trains, self.passengers, self.grid_size, self.screen_width, self.screen_height)
+                        else:
+                            logger.error("Received game state is not a dictionary")
+                    
                     except json.JSONDecodeError as e:
                         logger.error(f"Invalid JSON: {e}")
                 
@@ -152,11 +176,13 @@ class Client:
             # If it's a dictionary (case of respawn), send it directly
             if isinstance(direction, dict):
                 action = direction
+                # logger.debug(f"Sending action: {action}")
             else:
                 action = {
                     "action": "direction",
                     "direction": list(direction)
                 }
+                # logger.debug(f"Sending action: {action}")
             self.socket.sendall((json.dumps(action) + "\n").encode())
         except Exception as e:
             logger.error(f"Error sending action: {e}")
@@ -197,5 +223,5 @@ if __name__ == "__main__":
             break
         else:
             logger.warning("Agent name cannot be empty")
-    client = Client(agent_name)
+    client = Client(agent_name, HOST)
     client.run()
