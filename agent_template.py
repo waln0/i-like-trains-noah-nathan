@@ -30,6 +30,43 @@ MANUAL_RESPAWN = True  # Set to False to respawn automatically
 # DECISION_INTERVAL = 0  # Number of ticks between each decision
 
 class Agent:
+    """
+    A class to represent an agent controlling a train in a grid environment.
+    Attributes:
+    -----------
+    logger : logging.Logger
+        Logger for the agent.
+    all_trains : dict
+        Dictionary to store all trains.
+    agent_name : str
+        Name of the agent.
+    all_passengers : list
+        List to store all passengers.
+    send_action : function
+        Function to send actions.
+    grid_size : int
+        Size of the grid.
+    screen_width : int
+        Width of the screen.
+    screen_height : int
+        Height of the screen.
+    directions : list
+        List of possible directions (Up, Right, Down, Left).
+    current_direction_index : int
+        Index of the current direction.
+    changing_direction : bool
+        Flag to indicate if the direction is changing.
+    death_time : float
+        Time of death.
+    respawn_cooldown : int
+        Cooldown time for respawn.
+    is_dead : bool
+        Flag to indicate if the agent is dead.
+    waiting_for_respawn : bool
+        Flag to indicate if the agent is waiting for respawn.
+    """
+
+
     def __init__(self, agent_name, send_action):
         self.logger = logging.getLogger('client.agent')  # Customer's subcloger
         self.all_trains = {}
@@ -71,11 +108,11 @@ class Agent:
         """Return a valid random direction that does not lead to a wall or a collision"""
         return
 
-    def is_opposite_direction(self, new_direction):
+    def is_opposite_direction(self):
         """Check if the new direction is opposite to the current direction"""
         return
 
-    def draw_gui(self, screen, grid_size):
+    def draw_gui(self):
         """Draw the agent's GUI on the screen"""
         return
 

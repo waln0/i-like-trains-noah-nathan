@@ -44,7 +44,7 @@ $VK_ENTER = 0x0D
 # Start-Sleep -Seconds 3
 
 # Ouvrir les clients et envoyer les touches
-$scriptPath = "python client.py"
+$scriptPath = "python client.py <ip_adress>"
 for ($i = 0; $i -lt $numClients; $i++) {
     $key = $keys[$i % $keys.Length]  # Boucle sur les lettres si plus de 26 clients
 
