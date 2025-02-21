@@ -3,3 +3,4 @@ venv
 *.log
 
 server/config.txt
+agent.py

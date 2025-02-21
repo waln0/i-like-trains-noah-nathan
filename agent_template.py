@@ -17,12 +17,12 @@ logging.basicConfig(
 )
 
 # Colors
-WHITE = (255, 255, 255)
-GREEN = (0, 255, 0)
-BLACK = (0, 0, 0)
-RED = (255, 0, 0)
-BLUE = (0, 0, 255)
-LIGHT_BLUE = (100, 180, 255)  # New color for player wagons
+WHITE = (255, 255, 255) # Color for the background
+GREEN = (0, 255, 0) # Color for writing respawn message
+BLACK = (0, 0, 0) # Color for the passengers
+RED = (255, 0, 0) # Color for writing death message
+BLUE = (0, 0, 255) # Color for player train
+LIGHT_BLUE = (100, 180, 255)  # Color for player wagons
 
 RESPAWN_COOLDOWN = 10.0  # RESPAWN COOLDOWN in seconds, checked by the server :p
 MANUAL_RESPAWN = True  # Set to False to respawn automatically
