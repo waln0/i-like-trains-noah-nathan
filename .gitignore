@@ -3,3 +3,7 @@ venv
 *.log
 
 server/config.txt
+simulate_clients.ps1
+
+agent_old.py
+client_old.py

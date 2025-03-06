@@ -1,15 +1,18 @@
-import socket
-import json
-import threading
-import time
-import sys
+"""
+Train class for the game "I Like Trains"
+"""
+import pygame
+import random
 import logging
 
-from game import Game
+# Configure logging
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[logging.FileHandler("game_debug.log"), logging.StreamHandler()],
+)
 
-
-# Transfer frequency
-MAX_FREQUENCY = 30 
+logger = logging.getLogger(__name__)
 
 # Colors
 WHITE = (255, 255, 255)
@@ -23,236 +26,189 @@ DOWN = (0, 1)
 LEFT = (-1, 0)
 RIGHT = (1, 0)
 
-# Default host
-HOST = "localhost"
-ALLOW_MULTIPLE_CONNECTIONS = False
-
-# Check if an IP address has argued in argument
-if len(sys.argv) > 1:
-    HOST = sys.argv[1]
-
-def setup_server_logger():
-    # Delete existing handlers
-    for handler in logging.root.handlers[:]:
-        logging.root.removeHandler(handler)
-    
-    # Create a handler for the console
-    console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.DEBUG)
-    
-    # Define the format
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    console_handler.setFormatter(formatter)
-    
-    # Configure the main server logger
-    server_logger = logging.getLogger('server')
-    server_logger.setLevel(logging.DEBUG)
-    server_logger.propagate = False
-    server_logger.addHandler(console_handler)
-    
-    # Configure the loggers of the sub-modules
-    modules = ['server.game', 'server.train', 'server.passenger']
-    for module in modules:
-        logger = logging.getLogger(module)
-        logger.setLevel(logging.DEBUG)
-        logger.propagate = False
-        logger.addHandler(console_handler)
-    
-    return server_logger
-
-# Configure the server logger
-logger = setup_server_logger()
-logger.info(f"The server starts on {HOST}")
+# Train settings
+INITIAL_SPEED =10  # Initial speed in pixels per second
+SPEED_DECREMENT_COEFFICIENT = 0.95  # Speed reduction coefficient for each wagon
+TICK_RATE = 60  # Ticks per second
 
 
-class Server:
-    def __init__(self):
-        self.game = Game()
-        self.clients = {}  # {socket: agent_name}
-        self.lock = threading.Lock()
-        self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.server_socket.bind((HOST, 5555))
-        self.server_socket.listen(5)  # Accepte jusqu'à 5 connexions en attente
-        self.running = True
-        
-        # Add the tick counter
-        # self.tick_counter = 0
-        
-        # Start a thread dedicated to accepting clients
-        threading.Thread(target=self.accept_clients).start()
-        logger.warning("Server started on localhost:5555")
+class Train:
 
-    def accept_clients(self):
-        """Thread that waits for new connections"""
-        while self.running:
-            try:
-                # Accept a new connection
-                client_socket, addr = self.server_socket.accept()
-                logger.warning(f"New client connected: {addr}")
-                # Create a new thread to handle this client
-                threading.Thread(target=self.handle_client, args=(client_socket,)).start()
-            except Exception as e:
-                logger.error(f"Error accepting client: {e}")
-
-    def handle_client(self, client_socket):
-        """Thread dedicated to a specific client"""
-        try:
-            # First communication: the client sends its name
-            agent_name = client_socket.recv(1024).decode().strip()
-            logger.warning(f"Attempting to connect for agent: {agent_name}")
-
-            with self.lock:
-                # Check if the agent name already exists
-                if any(name == agent_name for name in self.clients.values()):
-                    logger.warning(f"Agent name already exists: {agent_name}")
-                    error_message = json.dumps({"error": "Agent name already exists"}) + "\n"
-                    client_socket.sendall(error_message.encode())
-                    client_socket.close()
-                    return
-                
-                # Check if the client's IP address is already connected
-                client_ip, _ = client_socket.getpeername()
-                if any(addr[0] == client_ip for addr in [sock.getpeername() for sock in self.clients.keys()]) and not ALLOW_MULTIPLE_CONNECTIONS:
-                    logger.warning(f"Client IP already connected: {client_ip}")
-                    error_message = json.dumps({"error": "IP address already connected"}) + "\n"
-                    client_socket.sendall(error_message.encode())
-                    client_socket.close()
-                    return
-
-                # If the name is available, send a confirmation
-                client_socket.sendall(json.dumps({"status": "ok"}).encode())
-
-                # Add the client WITHOUT creating a train
-                self.clients[client_socket] = agent_name
-                logger.debug(f"Client {agent_name} connected, waiting for spawn request")
-
-            buffer = ""
-            while self.running:
-                try:
-                    data = client_socket.recv(1024).decode()
-                    if not data:
-                        break
-                    
-                    buffer += data
-                    
-                    while "\n" in buffer:
-                        message, buffer = buffer.split("\n", 1)
-                        if message:
-                            try:
-                                command = json.loads(message)
-                                self.handle_client_message(client_socket, command)
-                            except json.JSONDecodeError as e:
-                                logger.warning(f"Invalid JSON from {agent_name}: {e}")
-                            
-                except Exception as e:
-                    logger.warning(f"Error receiving from {agent_name}: {e}")
-                    break
-
-        finally:
-            with self.lock:
-                if client_socket in self.clients:
-                    agent_name = self.clients[client_socket]
-                    if agent_name in self.game.trains:  # Check if the train exists
-                        self.game.remove_train(agent_name)
-                    del self.clients[client_socket]
-                    logger.warning(f"Client disconnected: {agent_name}")
-            client_socket.close()
-
-    def handle_client_message(self, client_socket, message):
-        """Handles messages received from the client"""
-        agent_name = self.clients[client_socket]
-        
-        if message.get("action") == "respawn":
-            logger.debug(f"Received respawn request from {agent_name}")
-            cooldown = self.game.get_train_cooldown(agent_name)
-            
-            if cooldown > 0:
-                # Inform the client of the remaining cooldown
-                response = {
-                    "type": "cooldown",
-                    "remaining": cooldown
-                }
-                try:
-                    client_socket.sendall((json.dumps(response) + "\n").encode())
-                except:
-                    logger.warning(f"Failed to send cooldown to {agent_name}")
-            else:
-                # Try to spawn the train
-                if self.game.add_train(agent_name):
-                    logger.info(f"Train {agent_name} respawned")
-                else:
-                    logger.warning(f"Failed to spawn train {agent_name}")
-        
-        elif message.get("action") == "direction":
-            if agent_name in self.game.trains:
-                self.game.trains[agent_name].change_direction(message["direction"])
-            else:
-                logger.warning(f"Train {agent_name} not found")
-
-    def broadcast(self):
-        if not self.clients:  # Broadcast only if there are clients
-            return
-            
-        start_time = time.time()
-        state = {
-            "trains": {name: train.serialize() for name, train in self.game.trains.items()},
-            "passengers": [p.position for p in self.game.passengers],
-            "grid_size": self.game.grid_size,
-            "screen_width": self.game.screen_width,
-            "screen_height": self.game.screen_height
+    def __init__(self, x, y, agent_name, color):
+        self.position = (x, y)
+        self.wagons = []
+        self.new_direction = (1, 0)
+        self.direction = (1, 0)  # Starts right
+        self.previous_direction = (1, 0)
+        self.agent_name = agent_name
+        self.alive = True
+        self.score = 0
+        self.color = color
+        self.move_timer = 0
+        self.speed = INITIAL_SPEED
+        self.last_position = (x, y)
+        # Dirty flags to track modifications
+        self._dirty = {
+            "position": True,
+            "wagons": True,
+            "direction": True,
+            "score": True,
+            "color": True,
+            "alive": True
         }
-        serialize_time = time.time() - start_time
-        if serialize_time > 0.01:  # Log if more than 10ms
-            logger.warning(f"Serialization took {serialize_time*1000:.2f}ms")
+        # Use both server and client loggers
+        self.server_logger = logging.getLogger("server.train")
+        self.client_logger = logging.getLogger("client.train")
+        self.server_logger.debug(
+            f"Initializing train at position: {x}, {y} with color {self.color}"
+        )
 
-        data = json.dumps(state) + "\n"
-        json_time = time.time() - start_time - serialize_time
-        if json_time > 0.01:
-            logger.warning(f"JSON encoding took {json_time*1000:.2f}ms")
+    def get_position(self):
+        """Return the train's position"""
+        return self.position
 
-        with self.lock:
-            clients_to_update = list(self.clients.items())
-        
-        for client_socket, agent_name in clients_to_update:
-            send_start = time.time()
-            try:
-                client_socket.sendall(data.encode())
-                send_time = time.time() - send_start
-                if send_time > 0.01:
-                    logger.warning(f"Sending to {agent_name} took {send_time*1000:.2f}ms")
-            except:
-                logger.warning(f"Client disconnected: {agent_name}")
-                with self.lock:
-                    self.clients.pop(client_socket, None)
-                    self.game.remove_train(agent_name)
+    def is_opposite_direction(self, new_direction):
+        """Check if the new direction is opposite to the previous direction"""
+        # self.server_logger.debug(f"Checking if {new_direction} is opposite to {self.direction}: {new_direction == self.get_opposite_direction(self.direction)}")
+        return new_direction[0] == -self.direction[0] and new_direction[1] == -self.direction[1]
 
-    def run_game(self):
-        last_update = time.time()
-        update_interval = 1.0 / self.game.tick_rate
+    def change_direction(self, new_direction):
+        """Change the train's direction if possible"""
+        if not self.is_opposite_direction(new_direction):
+            # self.server_logger.debug(f"Changing direction because {new_direction} is not opposite to {self.direction}")
+            self.new_direction = new_direction
 
-        while self.running:
-            current_time = time.time()
-            elapsed = current_time - last_update
+    def update(self, passengers, trains, screen_width, screen_height, grid_size):
+        """Update the train position"""
+        if not self.alive:
+            return
 
-            # Update the game only if there are trains
-            if elapsed >= update_interval and self.game.trains:
-                self.game.update()
-                last_update = current_time
-                
-                # Broadcast only if there are clients
-                if self.clients:
-                    self.broadcast()
-            
-            time.sleep(1/MAX_FREQUENCY)
+        # Increment movement timer
+        self.move_timer += 1
 
-if __name__ == "__main__":
-    server = Server()
-    # Start the game in a separate thread
-    game_thread = threading.Thread(target=server.game.run)
-    game_thread.start()
-    
-    # Main server loop
-    while True:
-        server.broadcast()
-        time.sleep(1/MAX_FREQUENCY)
+        # Check if it's time to move
+        if self.move_timer >= TICK_RATE / self.speed:  # TICK_RATE ticks per second
+            self.move_timer = 0
+            self.set_direction(self.new_direction)
+            self.move(passengers, trains, screen_width, screen_height, grid_size)
+
+    def add_wagon(self):
+        """Add a wagon to the train"""
+        self.wagons.append(self.last_position)
+        self._dirty["wagons"] = True
+        # Reduce speed with each wagon
+        self.speed *= SPEED_DECREMENT_COEFFICIENT
+
+    def move(self, passengers, trains, screen_width, screen_height, grid_size):
+        """Regular interval movement"""
+        if not self.alive:
+            return
+
+        # Save current position
+        self.last_position = self.position
+
+        # Calculate new position
+        new_x = self.position[0] + self.direction[0] * grid_size
+        new_y = self.position[1] + self.direction[1] * grid_size
+        new_position = (new_x, new_y)
+
+        # Check collisions and bounds
+        if (
+            self.check_collisions(new_position, trains)
+            or self.check_out_of_bounds(new_position, screen_width, screen_height)
+        ):
+            self.set_alive(False)
+            return
+
+        # Update wagons
+        if self.wagons:
+            self.wagons.insert(0, self.position)
+            self.wagons.pop()
+            self._dirty["wagons"] = True
+
+        # Update position
+        # self.server_logger.debug(f"Moving train to {new_position} in direction {self.direction}")
+        self.set_position(new_position)
+
+    def serialize(self):
+        """
+        Convert train state to a serializable format for sending to the client
+        """
+        return {
+            "position": self.position,
+            "wagons": self.wagons,
+            "direction": self.direction,
+            "score": self.score,
+            "color": self.color,
+            "alive": self.alive,
+        }
+
+    def to_dict(self):
+        """Convert train to dictionary, returning only modified data"""
+        data = {}
+        if self._dirty["position"]:
+            data["position"] = self.position
+            self._dirty["position"] = False
+        if self._dirty["wagons"]:
+            data["wagons"] = self.wagons
+            self._dirty["wagons"] = False
+        if self._dirty["direction"]:
+            data["direction"] = self.direction
+            self._dirty["direction"] = False
+        if self._dirty["score"]:
+            data["score"] = self.score
+            self._dirty["score"] = False
+        if self._dirty["color"]:
+            data["color"] = self.color
+            self._dirty["color"] = False
+        if self._dirty["alive"]:
+            data["alive"] = self.alive
+            self._dirty["alive"] = False
+        return data
+
+    def set_position(self, new_position):
+        """Update train position"""
+        if self.position != new_position:
+            self.position = new_position
+            self._dirty["position"] = True
+
+    def set_direction(self, direction):
+        """Change train direction"""
+        if self.direction != direction:
+            self.previous_direction = self.direction
+            self.direction = direction
+            self._dirty["direction"] = True
+
+    def update_score(self, new_score):
+        """Update train score"""
+        if self.score != new_score:
+            self.score = new_score
+            self._dirty["score"] = True
+
+    def set_alive(self, alive):
+        """Update train alive status"""
+        if self.alive != alive:
+            self.alive = alive
+            self._dirty["alive"] = True
+
+    def check_collisions(self, new_position, all_trains):
+        """Check collisions with other trains and their wagons"""
+        for train in all_trains.values():
+            # Skip self
+            if train.agent_name == self.agent_name:
+                continue
+
+            # Check collision with train head
+            if new_position == train.position:
+                return True
+
+            # Check collision with wagons
+            if new_position in train.wagons:
+                return True
+
+        return False
+
+    def check_out_of_bounds(self, new_position, screen_width, screen_height):
+        """Check if the train is out of the screen"""
+        x, y = new_position
+        return x < 0 or x >= screen_width or y < 0 or y >= screen_height
