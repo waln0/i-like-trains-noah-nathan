@@ -139,7 +139,7 @@ pip install -r requirements.txt
 
 ### 4. Execute the client
 
-To execute the client and connect to the server. We will give you an IP address to connect to.
+To execute the client and connect to the server. Replace `<ip_adress>` with the IP address of the server.
 
 ```bash
 python main.py <ip_adress>
