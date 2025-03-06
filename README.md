@@ -1,10 +1,10 @@
-# I Like Trains Game
+# I Like Trains
 
 ![Thumbnail](img/thumbnail_2.png)
 
 ## Overview
 
-I Like Trains Game is a multiplayer game where players take on the role of train operators, navigating a shared game world to collect passengers, strategically expand their trains, and skillfully avoid collisions. Built with Python and Pygame, the game employs a client-server architecture to enable networked gameplay, offering a blend of strategic decision-making and real-time reactions.
+I Like Trains is a multiplayer game where players take on the role of train operators, navigating a shared game world to collect passengers, strategically expand their trains, and skillfully avoid collisions. Built with Python and Pygame, the game employs a client-server architecture to enable networked gameplay, offering a blend of strategic decision-making and real-time reactions.
 
 The student's objective will be to modify the agent.py file (and only this one) to remotely control a train managed by a server according to his environment.
 The agent must make travel decisions for the train, as well as the game board with the Pygam Library.
