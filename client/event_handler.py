@@ -36,16 +36,6 @@ class EventHandler:
                         # logger.debug("Sending start game request")
                         self.client.network.send_start_game_request()
                 
-                # # Change the train's direction based on the pressed keys
-                # elif event.key == pygame.K_UP:
-                #     self.client.network.send_direction((0, -1))
-                # elif event.key == pygame.K_DOWN:
-                #     self.client.network.send_direction((0, 1))
-                # elif event.key == pygame.K_LEFT:
-                #     self.client.network.send_direction((-1, 0))
-                # elif event.key == pygame.K_RIGHT:
-                #     self.client.network.send_direction((1, 0))
-                
                 # Quit the game if the Escape key is pressed
                 elif event.key == pygame.K_ESCAPE:
                     self.client.running = False
