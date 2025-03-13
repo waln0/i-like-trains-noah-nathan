@@ -70,7 +70,7 @@ class Agent:
         return
 
     def get_target_position(self, current_pos):
-        """Find the closest passenger and return its position"""
+        """Find the best passenger to target and return its position"""
         return
 
     def get_direction_to_target(self, current_pos, target_pos, valid_directions):
@@ -90,7 +90,7 @@ class Agent:
 
     def update_agent(self, client):
         """
-        Update the agent's state.
+        Update the agent's state. 
         The student can add their own code here if they wish but removing code from this function may cause issues with updating the agent's state.
         """
         start_time = time.time()
