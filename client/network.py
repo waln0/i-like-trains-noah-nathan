@@ -8,9 +8,10 @@ import logging
 import threading
 import time
 
+
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     handlers=[logging.StreamHandler()],
 )
@@ -74,7 +75,7 @@ class NetworkManager:
     def receive_game_state(self):
         """Thread that receives game state updates"""
         buffer = ""
-        logger.debug("Starting receive_game_state thread")
+        # logger.debug("Starting receive_game_state thread")
         while self.running:
             try:
                 # Receive data from server
@@ -106,36 +107,51 @@ class NetworkManager:
                             # Handle different message types
                             if message_type == "state":
                                 self.client.handle_state_data(message_data["data"])
-                            elif message_type == "respawn":
-                                logger.debug(f"Received respawn data: {message_data}")
-                                self.client.handle_respawn_data(message_data["data"])
-                            elif message_type == "respawn_success":
-                                logger.info("Player respawned successfully")
+
+                            elif message_type == "spawn_success":
+                                logger.info("Player spawned successfully")
+                                self.client.agent.is_dead = False
+                                self.client.agent.waiting_for_respawn = False
+
                             elif message_type == "game_started_success":
                                 logger.info("Game has started")
                                 self.client.in_waiting_room = False
+                                
                             elif message_type == "game_status":
-                                # logger.debug(f"\n\nReceived: {message_data}")
                                 self.client.handle_game_status(message_data)
+
+                            elif message_type == "join_success":
+                                logger.debug(f"Received join success response")
+
+                            elif message_type == "drop_passenger_success":
+                                self.client.handle_drop_passenger_success(message_data)
+                            elif message_type == "drop_passenger_failed":
+                                # logger.info(f"Failed to activate boost (not enough passengers, boost in cooldown or inactive)")
+                                pass
+
                             elif message_type == "leaderboard":
                                 self.client.handle_leaderboard_data(message_data["data"])
+
                             elif message_type == "waiting_room":
                                 self.client.handle_waiting_room_data(message_data["data"])
+
                             elif message_type == "name_check":
-                                logger.debug(f"Received name_check response: {message_data}")
-                                # Store name check result
+                                logger.debug(f"Received name_check response: {message_data['available']}")
                                 self.client.name_check_result = message_data.get("available", False)
                                 self.client.name_check_received = True
                                 logger.debug(f"Name check response received, available: {self.client.name_check_result}")
-                            elif message_type == "cooldown":
-                                self.client.handle_cooldown_data(message_data)
+
+                            elif message_type == "death":
+                                logger.info(f"Train is dead. Cooldown: {message_data['remaining']}s")
+                                self.client.handle_death(message_data)
+
                             elif message_type == "error":
                                 logger.error(f"Received error from server: {message_data.get('message', 'Unknown error')}")
+
                             else:
                                 logger.warning(f"Unknown message type: {message_type}")
                         else:
-                            # If message has no type, treat it as game state
-                            self.client.handle_game_state(message_data)
+                            logger.debug(f"Received game state data: {message_data}")
                     except json.JSONDecodeError:
                         logger.error(f"Failed to parse message as JSON: {message}")
                     except Exception as e:
@@ -192,47 +208,32 @@ class NetworkManager:
         """Send direction to server"""
         message = {"action": "direction", "direction": direction}
         return self.send_message(message)
-        
-    def send_respawn_request(self):
+
+    def send_drop_passenger(self):
+        """Send request to drop a wagon"""
+        message = {"action": "drop_passenger"}
+        success = self.send_message(message)
+        # if success:
+        #     logger.info("Requested to drop a wagon")
+        return success
+
+    def send_spawn_request(self):
         """Send respawn request to server"""
         message = {"action": "respawn"}
-        current_time = time.time()
-        if hasattr(self, 'last_respawn_request') and current_time - self.last_respawn_request < 1.0:
-            logger.debug("Ignoring respawn request - too soon after previous request")
-            return False
-            
-        logger.debug("Sending respawn request")
         
         success = self.send_message(message)
         if success:
-            # Mark that we are waiting for server response
             self.client.agent.waiting_for_respawn = True
-            
-            # Record the time of this request
-            self.last_respawn_request = current_time
-            
-            # If this was the first spawn, mark it as done
-            if self.client.first_spawn:
-                self.client.first_spawn = False
-                logger.info("First spawn completed")
         return success
         
     def send_start_game_request(self):
         """Send request to start the game"""
-        # Check if we've recently sent a start game request
-        current_time = time.time()
-        if hasattr(self, 'last_start_game_request') and current_time - self.last_start_game_request < 1.0:
-            logger.debug("Ignoring start game request - too soon after previous request")
-            return False
-            
-        logger.debug("Sending start game request")
+        # logger.debug("Sending start game request")
         message = {"action": "start_game"}
         
         success = self.send_message(message)
-        if success:
-            logger.info("Requested game start")
-            # Record the time of this request
-            self.last_start_game_request = current_time
+        # if success:
+        #     logger.info("Requested game start")
         return success
         
     def request_leaderboard(self):

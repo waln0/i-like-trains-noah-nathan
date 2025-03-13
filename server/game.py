@@ -2,18 +2,14 @@
 Game class for the game "I Like Trains"
 """
 from pickle import FALSE
-import pygame
 import random
-import os
-import importlib
-import socket
-import json
 import threading
 import time
 
 from train import Train
 from passenger import Passenger
 import logging
+
 
 # Use the logger configured in server.py
 logger = logging.getLogger("server.game")
@@ -25,15 +21,15 @@ RED = (255, 0, 0)
 BLUE = (0, 0, 255)
 DARK_GREEN = (0, 100, 0)
 
-ORIGINAL_GAME_WIDTH = 200
-ORIGINAL_GAME_HEIGHT = 200
+ORIGINAL_GAME_WIDTH = 400
+ORIGINAL_GAME_HEIGHT = 400
+
+ORIGINAL_GRID_NB = 20
 
 TRAINS_PASSENGER_RATIO = 1  # Number of trains per passenger
 
 GAME_SIZE_INCREMENT_RATIO = 0.05  # Increment per train, the bigger the number, the bigger the screen grows
-
-GRID_SIZE = int(ORIGINAL_GAME_WIDTH/20)
-
+GRID_SIZE = int(ORIGINAL_GAME_WIDTH/ORIGINAL_GRID_NB)
 GAME_SIZE_INCREMENT = int(((ORIGINAL_GAME_WIDTH+ORIGINAL_GAME_HEIGHT)/2)*GAME_SIZE_INCREMENT_RATIO)  # Increment per train
 
 TICK_RATE = 60
@@ -41,7 +37,7 @@ TICK_RATE = 60
 SPAWN_SAFE_ZONE = 3
 SAFE_PADDING = 3
 
-RESPAWN_COOLDOWN = 10.0
+RESPAWN_COOLDOWN = 5.0
 
 def generate_random_non_blue_color():
     """Generate a random RGB color avoiding blue nuances"""
@@ -55,7 +51,8 @@ def generate_random_non_blue_color():
             return (r, g, b)
 
 class Game:
-    def __init__(self):
+    def __init__(self, send_cooldown_notification):
+        self.send_cooldown_notification = send_cooldown_notification
         self.game_width = ORIGINAL_GAME_WIDTH
         self.game_height = ORIGINAL_GAME_HEIGHT
         self.new_game_width = self.game_width
@@ -66,14 +63,17 @@ class Game:
         self.train_colors = {}  # {agent_name: (train_color, wagon_color)}
         self.passengers = []
         self.dead_trains = {}  # {agent_name: death_time}
+        self.removed_trains = []  # List to track removed trains
         self.lock = threading.Lock()
         self.last_update = time.time()
         self.game_started = False  # Track if game has started
         # Dirty flags for the game
         self._dirty = {
+            "trains": True,
             "size": True,
             "grid_size": True,
-            "passengers": True
+            "passengers": True,
+            "removed_trains": False
         }
         logger.info(f"Game initialized with tick rate: {TICK_RATE}")
 
@@ -83,25 +83,21 @@ class Game:
         
         # Add game dimensions if modified
         if self._dirty["size"]:
-            # logger.debug(f"Game state: size added")
-            state["game_width"] = self.game_width
-            state["game_height"] = self.game_height
+            state["size"] = {
+                "game_width": self.game_width,
+                "game_height": self.game_height
+            }
             self._dirty["size"] = False
-        # else:
-            # logger.debug(f"Game state: size not added")
             
         # Add grid size if modified
         if self._dirty["grid_size"]:
-            # logger.debug(f"Game state: grid size added")
             state["grid_size"] = self.grid_size
             self._dirty["grid_size"] = False
-        # else:
-            # logger.debug(f"Game state: grid size not added")
             
         # Add passengers if modified
         if self._dirty["passengers"]:
-            state["passengers"] = [p.position for p in self.passengers]
-            self._dirty["passengers"] = FALSE
+            state["passengers"] = [p.to_dict() for p in self.passengers]
+            self._dirty["passengers"] = False
             
         # Add modified trains
         trains_data = {}
@@ -109,6 +105,13 @@ class Game:
             train_data = train.to_dict()
             if train_data:  # Only add if data has changed
                 trains_data[name] = train_data
+        
+        # Add removed trains
+        if self._dirty["removed_trains"] and self.removed_trains:
+            state["removed_trains"] = self.removed_trains.copy()
+            self.removed_trains = []  # Clear after sending
+            self._dirty["removed_trains"] = False
+            
         if trains_data:
             state["trains"] = trains_data
             
@@ -170,7 +173,7 @@ class Game:
             )
 
             if self.is_position_safe(x, y):
-                logger.debug(f"Found safe spawn position at ({x}, {y})")
+                # logger.debug(f"Found safe spawn position at ({x}, {y})")
                 return x, y
 
         # Default position at the center
@@ -194,11 +197,6 @@ class Game:
             self.passengers.append(new_passenger)
             changed = True
             logger.debug("Added new passenger")
-
-        while len(self.passengers) > desired_passengers:
-            self.passengers.pop()
-            changed = True
-            logger.debug("Removed passenger")
             
         if changed:
             self._dirty["passengers"] = True
@@ -209,6 +207,7 @@ class Game:
             # Calculate initial game size based on number of clients
             self.game_width = ORIGINAL_GAME_WIDTH + (num_clients * GAME_SIZE_INCREMENT)
             self.game_height = ORIGINAL_GAME_HEIGHT + (num_clients * GAME_SIZE_INCREMENT)
+
             self.new_game_width = self.game_width
             self.new_game_height = self.game_height
             self._dirty["size"] = True
@@ -239,14 +238,28 @@ class Game:
             else:
                 train_color = generate_random_non_blue_color()
 
-            self.trains[agent_name] = Train(spawn_pos[0], spawn_pos[1], agent_name, train_color)
-            logger.info(f"Train {agent_name} was added to the game")
+            self.trains[agent_name] = Train(spawn_pos[0], spawn_pos[1], agent_name, train_color, self.handle_train_death)
             self.update_passengers_count()
             logger.info(f"Train {agent_name} spawned at position {spawn_pos}")
             return True
         return False
 
     def remove_train(self, agent_name):
+        """Remove a train from the game"""
+        if agent_name in self.trains:
+            logger.info(f"Removing train {agent_name}")
+            del self.trains[agent_name]
+            self._dirty["trains"] = True
+            
+            # Add to removed trains list to notify clients
+            self.removed_trains.append(agent_name)
+            self._dirty["removed_trains"] = True
+            
+            self.update_passengers_count()
+            return True
+        return False
+
+    def send_cooldown(self, agent_name):
         """Remove a train and update game size"""
         if agent_name in self.trains:
             # Register the death time
@@ -254,18 +267,14 @@ class Game:
             logger.info(f"Train {agent_name} entered {RESPAWN_COOLDOWN}s cooldown")
 
             # Notify the client of the cooldown
-            if hasattr(self, 'server') and self.server:
-                self.server.send_cooldown_notification(agent_name, RESPAWN_COOLDOWN)
+            self.send_cooldown_notification(agent_name, RESPAWN_COOLDOWN)            
+        else:
+            logger.error(f"Train {agent_name} not found in game")
+            return False
 
-            # Delete the train
-            del self.trains[agent_name]
-            
-            # Update game state
-            self.update_passengers_count()
-            if not self.trains:
-                logger.debug("No active trains, passengers list reset")
-                self.passengers.clear()
-                self._dirty["passengers"] = True
+    def handle_train_death(self, agent_name):
+        self.send_cooldown(agent_name)
+        self.update_passengers_count()
 
     def get_train_cooldown(self, agent_name):
         """Get remaining cooldown time for a train"""
@@ -273,7 +282,12 @@ class Game:
             elapsed = time.time() - self.dead_trains[agent_name]
             remaining = max(0, RESPAWN_COOLDOWN - elapsed)
             return remaining
+        # logger.error(f"Train {agent_name} not found in cooldown dictionary")
         return 0
+
+    def is_train_alive(self, agent_name):
+        """Check if a train is alive"""
+        return agent_name in self.trains and self.trains[agent_name].alive
 
     def update(self):
         """Update game state"""
@@ -282,11 +296,10 @@ class Game:
         
         with self.lock:
             # Update all trains and check for death conditions
-            trains_to_remove = []
-            for train_name, train in self.trains.items():
+            # trains_to_remove = []
+            for _, train in self.trains.items():
                 # logger.debug(f"Updating train {train_name} at position {train.position} with direction {train.direction}")
                 train.update(
-                    self.passengers,
                     self.trains,
                     self.game_width,
                     self.game_height,
@@ -297,16 +310,15 @@ class Game:
                 for passenger in self.passengers:
                     if train.position == passenger.position:
                         # Increase train score
-                        train.update_score(train.score + 1)
-                        train.add_wagon()
-                        # Respawn passenger at a new safe location
-                        passenger.respawn()
-                        # logger.debug(f"Train {train_name} collected passenger, score: {train.score}")
-
-                # Check the death conditions
-                if not train.alive:
-                    trains_to_remove.append(train_name)
-
-            # Remove the dead trains
-            for train_name in trains_to_remove:
-                self.remove_train(train_name)
+                        train.update_score(train.score + passenger.value)
+                        # logger.debug(f"Train {train.agent_name} collected passenger, gained {passenger.value} points")
+                        
+                        train.update_wagons()
+                        
+                        desired_passengers = (len(self.trains)) // TRAINS_PASSENGER_RATIO
+                        if len(self.passengers) <= desired_passengers:
+                            passenger.respawn()
+                        else:
+                            # Remove the passenger from the passengers list if there are too many
+                            self.passengers.remove(passenger)
+                            self._dirty["passengers"] = True

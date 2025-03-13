@@ -8,7 +8,7 @@ from client.agent import Agent
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     handlers=[logging.StreamHandler()]
 )
@@ -30,7 +30,7 @@ def main():
     client = Client(host)
     
     # Create the agent with a temporary name (will be replaced by user input)
-    agent = Agent("", lambda direction: client.network.send_direction(direction))
+    agent = Agent("", lambda: client.network.send_drop_passenger())
     
     # Set the agent for the client
     client.set_agent(agent)

@@ -2,18 +2,15 @@
 Main module for the game "I Like Trains"
 """
 import pygame
-import sys
 import logging
 import time
-import json
 import threading
-import socket
 from .network import NetworkManager
 from .renderer import Renderer
 from .event_handler import EventHandler
 from .game_state import GameState
 from .ui import UI
-import random
+
 
 # Configure logging
 logging.basicConfig(
@@ -26,11 +23,13 @@ logger = logging.getLogger("client")
 # Constants
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 5555
-SCREEN_WIDTH = 600  # Reduce screen width
-SCREEN_HEIGHT = 400
+SCREEN_WIDTH = 400
+SCREEN_HEIGHT = 560
 GRID_SIZE = 20
-LEADERBOARD_WIDTH = 300  # Width of the leaderboard on the right
-MANUAL_RESPAWN = False  # Enable manual respawn
+LEADERBOARD_WIDTH = 260  # Width of the leaderboard on the right
+
+MANUAL_SPAWN = True  # Enable manual respawn
+ACTIVATE_AGENT = True  # Enable agent
 
 
 class Client:
@@ -45,8 +44,7 @@ class Client:
         self.running = True
         self.is_initialized = False
         self.in_waiting_room = True
-        self.first_spawn = True
-        self.manual_respawn = MANUAL_RESPAWN
+        self.lock = threading.Lock()  # Add thread lock for synchronization
         
         # Name verification variables
         self.name_check_received = False
@@ -56,11 +54,14 @@ class Client:
         self.agent_name = ""
         self.trains = {}
         self.passengers = []
+
         self.grid_size = GRID_SIZE
         self.game_width = 200  # Initial game area width
         self.game_height = 200  # Initial game area height
-        self.game_screen_padding = 20  # Space between game area and leaderboard
+        self.game_screen_padding = GRID_SIZE  # Space between game area and leaderboard
         self.leaderboard_width = LEADERBOARD_WIDTH
+        self.leaderboard_height = 2*self.game_screen_padding + self.game_height
+
         self.leaderboard_data = []
         self.waiting_room_data = None
 
@@ -68,36 +69,78 @@ class Client:
         self.screen_width = SCREEN_WIDTH
         self.screen_height = SCREEN_HEIGHT
         
-        # Initialize pygame
+        # Window creation flags and parameters
+        self.window_needs_update = False
+        self.window_update_params = {
+            "width": self.screen_width,
+            "height": self.screen_height
+        }
+        
+        # Initialize pygame but don't create window yet
         pygame.init()
-        self.screen = pygame.display.set_mode((self.screen_width, self.screen_height))
+        self.screen = pygame.display.set_mode((self.screen_width, self.screen_height), pygame.RESIZABLE)
         pygame.display.set_caption("I Like Trains")
         self.is_initialized = True
         
         # Initialize components
         self.network = NetworkManager(self, host, port)
         self.renderer = Renderer(self)
-        self.event_handler = EventHandler(self)
-        self.game_state = GameState(self)
+        self.event_handler = EventHandler(self, ACTIVATE_AGENT)
+        self.game_state = GameState(self, ACTIVATE_AGENT)
         self.ui = UI(self)
         
         # Reference to the agent (will be initialized later)
         self.agent = None
         
+    def update_game_window_size(self, width, height):
+        """Schedule window size update to be done in main thread"""
+        logger.info(f"Scheduling window size update to {width}x{height}")
+        with self.lock:
+            self.window_needs_update = True
+            self.window_update_params = {
+                "width": width,
+                "height": height
+            }
+                
+    def handle_window_updates(self):
+        """Process any pending window updates in the main thread"""
+        with self.lock:
+            if self.window_needs_update:
+                width = self.window_update_params["width"]
+                height = self.window_update_params["height"]
+                
+                logger.info(f"Updating window size to {width}x{height}")
+                try:
+                    self.screen = pygame.display.set_mode((width, height), pygame.RESIZABLE)
+                    pygame.display.set_caption(f"I Like Trains - {self.agent_name}" if self.agent_name else "I Like Trains")
+                    logger.info(f"Window updated successfully")
+                except Exception as e:
+                    logger.error(f"Error updating window: {e}")
+                
+                self.window_needs_update = False
+
     def set_agent(self, agent):
-        """Set the agent used by the client"""
+        """Set the agent for the client"""
         self.agent = agent
         self.agent_name = agent.agent_name
         
     def run(self):
+        logger.info("Starting client loop")
         """Main client loop"""
         # Connect to server
         if not self.network.connect():
             logger.error("Failed to connect to server")
             return
 
-        logger.info(f"self.screen_width : {self.screen_width}, self.screen_height : {self.screen_height}")
-        logger.info(f"Grid size: {self.grid_size}")
+        # Create a temporary window for player name
+        logger.info("Creating temporary window for player name")
+        temp_width, temp_height = SCREEN_WIDTH, SCREEN_HEIGHT
+        try:
+            self.screen = pygame.display.set_mode((temp_width, temp_height))
+            pygame.display.set_caption("I Like Trains - Login")
+        except Exception as e:
+            logger.error(f"Error creating login window: {e}")
+            return
             
         # Ask player to enter their name
         player_name = self.ui.get_player_name()
@@ -106,20 +149,28 @@ class Client:
         self.agent.agent_name = player_name
         self.agent_name = player_name
         
-        # Update window title
-        pygame.display.set_caption(f"I Like Trains - {player_name}")
-            
         # Send agent name to server
         if not self.network.send_agent_name(self.agent_name):
             logger.error("Failed to send agent name to server")
             return
-
+            
         # Main loop
         clock = pygame.time.Clock()
         logger.info(f"Running client loop: {self.running}")
         while self.running:
             # Handle events
             self.event_handler.handle_events()
+            
+            # Handle any pending window updates in the main thread
+            self.handle_window_updates()
+
+            # Add automatic respawn logic
+            if not MANUAL_SPAWN and self.agent.is_dead and self.agent.waiting_for_respawn:
+                elapsed = time.time() - self.agent.death_time
+                if elapsed >= self.agent.respawn_cooldown:
+                    if self.in_waiting_room:
+                        self.network.send_start_game_request()
+                    self.network.send_spawn_request()
             
             # Draw the game
             self.renderer.draw_game()
@@ -135,21 +186,13 @@ class Client:
         """Handle state data received from server"""
         self.game_state.handle_state_data(data)
 
-    def handle_cooldown_data(self, data):
+    def handle_death(self, data):
         """Handle cooldown data received from server"""
-        self.game_state.handle_cooldown_data(data)
-        
-    def handle_game_state(self, state):
-        """Handle complete game state received directly from server"""
-        self.game_state.handle_game_state(state)
+        self.game_state.handle_death(data)
 
     def handle_game_status(self, data):
         """Handle game status received from server"""
         self.game_state.handle_game_status(data)
-        
-    def handle_respawn_data(self, data):
-        """Handle respawn data received from server"""
-        self.game_state.handle_respawn_data(data)
         
     def handle_leaderboard_data(self, data):
         """Handle leaderboard data received from server"""
@@ -158,3 +201,7 @@ class Client:
     def handle_waiting_room_data(self, data):
         """Handle waiting room data received from server"""
         self.game_state.handle_waiting_room_data(data)
+    
+    def handle_drop_passenger_success(self, data):
+        """Handle successful wagon drop response from server"""
+        self.game_state.handle_drop_passenger_success(data)
