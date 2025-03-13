@@ -1,5 +1,5 @@
 """
-Module client pour le jeu I Like Trains
+Client module for the game "I Like Trains"
 """
 from .client import Client
 

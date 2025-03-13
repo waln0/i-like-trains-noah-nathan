@@ -4,6 +4,7 @@ Module for the user interface of the I Like Trains client
 import pygame
 import logging
 
+
 # Configure the logger
 logger = logging.getLogger("client.ui")
 
@@ -33,7 +34,7 @@ class UI:
         small_font = pygame.font.Font(None, 24)
         
         # Variables for input
-        input_box = pygame.Rect(self.client.screen_width // 2 - 100, self.client.screen_height // 2, 200, 32)
+        input_box = pygame.Rect(self.client.screen_width / 2 - 100, self.client.screen_height / 2 - 40, 200, 32)
         color_inactive = GRAY
         color_active = BLUE
         color = color_inactive
@@ -81,7 +82,7 @@ class UI:
             
             # Title
             title = font.render("Enter your name", True, BLACK)
-            title_rect = title.get_rect(center=(self.client.screen_width // 2, self.client.screen_height // 2 - 50))
+            title_rect = title.get_rect(center=(self.client.screen_width / 2, self.client.screen_height / 2 - 80))
             self.client.screen.blit(title, title_rect)
             
             # Input box
@@ -89,18 +90,18 @@ class UI:
             text_surface = font.render(text, True, BLACK)
             width = max(200, text_surface.get_width() + 10)
             input_box.w = width
-            input_box.x = self.client.screen_width // 2 - width // 2
+            input_box.x = self.client.screen_width / 2 - width / 2
             self.client.screen.blit(text_surface, (input_box.x + 5, input_box.y + 5))
             
             # Error message
             if error_message:
                 error_surface = small_font.render(error_message, True, RED)
-                error_rect = error_surface.get_rect(center=(self.client.screen_width // 2, self.client.screen_height // 2 + 50))
+                error_rect = error_surface.get_rect(center=(self.client.screen_width / 2, self.client.screen_height / 2 + 40))
                 self.client.screen.blit(error_surface, error_rect)
                 
             # Instructions
             instructions = small_font.render("Press Enter to validate", True, BLACK)
-            instructions_rect = instructions.get_rect(center=(self.client.screen_width // 2, self.client.screen_height // 2 + 80))
+            instructions_rect = instructions.get_rect(center=(self.client.screen_width / 2, self.client.screen_height / 2 + 20))
             self.client.screen.blit(instructions, instructions_rect)
             
             pygame.display.flip()
