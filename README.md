@@ -15,12 +15,17 @@ The student will also have to edit the draw_passengers() and draw_trains() funct
 The project is divided into two main parts:
 
 ### 1. Server (folder `server/`)
+The server is responsible for managing client connections and game synchronization. It is executed on a distant machine which the student is connecting to.
+The server files are included here so the student can have a better understanding of how the management of the game works. 
+
 - `server.py` : Manages client connections and game synchronization
 - `game.py` : Contains the main game logic
 - `train.py` : Defines the Train class and its behaviors
 - `passenger.py` : Manages passenger logic
 
 ### 2. Client (folder `client/`)
+The client is responsible for managing the game display and user interactions. It is executed on the student's machine when executing `main.py`.
+
 - `client.py` : Manages server connection and the main game loop
 - `network.py` : Manages network communication with the server
 - `renderer.py` : Responsible for the graphical display of the game
@@ -32,7 +37,7 @@ The project is divided into two main parts:
 ## Client-Server Communication
 
 Communication between the client and server is done via TCP/IP sockets:
-1. The client connects to the server (by default on localhost:5555)
+1. The client connects to the distant server (by default on localhost:5555)
 2. The client sends its agent name to the server
 3. The server regularly sends the game state to clients
 4. Clients send their actions (directions) to the server
@@ -59,6 +64,9 @@ Helper functions are available in the Agent class:
 - `will_hit_train_or_wagon()` : Checks if the direction leads to a collision
 - `get_closest_passenger()` : Finds the closest passenger
 - `get_direction_to_target()` : Determines the best direction to reach a target
+
+The agent can also call the method `self.network.send_drop_passenger_request()` to send a request to the server to drop a passenger.
+The train will then get a 0.25sec *1.5 speed boost and enter a 10sec boost cooldown. Calling this method will drop one passenger from the train (costing 1 point from the train's score).
 
 ### 2. Graphical Rendering (renderer.py)
 
@@ -137,9 +145,14 @@ After activating the virtual environment, install the necessary dependencies:
 pip install -r requirements.txt
 ```
 
-### 4. Execute the client
+### 4. (Optionnal) Start a local server for testing
 
-To execute the client and connect to the server. Replace `<ip_adress>` with the IP address of the server.
+The student can start a local server by executing `python server/server.py`. This will start a server on the default port (5555).
+The student can then open another terminal and execute `python main.py` to connect to the local server. This is optional, but recommended for testing before connecting to the distant server.
+
+### 5. Execute the client
+
+To execute the client and connect to the server. Replace `<ip_adress>` with the IP address of the server (do not enter an IP address if you are connecting to the local server hosted on your machine).
 
 ```bash
 python main.py <ip_adress>
