@@ -23,13 +23,14 @@ logger = logging.getLogger("client")
 # Constants
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 5555
-SCREEN_WIDTH = 400
-SCREEN_HEIGHT = 560
+SCREEN_WIDTH = 500
+SCREEN_HEIGHT = 360
 GRID_SIZE = 20
-LEADERBOARD_WIDTH = 260  # Width of the leaderboard on the right
+LEADERBOARD_WIDTH = 280  # Width of the leaderboard on the right
 
-MANUAL_SPAWN = True  # Enable manual respawn
+MANUAL_SPAWN = False  # Enable manual respawn
 ACTIVATE_AGENT = True  # Enable agent
+MANUAL_CONTROL = True  # Enable manual control
 
 
 class Client:
@@ -46,14 +47,24 @@ class Client:
         self.in_waiting_room = True
         self.lock = threading.Lock()  # Add thread lock for synchronization
         
+        # Game over variables
+        self.game_over = False
+        self.game_over_data = None
+        self.final_scores = []
+        
         # Name verification variables
         self.name_check_received = False
         self.name_check_result = False
+
+        # Sciper verification variables
+        self.sciper_check_received = False
+        self.sciper_check_result = False
         
         # Game data
         self.agent_name = ""
         self.trains = {}
         self.passengers = []
+        self.delivery_zone = {}
 
         self.grid_size = GRID_SIZE
         self.game_width = 200  # Initial game area width
@@ -85,7 +96,7 @@ class Client:
         # Initialize components
         self.network = NetworkManager(self, host, port)
         self.renderer = Renderer(self)
-        self.event_handler = EventHandler(self, ACTIVATE_AGENT)
+        self.event_handler = EventHandler(self, ACTIVATE_AGENT, MANUAL_CONTROL)
         self.game_state = GameState(self, ACTIVATE_AGENT)
         self.ui = UI(self)
         
@@ -94,7 +105,7 @@ class Client:
         
     def update_game_window_size(self, width, height):
         """Schedule window size update to be done in main thread"""
-        logger.info(f"Scheduling window size update to {width}x{height}")
+        # logger.info(f"Scheduling window size update to {width}x{height}")
         with self.lock:
             self.window_needs_update = True
             self.window_update_params = {
@@ -109,11 +120,11 @@ class Client:
                 width = self.window_update_params["width"]
                 height = self.window_update_params["height"]
                 
-                logger.info(f"Updating window size to {width}x{height}")
+                # logger.info(f"Updating window size to {width}x{height}")
                 try:
                     self.screen = pygame.display.set_mode((width, height), pygame.RESIZABLE)
                     pygame.display.set_caption(f"I Like Trains - {self.agent_name}" if self.agent_name else "I Like Trains")
-                    logger.info(f"Window updated successfully")
+                    # logger.info(f"Window updated successfully")
                 except Exception as e:
                     logger.error(f"Error updating window: {e}")
                 
@@ -142,15 +153,16 @@ class Client:
             logger.error(f"Error creating login window: {e}")
             return
             
-        # Ask player to enter their name
-        player_name = self.ui.get_player_name()
+        # Ask player to enter their name and sciper
+        player_name, player_sciper = self.ui.get_player_ids()
         
         # Update agent name
         self.agent.agent_name = player_name
         self.agent_name = player_name
+        self.agent_sciper = player_sciper  # Store sciper for future use
         
         # Send agent name to server
-        if not self.network.send_agent_name(self.agent_name):
+        if not self.network.send_agent_ids(self.agent_name, self.agent_sciper):
             logger.error("Failed to send agent name to server")
             return
             
@@ -165,7 +177,7 @@ class Client:
             self.handle_window_updates()
 
             # Add automatic respawn logic
-            if not MANUAL_SPAWN and self.agent.is_dead and self.agent.waiting_for_respawn:
+            if not MANUAL_SPAWN and self.agent.is_dead and self.agent.waiting_for_respawn and not self.game_over:
                 elapsed = time.time() - self.agent.death_time
                 if elapsed >= self.agent.respawn_cooldown:
                     if self.in_waiting_room:
@@ -202,6 +214,29 @@ class Client:
         """Handle waiting room data received from server"""
         self.game_state.handle_waiting_room_data(data)
     
-    def handle_drop_passenger_success(self, data):
+    def handle_drop_wagon_success(self, data):
         """Handle successful wagon drop response from server"""
-        self.game_state.handle_drop_passenger_success(data)
+        self.game_state.handle_drop_wagon_success(data)
+        
+    def handle_game_over(self, data):
+        """Handle game over data received from server"""
+        self.game_state.handle_game_over(data)
+        
+    def handle_initial_state(self, data):
+        """Handle initial state message from server"""
+        logger.info("Received initial state from server")
+        
+        # Store game lifetime and start time
+        self.game_life_time = data.get("game_life_time", 60)  # Default to 60 seconds if not provided
+        self.game_start_time = time.time()  # Use client's time for consistency
+            
+        logger.info(f"Game lifetime set to {self.game_life_time} seconds")
+
+    def get_remaining_time(self):
+        """Calculate remaining game time in seconds"""
+        if not hasattr(self, 'game_life_time') or not hasattr(self, 'game_start_time'):
+            return None
+            
+        elapsed = time.time() - self.game_start_time
+        remaining = max(0, self.game_life_time - elapsed)
+        return remaining

@@ -22,6 +22,8 @@ The server files are included here so the student can have a better understandin
 - `game.py` : Contains the main game logic
 - `train.py` : Defines the Train class and its behaviors
 - `passenger.py` : Manages passenger logic
+- `ai_client.py` : Manages AI clients
+- `delivery_zone.py` : Manages delivery zones
 
 ### 2. Client (folder `client/`)
 The client is responsible for managing the game display and user interactions. It is executed on the student's machine when executing `main.py`.
@@ -32,15 +34,15 @@ The client is responsible for managing the game display and user interactions. I
 - `event_handler.py` : Manages events (keyboard, mouse)
 - `game_state.py` : Maintains the game state on the client side
 - `agent.py` : Controls the player's train behavior
-- `ui.py` : Manages the user interface
+- `ui.py` : Manages the user interface to enter train name and sciper
 
 ## Client-Server Communication
 
 Communication between the client and server is done via TCP/IP sockets:
 1. The client connects to the distant server (by default on localhost:5555)
-2. The client sends its agent name to the server
+2. The client sends its train name and sciper to the server
 3. The server regularly sends the game state to clients
-4. Clients send their actions (directions) to the server
+4. Clients send their actions (change direction or drop wagon) to the server
 5. The server updates the game state and the cycle continues
 
 ## Implementation Tasks
@@ -59,14 +61,27 @@ def get_direction(self, game_width, game_height):
     """
 ```
 
-Helper functions are available in the Agent class:
-- `will_hit_wall()` : Checks if the next position will hit a wall
-- `will_hit_train_or_wagon()` : Checks if the direction leads to a collision
-- `get_closest_passenger()` : Finds the closest passenger
-- `get_direction_to_target()` : Determines the best direction to reach a target
+The running client regularly calls the agent's `update_agent` method to update the agent's state (information from the server about the game, like the trains positions, the passengers, the delivery zones, etc.). The `update_agent` method then calls the method `get_direction` to dynamicaly get the next direction of the train (determined by the agent according to the game state) and transfer it to the server (`self.network.send_direction_change(direction)`).
 
-The agent can also call the method `self.network.send_drop_passenger_request()` to send a request to the server to drop a passenger.
-The train will then get a 0.25sec *1.5 speed boost and enter a 10sec boost cooldown. Calling this method will drop one passenger from the train (costing 1 point from the train's score).
+You can use such following methods (not mandatory):
+- `will_hit_wall()` : To check if the next position will hit a wall
+- `will_hit_train_or_wagon()` : To check if the direction leads to a collision
+- `get_target_position()` : To take a decision between targetting a passenger or a delivery zone
+- `get_direction_to_target()` : To determine the best direction to reach a target
+
+The agent can also call the method `self.network.send_drop_wagon_request()` to send a request to the server to drop a wagon.
+The train will then get a 0.25sec *1.5 speed boost and enter a 10sec boost cooldown. Calling this method will drop one wagon from the train (costing 1 point from the train's score).
+
+The class Agent is initialized with the following attributes:
+
+- `self.agent_name` : The name of the agent
+- `self.logger` : The logger object
+- `self.is_dead` : Whether the agent/train is currently dead or alive
+- `self.directions` : A list of possible directions
+- `self.death_time` : The time when the agent last died
+- `self.respawn_cooldown` : The cooldown time before respawning
+- `self.waiting_for_respawn` : Whether the agent is waiting for respawn
+- `self.game_width` and `self.game_height` are initialized later by the server but are still accessible in the program. They are the width and height of the game grid.
 
 ### 2. Graphical Rendering (renderer.py)
 
@@ -86,26 +101,27 @@ def draw_passengers(self):
     """
 ```
 
-## Game Parameters
-
-- Screen size: 600x400 pixel
-- Game screen size: 200x200 pixel
-- Grid size: 20 pixels
-- Possible directions: Up, Right, Down, Left
-- Automatic respawn after collision (configurable)
-- Scoreboard displayed on the right side of the screen
 
 ## Implementation Tips
 
 1. For the agent:
+   - Display the available information in the logger (trains, passengers, delivery zones, etc.)
    - Start with a simple strategy (e.g., go towards the closest passenger)
    - Gradually add obstacle avoidance (other trains and wagons)
    - Consider handling cases where the direct path is blocked
 
 2. For the renderer:
-   - Ensure trains and passengers are clearly visible
+   - Ensure trains and passengers should be clearly visible
    - Consider the orientation of trains based on their direction
    - Each train has a color by default, consider using dark blue to display yours (not used by default)
+
+### Other tools in client.py
+
+Some constants are available in the client for debugging:
+
+- `MANUAL_SPAWN`: Automatic respawn when available. False by default, otherwise the player has to press the space bar.
+- `ACTIVATE_AGENT`: Activate the agent. True by default. If set to False, the agent will not be used.
+- `MANUAL_CONTROL`: Activate manual control. False by default, otherwise the player can use the keyboard arrows to control the train.
 
 ## Requirements
 
@@ -147,8 +163,8 @@ pip install -r requirements.txt
 
 ### 4. (Optionnal) Start a local server for testing
 
-The student can start a local server by executing `python server/server.py`. This will start a server on the default port (5555).
-The student can then open another terminal and execute `python main.py` to connect to the local server. This is optional, but recommended for testing before connecting to the distant server.
+The student can start a local server by executing `python server/server.py`. This will start a server on the default port (5555) of his computer.
+The student can then open another terminal, go to the project folder, enter the virtual environment, and execute `python main.py` to connect to the local server. This is optional, but recommended for testing before connecting to the distant server.
 
 ### 5. Execute the client
 
@@ -160,12 +176,12 @@ python main.py <ip_adress>
 
 ## How to Play
 
-1. Launch the client: `python main.py <ip_adress>`
-2. Enter your player name
+1. Launch your client: `python main.py <ip_adress>`
+2. Enter your player name and sciper
 3. Wait in the waiting room until all players are connected
-4. Press SPACE to start the game when all players are ready
+4. Press SPACE to start the game when all players are ready if it is not automatic
 5. Your agent will automatically control your train
-6. The goal is to collect as many passengers as possible while avoiding collisions
+6. The goal is to collect as many passengers (your number of wagons will increase) and then deliver them to the delivery zone
 
 ## Logging System
 

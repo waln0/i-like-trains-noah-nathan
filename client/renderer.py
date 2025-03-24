@@ -34,6 +34,13 @@ class Renderer:
                 # Update display
                 pygame.display.flip()
                 return
+                
+            # If game is over, display game over screen
+            if hasattr(self.client, 'game_over') and self.client.game_over:
+                self.draw_game_over_screen()
+                # Update display
+                pygame.display.flip()
+                return
     
             try:
                 # Draw a light grid across the full game area
@@ -61,6 +68,11 @@ class Renderer:
                 )
             except Exception as e:
                 logger.error("Error drawing grid: " + str(e))
+
+            try:
+                self.draw_delivery_zone()
+            except Exception as e:
+                logger.error("Error drawing delivery zone: " + str(e))
 
             try:
                 self.draw_passengers()
@@ -93,13 +105,47 @@ class Renderer:
             import traceback
             logger.error(traceback.format_exc())
 
+    def draw_delivery_zone(self):
+        # Draw delivery zone
+        delivery_zone = self.client.delivery_zone
+        if delivery_zone:
+            x, y = delivery_zone["position"]
+            x += self.client.game_screen_padding
+            y += self.client.game_screen_padding
+            
+            # Create a surface with per-pixel alpha
+            s = pygame.Surface((delivery_zone["width"], delivery_zone["height"]), pygame.SRCALPHA)
+            # Fill with semi-transparent red (fourth parameter is alpha, 128 = semi-transparent)
+            s.fill((255, 0, 0, 128))
+            # Blit the surface onto the screen
+            self.client.screen.blit(s, (x, y))
+
     def draw_passengers(self):
-        # Draw passengers and their values
-        return
+        """
+        Draw passengers and their values
+        """
+        for passenger in self.client.passengers:
+            try:
+                # ========================================
+                # FILL THIS PART TO DISPLAY THE PASSENGERS
+                # ========================================
+                return
+            except Exception as e:
+                logger.error("Error processing passenger: " + str(e) + ", passenger: " + str(passenger))
 
     def draw_trains(self):
-        return
-    
+        """
+        Draw trains and their wagons
+        """
+        for train_name, train_data in self.client.trains.items():
+            try:
+                # ========================================
+                # FILL THIS PART TO DISPLAY THE TRAINS
+                # ========================================
+                return
+            except Exception as e:
+                logger.error("Error processing train: " + str(e) + ", train: " + str(train_name) + ", data: " + str(train_data))
+
     def draw_waiting_room(self):
         """Display the waiting room screen"""
         # Check if screen is available
@@ -180,18 +226,12 @@ class Renderer:
             self.client.screen.blit(text, text_rect)
 
     def draw_leaderboard(self):
-        """Draw leaderboard on right side of screen"""
-        
-        # Check if screen is available
-        if not self.client.is_initialized or self.client.screen is None:
-            logger.error("Cannot draw leaderboard: pygame not initialized or screen is None")
-            return
-            
+        """Draw the leaderboard with train scores"""
         try:
             # Define leaderboard area
             leaderboard_rect = pygame.Rect(self.client.game_width + 2*self.client.game_screen_padding, 0, self.client.leaderboard_width, self.client.screen_height)
             
-            # Fill leaderboard background with lighter color
+            # Draw leaderboard background
             pygame.draw.rect(self.client.screen, (240, 240, 240), leaderboard_rect)
             
             # Draw a line to separate leaderboard from game area
@@ -218,15 +258,18 @@ class Renderer:
             self.client.screen.blit(player_header, (self.client.game_width + 2*self.client.game_screen_padding + 70, header_y)) 
             
             score_header = header_font.render("Score", True, (0, 0, 100))
-            self.client.screen.blit(score_header, (self.client.game_width + 2*self.client.game_screen_padding + 140, header_y))
+            self.client.screen.blit(score_header, (self.client.game_width + 2*self.client.game_screen_padding + 170, header_y))
             
             best_score_header = header_font.render("Best", True, (0, 0, 100))
-            self.client.screen.blit(best_score_header, (self.client.game_width + 2*self.client.game_screen_padding + 200, header_y))
+            self.client.screen.blit(best_score_header, (self.client.game_width + 2*self.client.game_screen_padding + 230, header_y))
             
             # Add a line to separate header from player list
             pygame.draw.line(self.client.screen, (200, 200, 200), 
                             (self.client.game_width + 2*self.client.game_screen_padding + 5, header_y + 20), 
                             (self.client.game_width + 2*self.client.game_screen_padding + self.client.leaderboard_width - 5, header_y + 20), 2)
+
+            if len(self.sorted_trains) != len(self.client.trains):
+                self.sorted_trains = []
             
             # Get train data for leaderboard
             for train_name, train_data in self.client.trains.items():
@@ -246,7 +289,7 @@ class Renderer:
                 # If train not found, add it
                 if not train_found:
                     self.sorted_trains.append((train_name, current_score, current_score))
-            
+                       
             # Sort by best score in descending order
             self.sorted_trains.sort(key=lambda x: x[1], reverse=True)
             
@@ -256,8 +299,8 @@ class Renderer:
             
             for i, (train_name, best_score, current_score) in enumerate(self.sorted_trains):
                 # Limit to 10 players in leaderboard
-                if i >= 10:
-                    break
+                # if i >= 10:
+                #     break
                     
                 # Determine color based on rank
                 if i == 0:
@@ -296,12 +339,166 @@ class Renderer:
                 
                 # Display current score
                 score_text = player_font.render(str(current_score), True, (0, 0, 0))
-                self.client.screen.blit(score_text, (self.client.game_width + 2*self.client.game_screen_padding + 155, y_offset))
+                self.client.screen.blit(score_text, (self.client.game_width + 2*self.client.game_screen_padding + 185, y_offset))
                 
                 # Display best score
                 best_score_text = player_font.render(str(best_score), True, (0, 0, 0))
-                self.client.screen.blit(best_score_text, (self.client.game_width + 2*self.client.game_screen_padding + 210, y_offset))
+                self.client.screen.blit(best_score_text, (self.client.game_width + 2*self.client.game_screen_padding + 240, y_offset))
                 
                 y_offset += 25
+                
+            # Draw remaining time below the leaderboard
+            if hasattr(self.client, 'game_start_time') and hasattr(self.client, 'game_life_time'):
+                # Calculate remaining time
+                elapsed = time.time() - self.client.game_start_time
+                remaining = max(0, self.client.game_life_time - elapsed)
+                
+                # Format time as mm:ss
+                minutes = int(remaining) // 60
+                seconds = int(remaining) % 60
+                time_text = f"Time remaining: {minutes:02d}:{seconds:02d}"
+                
+                # Draw time with a background
+                time_rect = pygame.Rect(
+                    self.client.game_width + 2*self.client.game_screen_padding + 5,
+                    y_offset + 10,
+                    self.client.leaderboard_width - 10,
+                    30
+                )
+                pygame.draw.rect(self.client.screen, (50, 50, 150), time_rect)
+                
+                # Draw time text
+                time_font = pygame.font.Font(None, 24)
+                time_surface = time_font.render(time_text, True, (255, 255, 255))
+                time_text_rect = time_surface.get_rect(center=(
+                    self.client.game_width + 2*self.client.game_screen_padding + self.client.leaderboard_width // 2,
+                    y_offset + 25
+                ))
+                self.client.screen.blit(time_surface, time_text_rect)
         except Exception as e:
             logger.error("Error drawing leaderboard: " + str(e))
+
+    def draw_game_over_screen(self):
+        """Display the game over screen with final scores"""
+        try:
+            # Fill screen with a dark background
+            overlay = pygame.Surface((self.client.screen_width, self.client.screen_height))
+            overlay.fill((240, 240, 255))  # Dark blue background
+            self.client.screen.blit(overlay, (0, 0))
+            
+            # Draw message
+            font_message = pygame.font.Font(None, 36)
+            if hasattr(self.client, 'game_over_data') and self.client.game_over_data:
+                message = self.client.game_over_data.get("message", "Time limit reached.")
+            else:
+                message = "Time limit reached."
+            message_text = font_message.render(message, True, (0, 0, 0))
+            message_rect = message_text.get_rect(center=(self.client.screen_width // 2, 70))
+            self.client.screen.blit(message_text, message_rect)
+            
+            # Draw final scores title
+            font_scores_title = pygame.font.Font(None, 48)
+            scores_title = font_scores_title.render("Final Scores", True, (0, 0, 0))
+            scores_title_rect = scores_title.get_rect(center=(self.client.screen_width // 2, 120))
+            self.client.screen.blit(scores_title, scores_title_rect)
+            
+            # Draw scores table
+            font_scores = pygame.font.Font(None, 32)
+            y_offset = 170
+            
+            # Draw table headers
+            header_rank = font_scores.render("Rank", True, (0, 0, 0))
+            header_name = font_scores.render("Player", True, (0, 0, 0))
+            header_score = font_scores.render("Best scores", True, (0, 0, 0))
+            
+            # Calculate positions for centered table
+            table_width = 400
+            col1_x = self.client.screen_width // 2 - table_width // 2 + 50
+            col2_x = self.client.screen_width // 2 - 50
+            col3_x = self.client.screen_width // 2 + table_width // 2 - 130
+            
+            self.client.screen.blit(header_rank, (col1_x, y_offset))
+            self.client.screen.blit(header_name, (col2_x, y_offset))
+            self.client.screen.blit(header_score, (col3_x, y_offset))
+            
+            y_offset += 30
+            
+            # Draw horizontal line
+            pygame.draw.line(
+                self.client.screen, 
+                (200, 200, 200), 
+                (col1_x - 30, y_offset), 
+                (col3_x + 130, y_offset), 
+                2
+            )
+            
+            y_offset += 20
+            
+            # Get scores to display
+            scores_to_display = []
+            if hasattr(self.client, 'final_scores') and self.client.final_scores:
+                # Use final scores from game over data
+                # logger.debug(f"Final scores: {self.client.final_scores}")
+                for score_data in self.client.final_scores:
+                    name = score_data.get("name", "Unknown")
+                    best_score = score_data.get("best_score", 0)
+                    scores_to_display.append((name, best_score))
+            else:
+                # Use current leaderboard data
+                for name, best_score, _ in self.sorted_trains:
+                    scores_to_display.append((name, best_score))
+            
+            # Sort scores in descending order
+            scores_to_display.sort(key=lambda x: x[1], reverse=True)
+            
+            # Draw scores
+            for i, (player_name, player_score) in enumerate(scores_to_display):
+                # Limit to top 10 players
+                if i >= 10:
+                    break
+                    
+                # Determine color based on rank
+                if i == 0:
+                    rank_color = (255, 215, 0)  # Gold
+                elif i == 1:
+                    rank_color = (192, 192, 192)  # Silver
+                elif i == 2:
+                    rank_color = (205, 127, 50)  # Bronze
+                else:
+                    rank_color = (255, 255, 255)  # White
+                
+                # Highlight current player
+                if player_name == self.client.agent_name:
+                    # Draw highlight rectangle
+                    pygame.draw.rect(
+                        self.client.screen,
+                        (0, 0, 100),  # Blue
+                        pygame.Rect(col1_x - 30, y_offset - 10, col3_x - col1_x + 160, 40),
+                        border_radius=5
+                    )
+                    rank_color = (255, 255, 255)
+                
+                # Draw rank
+                rank_text = font_scores.render(f"#{i+1}", True, rank_color)
+                self.client.screen.blit(rank_text, (col1_x, y_offset))
+                
+                # Draw name
+                name_text = font_scores.render(player_name, True, rank_color)
+                self.client.screen.blit(name_text, (col2_x, y_offset))
+                
+                # Draw score
+                score_text = font_scores.render(str(player_score), True, rank_color)
+                self.client.screen.blit(score_text, (col3_x + 50, y_offset))
+                
+                y_offset += 40
+            
+            # Draw message to exit
+            font_exit = pygame.font.Font(None, 28)
+            exit_text = font_exit.render("Press ESC to exit", True, (200, 200, 200))
+            exit_rect = exit_text.get_rect(center=(self.client.screen_width // 2, y_offset + 50))
+            self.client.screen.blit(exit_text, exit_rect)
+            
+        except Exception as e:
+            logger.error(f"Error drawing game over screen: {e}")
+            import traceback
+            logger.error(traceback.format_exc())

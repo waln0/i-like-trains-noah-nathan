@@ -30,7 +30,7 @@ class Passenger:
 
     def get_safe_spawn_position(self):
         """Find a safe spawn position, far from trains and other passengers"""
-        max_attempts = 100
+        max_attempts = 200
         grid_size = self.game.grid_size
 
         for _ in range(max_attempts):
@@ -44,51 +44,9 @@ class Passenger:
                 * grid_size
             )
 
-            position_is_safe = True
-
-            # Check collision with trains and their wagons
-            for train in self.game.trains.values():
-                if (x, y) == train.position:
-                    position_is_safe = False
-                    break
-
-                for wagon_pos in train.wagons:
-                    if (x, y) == wagon_pos:
-                        position_is_safe = False
-                        break
-
-                if not position_is_safe:
-                    break
-
-            # Check collision with other passengers
-            for passenger in self.game.passengers:
-                if passenger != self and (x, y) == passenger.position:
-                    position_is_safe = False
-                    break
-
-            if position_is_safe:
-                # logger.debug(f"Passenger spawned at position {(x, y)}")
-                return (x, y)
-
-        # Default position if no safe position is found
-        logger.warning("No safe position found for passenger spawn")
-        return (0, 0)
-
-    def get_safe_position(self):
-        """Find a safe position away from trains and other passengers"""
-        max_attempts = 100
-        grid_size = self.game.grid_size
-
-        for _ in range(max_attempts):
-            # Position aligned on the grid
-            x = (
-                random.randint(0, (self.game.game_width // grid_size) - 1)
-                * grid_size
-            )
-            y = (
-                random.randint(0, (self.game.game_height // grid_size) - 1)
-                * grid_size
-            )
+            if x < 0 or x >= self.game.new_game_width or y < 0 or y >= self.game.new_game_height:
+                logger.error(f"Invalid spawn position: {(x, y)}, game dimensions: {self.game.new_game_width}x{self.game.new_game_height}")
+                continue
 
             position_is_safe = True
 
@@ -112,13 +70,22 @@ class Passenger:
                     position_is_safe = False
                     break
 
+            # Check collision with delivery zone
+            delivery_zone = self.game.delivery_zone
+            if delivery_zone.is_position_in_delivery_zone(x, y):
+                position_is_safe = False
+                break
+
             if position_is_safe:
-                # logger.debug(f"Passenger spawned at position {(x, y)}")
                 return (x, y)
 
         # Default position if no safe position is found
         logger.warning("No safe position found for passenger spawn")
-        return (0, 0)
+        # Return random position
+        return (
+            random.randint(0, self.game.new_game_width // grid_size - 1) * grid_size,
+            random.randint(0, self.game.new_game_height // grid_size - 1) * grid_size
+        )
 
     def to_dict(self):
         return {

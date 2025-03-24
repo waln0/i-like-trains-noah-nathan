@@ -37,18 +37,31 @@ class GameState:
                     # Update the modified attributes
                     # logger.debug(f"Updating train {train_name} with {train_data}")
                     self.client.trains[train_name].update(train_data)
-            
-            # Handle removed trains
-            if "removed_trains" in data:
-                removed_trains = data["removed_trains"]
-                for train_name in removed_trains:
-                    if train_name in self.client.trains:
-                        logger.info(f"Removing train {train_name} from client")
-                        del self.client.trains[train_name]
+
+                if self.activate_agent:
+                    self.client.agent.all_trains = self.client.trains
+                
+            # Handle renamed train
+            if "rename_train" in data:
+                old_name, new_name = data["rename_train"]
+                if old_name in self.client.trains:
+                    logger.info(f"Renaming train {old_name} to {new_name}")
+                    self.client.trains[new_name] = self.client.trains.pop(old_name)
+                    if self.activate_agent:
+                        self.client.agent.all_trains = self.client.trains
                 
             if "passengers" in data:
                 # Adjust passenger positions to be in pixel coordinates
                 self.client.passengers = data["passengers"]
+                if self.activate_agent:
+                    self.client.agent.passengers_data = self.client.passengers
+
+            if "delivery_zone" in data:
+                # Update delivery zone
+                logger.debug(f"Delivery zone updated: {data['delivery_zone']}")
+                self.client.delivery_zone = data["delivery_zone"]
+                if self.activate_agent:
+                    self.client.agent.delivery_zone = self.client.delivery_zone
 
             if "size" in data:
                 self.client.game_width = data["size"]["game_width"]
@@ -70,17 +83,34 @@ class GameState:
                     
                     # Mark as initialized to prevent default window creation
                     self.client.is_initialized = True
+                    if self.activate_agent:
+                        self.client.agent.screen_width = self.client.screen_width
+                        self.client.agent.screen_height = self.client.screen_height
                     
                 except Exception as e:
                     logger.error("Error handling game size update: " + str(e))
                 
             if "grid_size" in data:
                 self.client.grid_size = data["grid_size"]
-                logger.info(f"Grid size updated: {self.client.grid_size}")
-            
+                logger.info(f"Cell size updated: {self.client.grid_size}")
+                if self.activate_agent:
+                    self.client.agent.grid_size = self.client.grid_size
+                
+            # Update the agent's state
             if self.activate_agent:
-                # Update the agent's state
-                self.client.agent.update_agent(self.client)
+                # Make sure any data not updated individually gets updated here
+                if not hasattr(self.client.agent, 'all_trains'):
+                    self.client.agent.all_trains = self.client.trains
+                if not hasattr(self.client.agent, 'passengers_data'):
+                    self.client.agent.passengers_data = self.client.passengers
+                if not hasattr(self.client.agent, 'grid_size'):
+                    self.client.agent.grid_size = self.client.grid_size
+                if not hasattr(self.client.agent, 'game_width'):
+                    self.client.agent.game_width = self.client.game_width
+                if not hasattr(self.client.agent, 'game_height'):
+                    self.client.agent.game_height = self.client.game_height
+
+                self.client.agent.update_agent()
 
         except Exception as e:
             logger.error("Error handling state data: " + str(e))
@@ -166,12 +196,14 @@ class GameState:
                 self.handle_waiting_room_data(data)
             elif message_type == "game_status":
                 self.handle_game_status(data)
+            elif message_type == "game_over":
+                self.handle_game_over(data)
             else:
                 logger.warning("Unknown message type received: " + str(message_type))
         except Exception as e:
             logger.error("Error handling server message: " + str(e))
             
-    def handle_drop_passenger_success(self, message):
+    def handle_drop_wagon_success(self, message):
         """Handle successful passenger drop response from server"""
         try:
             agent_name = message.get("agent_name", "")
@@ -182,3 +214,24 @@ class GameState:
                 # The train state will be updated in the next state update
         except Exception as e:
             logger.error(f"Error handling drop passenger success: {e}")
+            
+    def handle_game_over(self, data):
+        """Handle game over data received from the server"""
+        try:
+            logger.info("Game over received")
+            
+            # Store the game over data
+            self.client.game_over = True
+            self.client.game_over_data = data
+            
+            # Extract final scores
+            self.client.final_scores = data.get("final_scores", [])
+            
+            # Update the leaderboard with final scores
+            self.client.leaderboard_data = self.client.final_scores
+            
+            logger.info(f"Game over: {data.get('message', 'Time limit reached')}")
+            logger.info(f"Final scores: {self.client.final_scores}")
+            
+        except Exception as e:
+            logger.error(f"Error handling game over data: {e}")

@@ -32,10 +32,15 @@ class NetworkManager:
     def connect(self):
         """Establish connection with server"""
         try:
-            # Create TCP/IP socket
-            self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.socket.connect((self.host, self.port))
-            logger.info(f"Connected to server at {self.host}:{self.port}")
+            # Create UDP socket
+            self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            # Set socket timeout to detect server disconnection
+            # self.socket.settimeout(3.0)  # 3 seconds timeout
+            # Bind to any available port on client side (required for receiving in UDP)
+            self.socket.bind(('0.0.0.0', 0))
+            # Store server address for sending
+            self.server_addr = (self.host, self.port)
+            logger.info(f"UDP socket created for server at {self.host}:{self.port}")
             
             # Start receive thread
             self.receive_thread = threading.Thread(target=self.receive_game_state)
@@ -44,49 +49,64 @@ class NetworkManager:
             
             return True
         except Exception as e:
-            logger.error(f"Failed to connect to server: {e}")
+            logger.error(f"Failed to create UDP socket: {e}")
             return False
             
-    def disconnect(self):
+    def disconnect(self, stop_client=False):
         """Close connection with server"""
         self.running = False
+        if stop_client:
+            self.client.running = False
         if self.socket:
             try:
                 self.socket.close()
-                logger.info("Disconnected from server")
+                self.socket = None  # Set to None after closing
+                logger.info("UDP socket closed")
             except Exception as e:
-                logger.error(f"Error disconnecting from server: {e}")
+                logger.error(f"Error closing UDP socket: {e}")
+                self.socket = None  # Still set to None even if there's an error
                 
     def send_message(self, message):
         """Send message to server"""
         if not self.socket:
-            logger.error("Cannot send message: not connected to server")
+            logger.error("Cannot send message: UDP socket not created")
             return False
             
         try:
-            # Serialize message to JSON and send
+            # Serialize message to JSON and send to server address
             serialized = json.dumps(message) + "\n"
-            self.socket.sendall(serialized.encode())
-            return True
+            bytes_sent = self.socket.sendto(serialized.encode(), self.server_addr)
+            return bytes_sent > 0
+        except ConnectionResetError:
+            # Don't log connection reset errors for UDP
+            return False
+        except socket.error as e:
+            if "[WinError 10054]" in str(e):
+                # This is a connection reset error, which is expected in UDP
+                # Don't log it to keep the console clean
+                pass
+            else:
+                logger.error(f"Failed to send UDP message: {e}")
+            return False
         except Exception as e:
-            logger.error(f"Failed to send message: {e}")
+            logger.error(f"Failed to send UDP message: {e}")
             return False
             
     def receive_game_state(self):
         """Thread that receives game state updates"""
         buffer = ""
-        # logger.debug("Starting receive_game_state thread")
+        logger.debug("Starting UDP receive_game_state thread")
+        
         while self.running:
             try:
-                # Receive data from server
-                data = self.socket.recv(4096).decode()
+                # For UDP, we need to use recvfrom which returns data and address
+                data, addr = self.socket.recvfrom(4096)
+                
                 if not data:
-                    logger.warning("Server closed connection")
-                    self.running = False
-                    break
+                    continue
                 
                 # Add data to buffer
-                buffer += data
+                buffer += data.decode()
 
                 # Process complete messages
                 while "\n" in buffer:
@@ -117,15 +137,19 @@ class NetworkManager:
                                 logger.info("Game has started")
                                 self.client.in_waiting_room = False
                                 
+                            elif message_type == "ping":
+                                # Respond to ping with a pong
+                                self.send_message({"type": "pong"})
+
                             elif message_type == "game_status":
                                 self.client.handle_game_status(message_data)
 
                             elif message_type == "join_success":
                                 logger.debug(f"Received join success response")
 
-                            elif message_type == "drop_passenger_success":
-                                self.client.handle_drop_passenger_success(message_data)
-                            elif message_type == "drop_passenger_failed":
+                            elif message_type == "drop_wagon_success":
+                                self.client.handle_drop_wagon_success(message_data)
+                            elif message_type == "drop_wagon_failed":
                                 # logger.info(f"Failed to activate boost (not enough passengers, boost in cooldown or inactive)")
                                 pass
 
@@ -141,13 +165,42 @@ class NetworkManager:
                                 self.client.name_check_received = True
                                 logger.debug(f"Name check response received, available: {self.client.name_check_result}")
 
+                            elif message_type == "sciper_check":
+                                logger.debug(f"Received sciper_check response: {message_data['available']}")
+                                self.client.sciper_check_result = message_data.get("available", False)
+                                self.client.sciper_check_received = True
+                                logger.debug(f"Sciper check response received, available: {self.client.sciper_check_result}")
+
+                            elif message_type == "best_score":
+                                logger.info(f"Your best score: {message_data['best_score']}")
+
                             elif message_type == "death":
                                 logger.info(f"Train is dead. Cooldown: {message_data['remaining']}s")
                                 self.client.handle_death(message_data)
 
+                            elif message_type == "disconnect":
+                                logger.info(f"Received disconnect request: {message_data['reason']}")
+                                self.disconnect(stop_client=True)
+                                return
+
+                            elif message_type == "game_over":
+                                logger.info(f"Game is over. Received final scores.")
+                                self.client.handle_game_over(message_data["data"])
+                                # Disconnect from server after a short delay
+                                def disconnect_after_delay():
+                                    time.sleep(2)  # Wait 2 seconds to ensure all final data is received
+                                    logger.info("Disconnecting from server after game over")
+                                    self.disconnect()
+                                
+                                disconnect_thread = threading.Thread(target=disconnect_after_delay)
+                                disconnect_thread.daemon = True
+                                disconnect_thread.start()
+
                             elif message_type == "error":
                                 logger.error(f"Received error from server: {message_data.get('message', 'Unknown error')}")
 
+                            elif message_type == "initial_state":
+                                self.client.handle_initial_state(message_data["data"])
                             else:
                                 logger.warning(f"Unknown message type: {message_type}")
                         else:
@@ -157,17 +210,32 @@ class NetworkManager:
                     except Exception as e:
                         logger.error(f"Error handling message: {e}")
             except ConnectionResetError:
-                logger.error("Connection reset by server")
-                self.running = False
-                break
+                # Don't log connection reset errors for UDP
+                time.sleep(0.1)  # Don't break for UDP, just wait and retry
+            except socket.error as e:
+                if "[WinError 10054]" in str(e):
+                    # This is a connection reset error, which is expected in UDP
+                    # Don't log it to keep the console clean
+                    pass
+                elif "timed out" in str(e).lower():
+                    # Socket timeout - check if game is over
+                    if hasattr(self.client, 'game_over') and self.client.game_over:
+                        logger.info("Server disconnected after game over")
+                        # No need to retry if game is over
+                        time.sleep(1)
+                    else:
+                        logger.warning(f"Socket timeout: {e}")
+                        time.sleep(0.1)  # Wait and retry
+                # else:
+                #     logger.error(f"Socket error receiving UDP data: {e}")
+                time.sleep(0.1)  # Don't break for UDP, just wait and retry
             except Exception as e:
-                logger.error(f"Error receiving data: {e}")
-                self.running = False
-                break
+                logger.error(f"Error receiving UDP data: {e}")
+                time.sleep(0.1)  # Don't break for UDP, just wait and retry
                 
-    def send_agent_name(self, agent_name):
-        """Send agent name to server"""
-        message = {"agent_name": agent_name}
+    def send_agent_ids(self, agent_name, agent_sciper):
+        """Send agent name and sciper to server"""
+        message = {"type": "agent_ids", "agent_name": agent_name, "agent_sciper": agent_sciper}
         return self.send_message(message)
         
     def check_name_availability(self, name):
@@ -201,53 +269,59 @@ class NetworkManager:
             logger.warning(f"Timeout waiting for name check response for '{name}'")
             return False
             
-        logger.info(f"Name '{name}' availability result: {self.client.name_check_result}")
+        logger.debug(f"Received name check response: {self.client.name_check_result}")
         return self.client.name_check_result
+
+    def check_sciper_availability(self, sciper):
+        """Check if a sciper is available on the server
         
-    def send_direction(self, direction):
-        """Send direction to server"""
+        Returns True if sciper is available, False otherwise.
+        """
+        logger.info(f"Checking sciper availability for '{sciper}'")
+        # Reset check variables
+        self.client.sciper_check_received = False
+        self.client.sciper_check_result = False
+        
+        # Send check request
+        message = {"action": "check_sciper", "agent_sciper": sciper}
+        success = self.send_message(message)
+        
+        if not success:
+            logger.error(f"Failed to send sciper check request for '{sciper}'")
+            return False
+            
+        # Wait for server response (with timeout)
+        timeout = 5.0  # 5 second timeout
+        start_time = time.time()
+        
+        logger.debug(f"Waiting for response with timeout of {timeout} seconds...")
+        
+        while not self.client.sciper_check_received and time.time() - start_time < timeout:
+            time.sleep(0.1)
+            
+        if not self.client.sciper_check_received:
+            logger.warning(f"Timeout waiting for sciper check response for '{sciper}'")
+            return False
+            
+        logger.debug(f"Received sciper check response: {self.client.sciper_check_result}")
+        return self.client.sciper_check_result
+        
+    def send_direction_change(self, direction):
+        """Send direction change to server"""
         message = {"action": "direction", "direction": direction}
         return self.send_message(message)
-
-    def send_drop_passenger(self):
-        """Send request to drop a wagon"""
-        message = {"action": "drop_passenger"}
-        success = self.send_message(message)
-        # if success:
-        #     logger.info("Requested to drop a wagon")
-        return success
-
-    def send_spawn_request(self):
-        """Send respawn request to server"""
-        message = {"action": "respawn"}
         
-        success = self.send_message(message)
-        if success:
-            self.client.agent.waiting_for_respawn = True
-        return success
+    def send_spawn_request(self):
+        """Send spawn request to server"""
+        message = {"action": "respawn"}
+        return self.send_message(message)
         
     def send_start_game_request(self):
-        """Send request to start the game"""
-        # logger.debug("Sending start game request")
+        """Send request to start game"""
         message = {"action": "start_game"}
+        return self.send_message(message)
         
-        success = self.send_message(message)
-        # if success:
-        #     logger.info("Requested game start")
-        return success
-        
-    def request_leaderboard(self):
-        """Request leaderboard data from server"""
-        # Create a message to request the leaderboard data
-        message = {"action": "get_leaderboard"}
-        
-        # Send the message to the server
-        success = self.send_message(message)
-        
-        # If the message was sent successfully, log a success message and indicate that we want to show the separate leaderboard
-        if success:
-            logger.info("Requested leaderboard data")
-            self.client.show_separate_leaderboard = True  # Indicate that we want to show separate leaderboard
-            
-        # Return whether the request was successful
-        return success
+    def send_drop_wagon_request(self):
+        """Send request to drop passenger"""
+        message = {"action": "drop_wagon"}
+        return self.send_message(message)

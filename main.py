@@ -30,7 +30,7 @@ def main():
     client = Client(host)
     
     # Create the agent with a temporary name (will be replaced by user input)
-    agent = Agent("", lambda: client.network.send_drop_passenger())
+    agent = Agent("", client.network)
     
     # Set the agent for the client
     client.set_agent(agent)
