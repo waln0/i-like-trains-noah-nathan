@@ -1,6 +1,6 @@
 import random
 import logging
-import time
+from base_agent import BaseAgent
 
 # Configure logging
 logging.basicConfig(
@@ -10,79 +10,20 @@ logging.basicConfig(
 )
 
 
-class Agent:
-    def __init__(self, agent_name, network, logger="client.agent", is_dead=True):
+class Agent(BaseAgent):
+    # =========================================
+    # Required method
+    # =========================================
+    def get_direction(self, game_width, game_height):
         """
-        Initialize the agent
-        
-        Args:
-            agent_name (str): The name of the agent
-            network (Network): The network object to handle communication
-            logger (str): The logger name
-            is_dead (bool): Whether the agent is dead
+        Return a valid random direction that does not lead to a wall or a collision.
+        This function is periodically called by the client to get a new decision.
         """
-        self.logger = logging.getLogger(logger)  # Customer's subcloger
-        self.join_success = False
-        self.agent_name = agent_name
+        return random.choice(self.directions)
 
-        self.network = network
-
-        self.directions = [
-            (0, -1),
-            (1, 0),
-            (0, 1),
-            (0, 1),
-            (-1, 0),
-        ]  # Possible directions (Up, Right, Down, Left)
-
-        self.death_time = time.time()  # Initializing death time at startup
-        self.respawn_cooldown = 0  # No cooldown at the first spawn
-        self.is_dead = is_dead  # Start dead
-        self.waiting_for_respawn = True
-
-        # the self.game_width and self.game_height are initialized later by the server but are still accessible
-        # self.game_width is the width of the game grid
-        # self.game_height is the height of the game grid
-
-        self.logger.info(f"Agent {self.agent_name} initialized")
-
-
-    def update_agent(self):
-        """Update the agent's state. Not supposed to be modified"""
-        start_time = time.time()
-
-        # If the agent is present in the trains, update its position and direction
-        if self.agent_name in self.all_trains and not self.is_dead:
-            try:
-                train_data = self.all_trains.get(self.agent_name, None)
-                
-                # Check if the train data is in the new format (dictionary)
-                if isinstance(train_data, dict):
-                    # New format
-                    train_position = train_data.get("position", (0, 0))
-                    train_direction = train_data.get("direction", (1, 0))
-                    
-                    # Update the agent's position and direction
-                    self.x, self.y = train_position
-                    self.direction = train_direction
-            except Exception as e:
-                self.logger.error(f"Error updating agent position: {e}")
-        
-        if not self.is_dead:
-            try:
-                # Let the agent make a decision
-                direction = self.get_direction(self.game_width, self.game_height)
-            
-                # If the direction has changed, send it to the server
-                if direction != self.direction:
-                    self.network.send_direction_change(direction)
-            except Exception as e:
-                self.logger.error(f"Error making agent decision: {e}")
-
-        update_time = time.time() - start_time
-        if update_time > 0.1:
-            self.logger.warning("Agent update took " + str(update_time*1000) + "ms")
-
+    # =========================================
+    # Helper methods (can be removed or completed)
+    # =========================================
     def will_hit_wall(
         self, position, direction, grid_size, game_width, game_height
     ):
@@ -110,13 +51,6 @@ class Agent:
     def get_direction_to_target(self, current_position, target_position, valid_directions):
         """Determine the best direction among the valid ones to reach the target the fastest"""
         return
-
-    def get_direction(self, game_width, game_height):
-        """
-        Return a valid random direction that does not lead to a wall or a collision.
-        This function is periodically called by the client to get a new decision.
-        """
-        return random.choice(self.directions)
 
     def is_opposite_direction(self, new_direction):
         """Check if the new direction is opposite to the current direction"""
