@@ -41,8 +41,6 @@ class BaseAgent(ABC):
 
         self.logger.info(f"Agent {self.agent_name} initialized")
         
-        self.max_wagons_before_drop = random.randint(3, 8) # Remove it in the template
-        
     @abstractmethod
     def get_direction(self, game_width, game_height):
         """

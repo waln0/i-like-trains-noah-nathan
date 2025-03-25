@@ -31,17 +31,17 @@ class Passenger:
     def get_safe_spawn_position(self):
         """Find a safe spawn position, far from trains and other passengers"""
         max_attempts = 200
-        grid_size = self.game.grid_size
+        cell_size = self.game.cell_size
 
         for _ in range(max_attempts):
             # Position aligned on the grid
             x = (
-                random.randint(0, (self.game.new_game_width // grid_size) - 1)
-                * grid_size
+                random.randint(0, (self.game.new_game_width // cell_size) - 1)
+                * cell_size
             )
             y = (
-                random.randint(0, (self.game.new_game_height // grid_size) - 1)
-                * grid_size
+                random.randint(0, (self.game.new_game_height // cell_size) - 1)
+                * cell_size
             )
 
             if x < 0 or x >= self.game.new_game_width or y < 0 or y >= self.game.new_game_height:
@@ -83,8 +83,8 @@ class Passenger:
         logger.warning("No safe position found for passenger spawn")
         # Return random position
         return (
-            random.randint(0, self.game.new_game_width // grid_size - 1) * grid_size,
-            random.randint(0, self.game.new_game_height // grid_size - 1) * grid_size
+            random.randint(0, self.game.new_game_width // cell_size - 1) * cell_size,
+            random.randint(0, self.game.new_game_height // cell_size - 1) * cell_size
         )
 
     def to_dict(self):

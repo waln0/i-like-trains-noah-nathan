@@ -49,9 +49,9 @@ class Renderer:
                 outline_width = 3  # Thicker width for outlines
                 
                 # Draw inner grid lines
-                for x in range(self.client.game_screen_padding, self.client.game_width + self.client.game_screen_padding, self.client.grid_size):
+                for x in range(self.client.game_screen_padding, self.client.game_width + self.client.game_screen_padding, self.client.cell_size):
                     pygame.draw.line(self.client.screen, grid_color, (x, self.client.game_screen_padding), (x, self.client.game_height + self.client.game_screen_padding), 1)
-                for y in range(self.client.game_screen_padding, self.client.game_height + self.client.game_screen_padding, self.client.grid_size):
+                for y in range(self.client.game_screen_padding, self.client.game_height + self.client.game_screen_padding, self.client.cell_size):
                     pygame.draw.line(self.client.screen, grid_color, (self.client.game_screen_padding, y), (self.client.game_width + self.client.game_screen_padding, y), 1)
                 
                 # Draw outer border with thicker lines

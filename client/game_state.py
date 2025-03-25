@@ -90,11 +90,11 @@ class GameState:
                 except Exception as e:
                     logger.error("Error handling game size update: " + str(e))
                 
-            if "grid_size" in data:
-                self.client.grid_size = data["grid_size"]
-                logger.info(f"Cell size updated: {self.client.grid_size}")
+            if "cell_size" in data:
+                self.client.cell_size = data["cell_size"]
+                logger.info(f"Cell size updated: {self.client.cell_size}")
                 if self.activate_agent:
-                    self.client.agent.grid_size = self.client.grid_size
+                    self.client.agent.cell_size = self.client.cell_size
                 
             # Update the agent's state
             if self.activate_agent:
@@ -103,8 +103,8 @@ class GameState:
                     self.client.agent.all_trains = self.client.trains
                 if not hasattr(self.client.agent, 'passengers_data'):
                     self.client.agent.passengers_data = self.client.passengers
-                if not hasattr(self.client.agent, 'grid_size'):
-                    self.client.agent.grid_size = self.client.grid_size
+                if not hasattr(self.client.agent, 'cell_size'):
+                    self.client.agent.cell_size = self.client.cell_size
                 if not hasattr(self.client.agent, 'game_width'):
                     self.client.agent.game_width = self.client.game_width
                 if not hasattr(self.client.agent, 'game_height'):

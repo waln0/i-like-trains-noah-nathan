@@ -30,7 +30,7 @@ ORIGINAL_GRID_NB = 20
 TRAINS_PASSENGER_RATIO = 1.0  # Number of trains per passenger
 
 GAME_SIZE_INCREMENT_RATIO = 0.05  # Increment per train, the bigger the number, the bigger the screen grows
-GRID_SIZE = int(ORIGINAL_GAME_WIDTH/ORIGINAL_GRID_NB)
+CELL_SIZE = int(ORIGINAL_GAME_WIDTH/ORIGINAL_GRID_NB)
 GAME_SIZE_INCREMENT = int(((ORIGINAL_GAME_WIDTH+ORIGINAL_GAME_HEIGHT)/2)*GAME_SIZE_INCREMENT_RATIO)  # Increment per train
 
 TICK_RATE = 60
@@ -61,9 +61,9 @@ class Game:
         self.game_height = ORIGINAL_GAME_HEIGHT
         self.new_game_width = self.game_width
         self.new_game_height = self.game_height
-        self.grid_size = GRID_SIZE
+        self.cell_size = CELL_SIZE
         self.running = True
-        self.delivery_zone = DeliveryZone(self.game_width, self.game_height, self.grid_size, nb_players)
+        self.delivery_zone = DeliveryZone(self.game_width, self.game_height, self.cell_size, nb_players)
         self.trains = {}
         self.ai_clients = {}
         self.best_scores = {}
@@ -80,7 +80,7 @@ class Game:
         self._dirty = {
             "trains": True,
             "size": True,
-            "grid_size": True,
+            "cell_size": True,
             "passengers": True,
             "delivery_zone": True
         }
@@ -98,10 +98,10 @@ class Game:
             }
             self._dirty["size"] = False
             
-        # Add grid size if modified
-        if self._dirty["grid_size"]:
-            state["grid_size"] = self.grid_size
-            self._dirty["grid_size"] = False
+        # Add cell size if modified
+        if self._dirty["cell_size"]:
+            state["cell_size"] = self.cell_size
+            self._dirty["cell_size"] = False
             
         # Add passengers if modified
         if self._dirty["passengers"]:
@@ -135,7 +135,7 @@ class Game:
     def is_position_safe(self, x, y):
         """Check if a position is safe for spawning"""
         # Check the borders
-        safe_distance = self.grid_size * SPAWN_SAFE_ZONE
+        safe_distance = self.cell_size * SPAWN_SAFE_ZONE
         if (
             x < safe_distance
             or y < safe_distance
@@ -181,16 +181,16 @@ class Game:
             x = (
                 random.randint(
                     SPAWN_SAFE_ZONE,
-                    (self.game_width // self.grid_size) - SPAWN_SAFE_ZONE,
+                    (self.game_width // self.cell_size) - SPAWN_SAFE_ZONE,
                 )
-                * self.grid_size
+                * self.cell_size
             )
             y = (
                 random.randint(
                     SPAWN_SAFE_ZONE,
-                    (self.game_height // self.grid_size) - SPAWN_SAFE_ZONE,
+                    (self.game_height // self.cell_size) - SPAWN_SAFE_ZONE,
                 )
-                * self.grid_size
+                * self.cell_size
             )
 
             if self.is_position_safe(x, y):
@@ -198,8 +198,8 @@ class Game:
                 return x, y
 
         # Default position at the center
-        center_x = (self.game_width // 2) // self.grid_size * self.grid_size
-        center_y = (self.game_height // 2) // self.grid_size * self.grid_size
+        center_x = (self.game_width // 2) // self.cell_size * self.cell_size
+        center_y = (self.game_height // 2) // self.cell_size * self.cell_size
         logger.warning(f"Using default center position: ({center_x}, {center_y})")
         return center_x, center_y
 
@@ -229,7 +229,7 @@ class Game:
             self.new_game_width = self.game_width
             self.new_game_height = self.game_height
             self._dirty["size"] = True
-            self._dirty["grid_size"] = True
+            self._dirty["cell_size"] = True
             self.game_started = True
             logger.info(f"Game started with size {self.game_width}x{self.game_height} for {num_clients} clients")
 
@@ -313,7 +313,7 @@ class Game:
                 self.trains,
                 self.game_width,
                 self.game_height,
-                self.grid_size,
+                self.cell_size,
             )
 
             # Check for passenger collisions

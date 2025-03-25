@@ -25,7 +25,7 @@ DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 5555
 SCREEN_WIDTH = 500
 SCREEN_HEIGHT = 360
-GRID_SIZE = 20
+CELL_SIZE = 20
 LEADERBOARD_WIDTH = 280  # Width of the leaderboard on the right
 
 MANUAL_SPAWN = False  # Enable manual respawn
@@ -66,10 +66,10 @@ class Client:
         self.passengers = []
         self.delivery_zone = {}
 
-        self.grid_size = GRID_SIZE
+        self.cell_size = CELL_SIZE
         self.game_width = 200  # Initial game area width
         self.game_height = 200  # Initial game area height
-        self.game_screen_padding = GRID_SIZE  # Space between game area and leaderboard
+        self.game_screen_padding = CELL_SIZE  # Space between game area and leaderboard
         self.leaderboard_width = LEADERBOARD_WIDTH
         self.leaderboard_height = 2*self.game_screen_padding + self.game_height
 

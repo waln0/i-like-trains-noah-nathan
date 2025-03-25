@@ -95,7 +95,7 @@ class Train:
             # logger.debug(f"Changing direction because {new_direction} is not opposite to {self.direction}")
             self.new_direction = new_direction
 
-    def update(self, trains, screen_width, screen_height, grid_size):
+    def update(self, trains, screen_width, screen_height, cell_size):
         """Update the train position"""
         if not self.alive:
             return
@@ -127,7 +127,7 @@ class Train:
         if self.move_timer >= TICK_RATE / self.speed:  # TICK_RATE ticks per second
             self.move_timer = 0
             self.set_direction(self.new_direction)
-            self.move(trains, screen_width, screen_height, grid_size)
+            self.move(trains, screen_width, screen_height, cell_size)
 
     def add_wagons(self, nb_wagons=1):
         """Add wagons to the train"""
@@ -179,7 +179,7 @@ class Train:
         self.speed = INITIAL_SPEED * SPEED_DECREMENT_COEFFICIENT ** len(self.wagons)
         self._dirty["speed"] = True 
 
-    def move(self, trains, screen_width, screen_height, grid_size):
+    def move(self, trains, screen_width, screen_height, cell_size):
         """Regular interval movement"""
         if not self.alive:
             return
@@ -194,8 +194,8 @@ class Train:
             self.last_position = (0, 0)
             
         # Calculate new position
-        new_x = self.position[0] + self.direction[0] * grid_size
-        new_y = self.position[1] + self.direction[1] * grid_size
+        new_x = self.position[0] + self.direction[0] * cell_size
+        new_y = self.position[1] + self.direction[1] * cell_size
         new_position = (new_x, new_y)
         # logger.debug(f"New position for train {self.agent_name}: {new_position}")
         

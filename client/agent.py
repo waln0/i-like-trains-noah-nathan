@@ -11,6 +11,17 @@ logging.basicConfig(
 
 
 class Agent(BaseAgent):
+    def __init__(self, agent_name, network, logger="client.agent", is_dead=True):
+        """
+        Initialize the agent
+        Args:
+            agent_name (str): The name of the agent
+            network (Network): The network object to handle communication
+            logger (str): The logger name
+            is_dead (bool): Whether the agent is dead
+        """
+        super().__init__(agent_name, network, logger, is_dead)
+
     # =========================================
     # Required method
     # =========================================
@@ -25,14 +36,14 @@ class Agent(BaseAgent):
     # Helper methods (can be removed or completed)
     # =========================================
     def will_hit_wall(
-        self, position, direction, grid_size, game_width, game_height
+        self, position, direction, cell_size, game_width, game_height
     ):
         """
         Check if the next position will hit a wall
         Args:
             position (tuple): The current position of the train
             direction (tuple): The direction of the train
-            grid_size (int): The size of the grid
+            cell_size (int): The size of the grid
             game_width (int): The width of the game
             game_height (int): The height of the game
         Returns:

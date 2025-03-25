@@ -111,7 +111,7 @@ class AIClient:
             })
             
         # Copy other game state properties            
-        self.grid_size = self.game.grid_size
+        self.cell_size = self.game.cell_size
         self.game_width = self.game.game_width
         self.game_height = self.game.game_height
         self.in_waiting_room = not self.game.game_started
@@ -130,7 +130,7 @@ class AIClient:
                 # Make sure the agent has access to the correct properties
                 self.agent.all_trains = self.all_trains
                 self.agent.passengers_data = self.passengers_data
-                self.agent.grid_size = self.grid_size
+                self.agent.cell_size = self.cell_size
                 self.agent.game_width = self.game_width
                 self.agent.game_height = self.game_height
                 
