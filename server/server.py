@@ -757,11 +757,6 @@ class Server:
         # Initialize client activity tracking
         self.client_last_activity[addr] = time.time()
 
-        # If this client was previously marked as disconnected, remove it from the disconnected set
-        # if addr in self.disconnected_clients:
-        #     self.disconnected_clients.remove(addr)
-        #     logger.info(f"Client at {addr} reconnected as {agent_name}")
-
         # Check if this address is already associated with a different name or sciper
         if addr in self.addr_to_name and self.addr_to_name[addr] != agent_name:
             old_name = self.addr_to_name[addr]
