@@ -9,7 +9,7 @@ written in Python and Pygame is used to render the playing field. Programs score
 passengers. The more passengers a train is carrying, the longer and slower it becomes. Programs are therefore expected
 to implement various strategies and avoid collisions.
 
-Your objective will be to modify the agent.py file (and only this one) to remotely control a train managed by a server according to his environment.
+Your objective will be to modify the client/agent.py file (and only this one) to remotely control a train managed by a server according to his environment.
 The agent must make travel decisions for the train, as well as the game board with the Pygame Library.
 
 ## Setup Instructions
@@ -22,7 +22,7 @@ The agent must make travel decisions for the train, as well as the game board wi
 ### 1. (Optional) Start a local server for testing
 
 You can start a local server by executing `python server/server.py` if you want to test the client locally. This will start a server on the default port (5555) of your computer.
-Then, open another terminal, go to the project folder, enter the virtual environment, and execute `python client/client.py` to connect to the local server. This is optional, but recommended for testing before connecting to the distant server.
+Then, open another terminal, go to the project folder, and execute `python client/client.py` to connect to the local server. This is optional, but recommended for testing before connecting to the distant server.
 
 ### 2. Execute the client
 
@@ -81,7 +81,7 @@ The client is responsible for managing the game display and user interactions. I
 - `event_handler.py` : Manages events (keyboard inputs).
 - `game_state.py` : Maintains the game state on the client side.
 - `base_agent.py` : Defines the base agent class.
-- `agent.py` : Controls the player's train behavior.
+- `agent.py` : Controls the train's behavior.
 - `ui.py` : Manages the user interface to enter train name and sciper.
 
 
