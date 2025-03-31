@@ -29,7 +29,7 @@ RIGHT = (1, 0)
 
 # Default host
 HOST: str = os.getenv("HOST", "0.0.0.0")
-PORT: int = int(os.getenv("PORT", 5000))
+PORT: int = int(os.getenv("PORT", 5555))
 DEFAULT_NB_PLAYERS_PER_ROOM: int = int(os.getenv("NB_PLAYERS_PER_ROOM", "2"))
 ALLOW_MULTIPLE_CONNECTIONS: bool = bool(os.getenv("ALLOW_MULTIPLE_CONNECTIONS", "True"))
 

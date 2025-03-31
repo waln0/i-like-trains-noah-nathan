@@ -21,7 +21,7 @@ logger = logging.getLogger("client")
 
 # Constants
 DEFAULT_HOST = "127.0.0.1"
-DEFAULT_PORT = 5000
+DEFAULT_PORT = 5555
 SCREEN_WIDTH = 500
 SCREEN_HEIGHT = 360
 CELL_SIZE = 20  # Size of each cell in pixels, overriden by server
