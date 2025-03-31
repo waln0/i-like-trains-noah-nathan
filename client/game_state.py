@@ -8,7 +8,6 @@ import json
 import threading
 
 
-window_lock = threading.Lock()
 # Configure the logger
 logger = logging.getLogger("client.game_state")
 
