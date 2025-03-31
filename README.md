@@ -21,7 +21,7 @@ The student will also have to edit the draw_passengers() and draw_trains() funct
 ### 1. (Optional) Start a local server for testing
 
 The student can start a local server by executing `python server/server.py`. This will start a server on the default port (5555) of his computer.
-The student can then open another terminal, go to the project folder, enter the virtual environment, and execute `python client/client.py` to connect to the local server. This is optional, but recommended for testing before connecting to the distant server.
+The student can then open another terminal, go to the project folder, enter the virtual environment, and execute `python client/client.py` to connect to the local server. This is optional, but recommended for testing before connecting to the remote server.
 
 ### 2. Execute the client
 
@@ -50,7 +50,7 @@ The train cannot change its direction to the opposite, only to the left or right
 The project is divided into two main parts:
 
 #### 1. Server (folder `server/`)
-The server is responsible for managing client connections and game synchronization. It is executed on a distant machine which the student is connecting to.
+The server is responsible for managing client connections and game synchronization. It is executed on a remote machine which the student is connecting to.
 The server files are included here so the student can have a better understanding of how the management of the game works. 
 
 - `server.py` : Manages client connections and game synchronization.
@@ -76,7 +76,7 @@ The client is responsible for managing the game display and user interactions. I
 ### How the client data is updated from the server
 
 1. The server hosts the room and calculates the **game state** (information from the server about the game, like the trains positions, the passengers, the delivery zones, etc.)
-2. The client connects to the distant server (by default on localhost:5555)
+2. The client connects to the remote server (by default on localhost:5555)
 3. The client sends its **train name** and **sciper** to the server
 4. The server regularly sends the game state to the clients, and also listens to potential actions (change direction or drop wagon) from the clients to influence the game.
 5. The client receives the game state in the `network.py` and updates the agent's game state from the `handle_state_data()` method in `game_state.py`.
