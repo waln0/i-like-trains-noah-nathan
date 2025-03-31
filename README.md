@@ -15,44 +15,15 @@ The student will also have to edit the draw_passengers() and draw_trains() funct
 
 #### Prerequisites:
 
-- Python 3.10 or higher
+- Python 3.12.9
+- Pygame 2.6.1
 
-### 1. Create a virtual environment 
-
-After cloning the project and entering the folder with `cd .\i_like_trains\`, enter:
-
-```bash
-python -m venv venv
-```
-
-### 2. Activate the virtual environment (every time before starting the project)
-
-#### On Windows
-
-```bash
-.\venv\Scripts\activate
-```
-
-#### On macOS/Linux
-
-```bash
-source venv/bin/activate
-```
-
-### 3. Install the necessary dependencies
-
-After activating the virtual environment, install the necessary dependencies:
-
-```bash
-pip install -r requirements.txt
-```
-
-### 4. (Optionnal) Start a local server for testing
+### 1. (Optional) Start a local server for testing
 
 The student can start a local server by executing `python server/server.py`. This will start a server on the default port (5555) of his computer.
 The student can then open another terminal, go to the project folder, enter the virtual environment, and execute `python client/client.py` to connect to the local server. This is optional, but recommended for testing before connecting to the distant server.
 
-### 5. Execute the client
+### 2. Execute the client
 
 To execute the client and connect to the server. Replace `<ip_adress>` with the IP address of the server (do not enter an IP address if you are connecting to a local server hosted on your machine).
 
