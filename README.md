@@ -165,7 +165,7 @@ Some constants are available in the client for debugging:
 
 - `MANUAL_SPAWN`: Automatic respawn when available. False by default, otherwise the player has to press the space bar.
 - `ACTIVATE_AGENT`: Activate the agent. True by default. If set to False, the agent will not be used.
-- `MANUAL_CONTROL`: Activate manual control. False by default, otherwise the player can use the keyboard arrows to control the train. Only meant for debugging, should be False when deployed.
+- `MANUAL_CONTROL`: Activate manual control. False by default, otherwise the player can use the keyboard arrows keys to control the train + `d` key to drop wagons. Only meant for debugging, will be False when grading.
 
 ### Logging System
 
