@@ -30,7 +30,9 @@ class Agent(BaseAgent):
         # Initialize the base agent with the same parameters
         super().__init__(agent_name, network, logger, is_dead) 
 
-        # You can access the base agent attributes and methods with self anywhere in the class. For example (here we log the agent name): 
+        # You can access the base agent attributes and methods with "self" anywhere in the class. 
+        # These attributes are automatically synchronized from the server data.
+        # For example, here we log the agent name: 
         self.logger.info(f"Agent {self.agent_name} initialized")
 
         # You can add any additional attributes here. For example:
