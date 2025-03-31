@@ -7,3 +7,6 @@ simulate_clients.ps1
 
 agent_old.py
 client_old.py
+simulate_clients.ps1
+player_scores.json
+config.txt

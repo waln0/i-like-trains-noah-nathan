@@ -4,65 +4,37 @@
 
 ## Overview
 
-I Like Trains is a multiplayer game where players take on the role of train operators, navigating a shared game world to collect passengers, strategically expand their trains, and skillfully avoid collisions. Built with Python and Pygame, the game employs a client-server architecture to enable networked gameplay, offering a blend of strategic decision-making and real-time reactions.
+I Like Trains is a multiplayer, real-time, network game where trains controlled by computer programs compete. Programs are
+written in Python and Pygame is used to render the playing field. Programs score points by collecting and dropping off
+passengers. The more passengers a train is carrying, the longer and slower it becomes. Programs are therefore expected
+to implement various strategies and avoid collisions.
 
 The student's objective will be to modify the agent.py file (and only this one) to remotely control a train managed by a server according to his environment.
 The agent must make travel decisions for the train, as well as the game board with the Pygam Library.
-The student will also have to edit the draw_passengers() and draw_trains() functions in client/renderer to display the passengers and trains.
-
 
 ## Setup Instructions
 
 #### Prerequisites:
 
-- Python 3.10 or higher
+- Python 3.12.9
+- Pygame 2.6.1
 
-### 1. Create a virtual environment 
+### 1. (Optional) Start a local server for testing
 
-After cloning the project and entering the folder with `cd .\i_like_trains\`, enter:
+You can start a local server by executing `python server/server.py` if you want to test the client locally. This will start a server on the default port (5000) of your computer.
+Then, open another terminal, go to the project folder, enter the virtual environment, and execute `python client/client.py` to connect to the local server. This is optional, but recommended for testing before connecting to the distant server.
 
-```bash
-python -m venv venv
-```
+### 2. Execute the client
 
-### 2. Activate the virtual environment (every time before starting the project)
-
-#### On Windows
+To execute the client and connect to the server. Replace `<ip_adress>` and `<port>` with the IP address and port of the server (do not enter an IP address if you are connecting to a local server hosted on your machine).
 
 ```bash
-.\venv\Scripts\activate
-```
-
-#### On macOS/Linux
-
-```bash
-source venv/bin/activate
-```
-
-### 3. Install the necessary dependencies
-
-After activating the virtual environment, install the necessary dependencies:
-
-```bash
-pip install -r requirements.txt
-```
-
-### 4. (Optionnal) Start a local server for testing
-
-The student can start a local server by executing `python server/server.py`. This will start a server on the default port (5555) of his computer.
-The student can then open another terminal, go to the project folder, enter the virtual environment, and execute `python client/client.py` to connect to the local server. This is optional, but recommended for testing before connecting to the distant server.
-
-### 5. Execute the client
-
-To execute the client and connect to the server. Replace `<ip_adress>` with the IP address of the server (do not enter an IP address if you are connecting to a local server hosted on your machine).
-
-```bash
-python client/client.py <ip_adress>
+python client/client.py <ip_adress> <port>
 ```
 
 ## How to Play
 
-1. Launch your client: `python client/client.py <ip_adress>`.
+1. Launch your client: `python client/client.py <ip_adress> <port>`.
 2. Enter your player name and sciper.
 3. Wait in the waiting room until all players are connected.
 4. Press SPACE to start the game when all players are ready if it is not automatic.
@@ -159,7 +131,8 @@ You can use such following method ideas (these are examples, not mandatory):
 #### Using the network to send actions
 
 The agent can also call the method `self.network.send_drop_wagon_request()` to send a request to the server to drop a wagon.
-The train will then get a 0.25sec *1.5 speed boost and enter a 10sec boost cooldown. Calling this method will drop one wagon from the train (costing 1 point from the train's score).
+The train will then get a 0.25sec *1.5 speed boost and will enter a 10sec boost cooldown. Calling this method will drop one wagon from the train (costing 1 point from the train's score).
+This method is not supposed to be called to deliver the passengers to the delivery zone as the delivery is automatic.
 
 ### 2. Graphical Rendering (renderer.py)
 
@@ -198,7 +171,7 @@ Some constants are available in the client for debugging:
 
 - `MANUAL_SPAWN`: Automatic respawn when available. False by default, otherwise the player has to press the space bar.
 - `ACTIVATE_AGENT`: Activate the agent. True by default. If set to False, the agent will not be used.
-- `MANUAL_CONTROL`: Activate manual control. False by default, otherwise the player can use the keyboard arrows to control the train.
+- `MANUAL_CONTROL`: Activate manual control. False by default, otherwise the player can use the keyboard arrows to control the train. Only meant for debugging, should be False when deployed.
 
 ### Logging System
 
