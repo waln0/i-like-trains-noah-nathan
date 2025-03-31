@@ -38,6 +38,9 @@ class Agent(BaseAgent):
         # You can add any additional attributes here. For example:
         # self.some_attribute = None
 
+        # You can ask the server to drop a wagon:
+        # self.network.send_drop_wagon_request()
+
     def get_direction(self):
         """
         This method is regularly called by the client to get the next direction of the train.
