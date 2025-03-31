@@ -290,14 +290,7 @@ def main():
     client.set_agent(agent)
 
     # Start the client
-    try:
-        client.run()
-    except KeyboardInterrupt:
-        logger.info("Client stopped by user")
-    except Exception as e:
-        logger.error(f"Error during client execution: {e}")
-    finally:
-        logger.info("Client closed")
+    client.run()
 
 
 if __name__ == "__main__":
