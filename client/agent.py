@@ -39,36 +39,3 @@ class Agent(BaseAgent):
         This method is regularly called by the client to get the next direction of the train.
         """
         return random.choice(BASE_DIRECTIONS)
-
-    # =========================================
-    # Method ideas (can be removed or completed)
-    # =========================================
-
-    def will_hit_wall(
-        self, position: tuple, direction: tuple
-    ):
-        """
-        Check if the next position will hit a wall
-        Args:
-            position (tuple): The current position of the train
-            direction (tuple): The direction of the train
-        Returns:
-            bool: True if the next position will hit a wall, False otherwise
-        """
-        return
-
-    def will_hit_train_or_wagon(self, position: tuple, direction: tuple):
-        """Check if the direction leads to a collision with a train or wagon"""
-        return
-
-    def get_target_position(self, current_position: tuple):
-        """Find the adapted target and return its position"""
-        return
-
-    def get_direction_to_target(self, current_position: tuple, target_position: tuple, valid_directions: list):
-        """Determine the best direction among the valid ones to reach the target the fastest"""
-        return
-
-    def is_opposite_direction(self, new_direction: tuple):
-        """Check if the new direction is opposite to the current direction"""
-        return
