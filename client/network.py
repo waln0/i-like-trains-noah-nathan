@@ -12,7 +12,7 @@ import time
 
 # Configure logging
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO, # logging.DEBUG for more details,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     handlers=[logging.StreamHandler()],
 )
@@ -131,7 +131,6 @@ class NetworkManager:
                                 self.client.handle_state_data(message_data["data"])
 
                             elif message_type == "spawn_success":
-                                logger.info("Player spawned successfully")
                                 self.client.agent.is_dead = False
                                 self.client.agent.waiting_for_respawn = False
 

@@ -148,7 +148,6 @@ class Client:
             return
 
         # Create a temporary window for player name
-        logger.info("Creating temporary window for player name")
         temp_width, temp_height = SCREEN_WIDTH, SCREEN_HEIGHT
         try:
             self.screen = pygame.display.set_mode((temp_width, temp_height))
@@ -257,7 +256,7 @@ class Client:
 
 # Configure logging
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO, # logging.DEBUG for more details,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     handlers=[logging.StreamHandler()],
 )
