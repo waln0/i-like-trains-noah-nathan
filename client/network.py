@@ -83,7 +83,7 @@ class NetworkManager:
             # Don't log connection reset errors for UDP
             return False
         except socket.error as e:
-            if "[WinError 10054]" in str(e):
+            if "[Errno 10054]" in str(e):
                 # This is a connection reset error, which is expected in UDP
                 # Don't log it to keep the console clean
                 pass
@@ -245,7 +245,7 @@ class NetworkManager:
                 # Don't log connection reset errors for UDP
                 time.sleep(0.1)  # Don't break for UDP, just wait and retry
             except socket.error as e:
-                if "[WinError 10054]" in str(e):
+                if "[Errno 10054]" in str(e):
                     # This is a connection reset error, which is expected in UDP
                     # Don't log it to keep the console clean
                     pass

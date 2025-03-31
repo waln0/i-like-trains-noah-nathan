@@ -566,7 +566,7 @@ class Server:
             except socket.error as e:
                 # For UDP, we don't know which client caused the error
                 # So we only log the error and don't mark any client as disconnected
-                if "[WinError 10054]" in str(e):
+                if "[Errno 10054]" in str(e):
                     # This is a connection reset error, which is expected in UDP
                     # We'll just log it at a lower level or not at all
                     pass  # Don't log connection reset errors at all
