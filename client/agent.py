@@ -42,4 +42,4 @@ class Agent(BaseAgent):
         """
         This method is regularly called by the client to get the next direction of the train.
         """
-        return random.choice(BASE_DIRECTIONS)
+        return random.choice(BASE_DIRECTIONS) # Replace this with your own logic

@@ -125,7 +125,7 @@ class Game:
 
         # Add delivery zone if modified
         if self._dirty["delivery_zone"]:
-            state["delivery_zone"] = self.delivery_zone.get_state()
+            state["delivery_zone"] = self.delivery_zone.to_dict()
             self._dirty["delivery_zone"] = False
 
         if trains_data:

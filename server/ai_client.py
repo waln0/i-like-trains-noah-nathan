@@ -92,7 +92,7 @@ class AIClient:
         self.agent = Agent(
             name, self.network, "server.ai_agent", False
         )  # Use AI name for agent
-        self.agent.delivery_zone = self.game.delivery_zone.get_state()
+        self.agent.delivery_zone = self.game.delivery_zone.to_dict()
 
         # Start the AI thread
         self.running = True

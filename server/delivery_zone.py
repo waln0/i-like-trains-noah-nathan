@@ -30,7 +30,7 @@ class DeliveryZone:
             0, (game_height // cell_size - 1 - self.height // cell_size)
         )
         logger.debug(
-            f"Delivery zone initialized: {self.get_state()}, game size: {game_width}x{game_height}"
+            f"Delivery zone initialized: {self.to_dict()}, game size: {game_width}x{game_height}"
         )
 
     def is_position_in_delivery_zone(self, x, y):
@@ -41,7 +41,7 @@ class DeliveryZone:
             and y < self.y + self.height
         )
 
-    def get_state(self):
+    def to_dict(self):
         return {
             "height": self.height,
             "width": self.width,

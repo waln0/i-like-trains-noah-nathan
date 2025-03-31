@@ -5,7 +5,7 @@ from network import NetworkManager
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     handlers=[logging.FileHandler("game_debug.log"), logging.StreamHandler()],
 )
