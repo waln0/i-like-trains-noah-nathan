@@ -22,8 +22,10 @@ modify any existing files, except for [client/agent.py](/client/agent.py).
 
 ### 1. (Optional) Start a local server for testing
 
-You can start a local server by executing `python server/server.py` if you want to test the client locally. This will start a server on the default port (5555) of your computer.
+You can start a local server by executing `python server/server.py` if you want to test the client locally. This will start a server on `0.0.0.0:5555`.
 Then, open another terminal, go to the project folder, and execute `python client/client.py` to connect to the local server. This is optional, but recommended for testing before connecting to the remote server.
+
+If you want to quit the server, you need to hit `ctrl-c` twice.
 
 ### 2. Execute the client
 
