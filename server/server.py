@@ -654,7 +654,7 @@ class Server:
                 self.handle_new_client(message, addr)
             else:
                 # ask the client to disconnect
-                self.send_disconnect(addr)
+                self.send_disconnect(addr, "Name or sciper not available")
                 logger.warning(f"Name or sciper not available for {addr}")
             return
 
@@ -691,14 +691,14 @@ class Server:
                 logger.debug(
                     f"Received message from unknown client {addr}: {message}")
                 # ask the client to disconnect
-                self.send_disconnect(addr)
+                self.send_disconnect(addr, "Unknown client or invalid message format")
 
-    def send_disconnect(self, addr):
+    def send_disconnect(self, addr, message="Unknown client or invalid message format"):
         """Disconnect a client from the server"""
         # ask the client to disconnect
         disconnect_message = {
             "type": "disconnect",
-            "reason": "Unknown client or invalid message format",
+            "reason": message,
         }
         try:
             self.server_socket.sendto(
