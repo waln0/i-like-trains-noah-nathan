@@ -142,10 +142,6 @@ class NetworkManager:
                                 # Respond to ping with a pong
                                 self.send_message({"type": "pong"})
 
-                            elif message_type == "pong":
-                                # Mark that we received a response to our ping
-                                self.client.ping_response_received = True
-
                             elif message_type == "game_status":
                                 self.client.handle_game_status(message_data)
 
@@ -204,7 +200,7 @@ class NetworkManager:
                                 self.client.handle_death(message_data)
 
                             elif message_type == "disconnect":
-                                logger.error(
+                                logger.warning(
                                     f"Received disconnect request: {message_data['reason']}"
                                 )
                                 self.disconnect(stop_client=True)
@@ -268,51 +264,6 @@ class NetworkManager:
             except Exception as e:
                 logger.error(f"Error receiving UDP data: {e}")
                 time.sleep(0.1)  # Don't break for UDP, just wait and retry
-
-    def verify_connection(self):
-        """Verify that the connection to the server is actually running on the specified port
-        by sending a name check request and waiting for a response.
-        Returns True if the server responds, False otherwise.
-        """
-        if not self.socket:
-            logger.error("Cannot verify connection: UDP socket not created")
-            return False
-            
-        try:
-            # Reset name check variables
-            self.client.name_check_received = False
-            
-            # Generate a unique test name using timestamp
-            test_name = f"test_{int(time.time())}"
-            logger.info(f"Verifying connection to server at {self.host}:{self.port} using name check for '{test_name}'")
-            
-            # Send a name check request (this is allowed for unregistered clients)
-            check_message = {"action": "check_name", "agent_name": test_name}
-            success = self.send_message(check_message)
-            
-            if not success:
-                logger.error("Failed to send name check message")
-                return False
-            
-            # Wait for the name check response (which will be handled by receive_game_state thread)
-            timeout = 2.0  # 2 second timeout
-            start_time = time.time()
-            
-            # Wait for name check response
-            while not self.client.name_check_received and time.time() - start_time < timeout:
-                time.sleep(0.1)
-                
-            if not self.client.name_check_received:
-                logger.error(f"Timeout waiting for name check response from server at {self.host}:{self.port}")
-                return False
-                
-            # If we get here, we received a response
-            logger.info(f"Successfully verified connection to server at {self.host}:{self.port}")
-            return True
-            
-        except Exception as e:
-            logger.error(f"Error verifying connection: {e}")
-            return False
 
     def send_agent_ids(self, agent_name, agent_sciper):
         """Send agent name and sciper to server"""

@@ -29,8 +29,7 @@ If you want to quit the server, you need to hit `ctrl-c` twice.
 
 ### 2. Enter your player name and sciper in the id_config.json file
 
-Rename `id_config.json.template` to `id_config.json`.
-This file should contain your player name and sciper.
+The file `id_config.json` should contain your player name and sciper.
 For example:
 
 ```json

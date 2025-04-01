@@ -17,7 +17,6 @@ BASE_DIRECTIONS = [
     (-1, 0),  # Left
 ]
 
-
 class BaseAgent(ABC):
     """Base class for all agents, enforcing the implementation of get_direction()."""
 
@@ -70,7 +69,7 @@ class BaseAgent(ABC):
     def get_direction(self):
         """
         Abstract method to be implemented by subclasses.
-        Must return a valid movement direction from BASE_DIRECTIONS.
+        Must return a valid movement direction.
         """
         pass
 
