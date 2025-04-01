@@ -490,6 +490,7 @@ class Server:
         )  # Track disconnected clients by full address tuple (IP, port)
         self.ai_clients = {}  # Maps train names to AI clients
         self.used_ai_names = set()  # Track AI names that are already in use
+        self.unknown_clients_sent_disconnect = {}  # Unknown client address -> timestamp of last disconnect message
 
         # Client activity tracking for disconnection detection
         self.client_timeout = (
@@ -633,6 +634,17 @@ class Server:
                 # Don't log a warning for every message, just silently ignore it
                 return
 
+        # Check if this is an unknown client that we've already asked to disconnect
+        if addr not in self.addr_to_name and addr in self.unknown_clients_sent_disconnect:
+            # Check if we've sent a disconnect request recently (within the last 5 seconds)
+            last_disconnect_time = self.unknown_clients_sent_disconnect[addr]
+            if time.time() - last_disconnect_time < 5:
+                # We've already asked this client to disconnect recently, ignore the message
+                return
+            else:
+                # It's been a while, we can remove them from the list and process normally
+                del self.unknown_clients_sent_disconnect[addr]
+
         # For name check requests
         if "action" in message and message["action"] == "check_name":
             self.handle_name_check(message, addr)
@@ -666,8 +678,8 @@ class Server:
                 self.handle_new_client(message, addr)
             else:
                 # ask the client to disconnect
-                self.send_disconnect(addr, "Name or sciper not available")
-                logger.warning(f"Name or sciper not available for {addr}")
+                self.send_disconnect(addr, "Name or sciper not available or invalid")
+                logger.warning(f"Name or sciper not available or invalid for {addr}")
             return
 
         # For all other messages, find the client's room and handle the message
@@ -700,10 +712,13 @@ class Server:
                 # Handle common action messages without logging
                 pass
             else:
-                logger.debug(
-                    f"Received message from unknown client {addr}: {message}")
-                # ask the client to disconnect
-                self.send_disconnect(addr, "Unknown client or invalid message format")
+                # This is an unknown client sending a message that's not a common type
+                logger.debug(f"Received message from unknown client {addr}: {message}")
+                # Send a disconnect request to the client
+                self.send_disconnect(addr, "Unknown client")
+                # Record that we've sent a disconnect request to this client
+                self.unknown_clients_sent_disconnect[addr] = time.time()
+                logger.info(f"Sent disconnect request to unknown client {addr}")
 
     def send_disconnect(self, addr, message="Unknown client or invalid message format"):
         """Disconnect a client from the server"""
@@ -804,7 +819,7 @@ class Server:
         # Check if the sciper is empty or not an int
         if (
             not sciper_to_check
-            or len(sciper_to_check) == 0
+            or len(sciper_to_check) != 6
             or not sciper_to_check.isdigit()
         ):
             if addr:
@@ -816,8 +831,8 @@ class Server:
                     )
                 except Exception as e:
                     logger.error(f"Error sending sciper check response: {e}")
-                logger.debug(
-                    f"Sciper check for '{sciper_to_check}': not available")
+                return False
+            else:
                 return False
 
         # Check if the sciper exists in our mapping

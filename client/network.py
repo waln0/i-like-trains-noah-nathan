@@ -71,7 +71,10 @@ class NetworkManager:
                         dummy_socket.sendto(b'', local_addr)
                         dummy_socket.close()
                     except Exception as e:
-                        logger.debug(f"Error sending dummy packet: {e}")
+                        if "10049" in str(e):
+                            pass
+                        else:
+                            logger.debug(f"Error sending dummy packet: {e}")
                 
                 self.socket.close()
                 self.socket = None  # Set to None after closing
