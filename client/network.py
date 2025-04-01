@@ -30,6 +30,10 @@ class NetworkManager:
         self.socket = None
         self.running = True
         self.receive_thread = None
+        
+        # Variables pour surveiller les pings du serveur
+        self.last_ping_time = 0
+        self.server_timeout = 10.0  # Temps après lequel on considère le serveur comme déconnecté
 
     def connect(self):
         """Establish connection with server"""
@@ -44,6 +48,9 @@ class NetworkManager:
             self.server_addr = (self.host, self.port)
             logger.info(f"UDP socket created for server at {self.host}:{self.port}")
 
+            # Initialiser le temps du dernier ping
+            self.last_ping_time = time.time()
+            
             # Start receive thread
             self.receive_thread = threading.Thread(target=self.receive_game_state)
             self.receive_thread.daemon = True
@@ -59,6 +66,11 @@ class NetworkManager:
         self.running = False
         if stop_client:
             self.client.running = False
+            
+            # Afficher un message d'erreur si la déconnexion est due à un timeout du serveur
+            # On laisse le client gérer l'affichage du message et la fermeture
+            logger.warning("Server disconnection detected. Stopping client.")
+            
         if self.socket:
             try:
                 # Envoyer un message à nous-même pour débloquer le recvfrom
@@ -123,6 +135,14 @@ class NetworkManager:
                 # Définir un timeout pour permettre de vérifier self.running périodiquement
                 self.socket.settimeout(0.5)
                 
+                # Vérifier si on a reçu un ping récemment
+                current_time = time.time()
+                if current_time - self.last_ping_time > self.server_timeout:
+                    logger.warning(f"Server hasn't sent a ping for {self.server_timeout} seconds, disconnecting")
+                    # Déconnecter le client
+                    self.disconnect(stop_client=True)
+                    break
+                
                 # Pour UDP, on utilise recvfrom qui retourne les données et l'adresse
                 data, addr = self.socket.recvfrom(4096)
 
@@ -163,6 +183,8 @@ class NetworkManager:
                             elif message_type == "ping":
                                 # Respond to ping with a pong
                                 self.send_message({"type": "pong"})
+                                # Mettre à jour le temps du dernier ping reçu
+                                self.last_ping_time = time.time()
 
                             elif message_type == "pong":
                                 # Mark that we received a response to our ping
