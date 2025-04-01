@@ -12,8 +12,8 @@ from game import Game
 from passenger import Passenger
 from ai_client import AIClient
 
-# Transfer frequency
-MAX_FREQUENCY = 30
+# Transfer tick rate
+TICK_RATE = 30
 
 # Colors
 WHITE = (255, 255, 255)
@@ -364,8 +364,8 @@ class Room:
                 if self.clients and not self.game_thread:
                     current_time = time.time()
                     if (
-                        current_time - last_update >= 1.0 / MAX_FREQUENCY
-                    ):  # Limit to MAX_FREQUENCY Hz
+                        current_time - last_update >= 1.0 / TICK_RATE
+                    ):  # Limit to TICK_RATE Hz
                         if self.clients:
                             waiting_room_data = {
                                 "type": "waiting_room",
@@ -391,10 +391,10 @@ class Room:
                         last_update = current_time
 
                 # Sleep for half the period
-                time.sleep(1.0 / (MAX_FREQUENCY * 2))
+                time.sleep(1.0 / (TICK_RATE * 2))
             except Exception as e:
                 logger.error(f"Error in broadcast_waiting_room: {e}")
-                time.sleep(1.0 / MAX_FREQUENCY)
+                time.sleep(1.0 / TICK_RATE)
 
     def broadcast_game_state(self):
         """Thread that periodically sends the game state to clients"""
@@ -427,7 +427,7 @@ class Room:
                 elapsed = current_time - last_update
 
                 # If enough time has passed
-                if elapsed >= 1.0 / MAX_FREQUENCY:
+                if elapsed >= 1.0 / TICK_RATE:
                     # Get the game state with only the modified data
                     state = self.game.get_state()
                     if state:  # If data has been modified
@@ -448,10 +448,10 @@ class Room:
                     last_update = current_time
 
                 # Wait a bit to avoid overloading the CPU
-                time.sleep(1.0 / (MAX_FREQUENCY * 2))
+                time.sleep(1.0 / (TICK_RATE * 2))
             except Exception as e:
                 logger.error(f"Error in broadcast_game_state: {e}")
-                time.sleep(1.0 / MAX_FREQUENCY)
+                time.sleep(1.0 / TICK_RATE)
 
 
 class Server:

@@ -279,6 +279,7 @@ class Game:
                 agent_name,
                 train_color,
                 self.handle_train_death,
+                TICK_RATE,
             )
             self.update_passengers_count()
             logger.info(f"Train {agent_name} spawned at position {spawn_pos}")
@@ -355,9 +356,7 @@ class Game:
                         self._dirty["passengers"] = True
 
             # Check for delivery zone collisions
-            if self.delivery_zone.is_position_in_delivery_zone(
-                train.position[0], train.position[1]
-            ):
+            if self.delivery_zone.contains(train.position):
                 current_time = time.time()
                 # Check if enough time has passed since the last delivery for this train
                 if (

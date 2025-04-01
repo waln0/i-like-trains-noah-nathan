@@ -33,7 +33,8 @@ class DeliveryZone:
             f"Delivery zone initialized: {self.to_dict()}, game size: {game_width}x{game_height}"
         )
 
-    def is_position_in_delivery_zone(self, x, y):
+    def contains(self, position):
+        x, y = position
         return (
             x >= self.x
             and x < self.x + self.width
