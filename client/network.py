@@ -204,7 +204,7 @@ class NetworkManager:
                                 self.client.handle_death(message_data)
 
                             elif message_type == "disconnect":
-                                logger.error(
+                                logger.warning(
                                     f"Received disconnect request: {message_data['reason']}"
                                 )
                                 self.disconnect(stop_client=True)
