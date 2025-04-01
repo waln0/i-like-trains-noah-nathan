@@ -4,13 +4,14 @@
 
 ## Overview
 
-I Like Trains is a multiplayer, real-time, network game where trains controlled by computer programs compete. Programs are
+"I Like Trains" is a multiplayer, real-time, network game where trains controlled by computer programs compete. Programs are
 written in Python and Pygame is used to render the playing field. Programs score points by collecting and dropping off
 passengers. The more passengers a train is carrying, the longer and slower it becomes. Programs are therefore expected
-to implement various strategies and avoid collisions.
+to implement various strategies while avoiding collisions.
 
-The student's objective will be to modify the agent.py file (and only this one) to remotely control a train managed by a server according to his environment.
-The agent must make travel decisions for the train, as well as the game board with the Pygam Library.
+Your objective will be to modify [client/agent.py](/client/agent.py) file and implement logic to control
+your train. You may add additional files to the /client directory but do not
+modify any existing files, except for [client/agent.py](/client/agent.py).
 
 ## Setup Instructions
 
@@ -21,10 +22,26 @@ The agent must make travel decisions for the train, as well as the game board wi
 
 ### 1. (Optional) Start a local server for testing
 
-You can start a local server by executing `python server/server.py` if you want to test the client locally. This will start a server on the default port (5000) of your computer.
-Then, open another terminal, go to the project folder, enter the virtual environment, and execute `python client/client.py` to connect to the local server. This is optional, but recommended for testing before connecting to the distant server.
+You can start a local server by executing `python server/server.py` if you want to test the client locally. This will start a server on `0.0.0.0:5555`.
+Then, open another terminal, go to the project folder, and execute `python client/client.py` to connect to the local server. This is optional, but recommended for testing before connecting to the remote server.
 
-### 2. Execute the client
+If you want to quit the server, you need to hit `ctrl-c` twice.
+
+### 2. Enter your player name and sciper in the id_config.json file
+
+The file `id_config.json` should contain your player name and sciper.
+For example:
+
+```json
+{
+    "SCIPER": "000000",
+    "TRAIN_NAME": "Player"
+}
+```
+
+You cannot use the same sciper or train name as another player already connected.
+
+### 3. Execute the client
 
 To execute the client and connect to the server. Replace `<ip_adress>` and `<port>` with the IP address and port of the server (do not enter an IP address if you are connecting to a local server hosted on your machine).
 
@@ -34,15 +51,25 @@ python client/client.py <ip_adress> <port>
 
 ## How to Play
 
+### 1. Launch the client
+
 1. Launch your client: `python client/client.py <ip_adress> <port>`.
-2. Enter your player name and sciper.
-3. Wait in the waiting room until all players are connected.
-4. Press SPACE to start the game when all players are ready if it is not automatic.
-5. Your agent will automatically control your train.
+2. Wait in the waiting room until all players are connected.
+3. Your agent will automatically control your train.
 
-The goal is to collect as many passengers (your number of wagons will increase) and then deliver them to the delivery zone.
-The train cannot change its direction to the opposite, only to the left or right.
+### 2. Play the game
 
+- The goal is to collect as many passengers (they will appear at random positions on the map), incrementing your number of wagons, and then deliver them to the delivery zone. The number above each passenger spot indicates how many passengers are at that location. You can find the list of passengers with `self.passengers` (in `client/agent.py`).
+
+- The train cannot change its direction to the opposite, only to the left or right.
+
+- As you pick up passengers, your train will get longer and slower.
+
+- Once you picked up passengers, you have to go to the dropoff zone. Passengers automatically leave the train when you enter the dropoff zone. For each passenger you drop off, you score 1 point in the game.
+
+- If you collide into another train or the walls, your train dies. You will then respawn after 10 seconds. Your code knows where all the trains are located via `self.all_trains`.
+
+- If a player disconnects, the server will create a new AI client to control their train.
 
 ## Documentation
 
@@ -51,8 +78,8 @@ The train cannot change its direction to the opposite, only to the left or right
 The project is divided into two main parts:
 
 #### 1. Server (folder `server/`)
-The server is responsible for managing client connections and game synchronization. It is executed on a remote machine which the student is connecting to.
-The server files are included here so the student can have a better understanding of how the management of the game works. 
+The server is responsible for managing client connections and game synchronization. It is executed on a remote machine you can connect to.
+The server files are included here so you can have a better understanding of how the management of the game works. 
 
 - `server.py` : Manages client connections and game synchronization.
 - `game.py` : Contains the main game logic.
@@ -62,7 +89,7 @@ The server files are included here so the student can have a better understandin
 - `delivery_zone.py` : Manages delivery zones.
 
 #### 2. Client (folder `client/`)
-The client is responsible for managing the game display and user interactions. It is executed on the student's machine when executing `client/client.py`.
+The client is responsible for managing the game display and user interactions. It is executed on your machine when executing `client/client.py`.
 
 - `client.py` : Manages server connection and the main game loop.
 - `network.py` : Manages network communication with the server.
@@ -70,7 +97,7 @@ The client is responsible for managing the game display and user interactions. I
 - `event_handler.py` : Manages events (keyboard inputs).
 - `game_state.py` : Maintains the game state on the client side.
 - `base_agent.py` : Defines the base agent class.
-- `agent.py` : Controls the player's train behavior.
+- `agent.py` : Controls the train's behavior.
 - `ui.py` : Manages the user interface to enter train name and sciper.
 
 
@@ -105,11 +132,19 @@ And the following attributes:
 This parameters and attributes are not supposed to be modified. They are updated by the client, receiving the game state from the server. Modifying them may lead to a desynchronization between the information of the client and the real game state managed by the server.
 On the other hand, attributes can be added to the Agent class to store additional information (related to your agent strategy).
 
-## Implementation Tasks
+You can check the data available in the client by using the logger:
 
-As a student, you must implement two main components:
+```python
+self.logger.debug(self.all_trains)
+self.logger.debug(self.all_passengers)
+self.logger.debug(self.delivery_zones)
+```
 
-### 1. Intelligent Agent (agent.py)
+or by direcly checking what is returned by the `to_dict()` method in each class. For example to check the train's data format, check the method `to_dict()` in `server/train.py`. For the passenger, check `server/passenger.py`. Etc.
+
+## Implementation Task
+
+### Intelligent Agent (agent.py)
 
 You must implement an intelligent agent that controls your train. The main method to implement in `client/agent.py` is:
 
@@ -120,50 +155,22 @@ def get_direction(self, game_width, game_height):
     """
 ```
 
-#### Methods ideas
-
-You can use such following method ideas (these are examples, not mandatory):
-- `will_hit_wall()` : To check if the next position will hit a wall.
-- `will_hit_train_or_wagon()` : To check if the direction leads to a collision.
-- `get_target_position()` : To take a decision between targetting a passenger or a delivery zone.
-- `get_direction_to_target()` : To determine the best direction to reach a target.
+- Your train exists in a 2D grid. You can tell your train to turn left, right, or continue going straight. Your code should live in [client/agent.py](/client/agent.py) and any additional files you might need.
 
 #### Using the network to send actions
 
 The agent can also call the method `self.network.send_drop_wagon_request()` to send a request to the server to drop a wagon.
-The train will then get a 0.25sec *1.5 speed boost and will enter a 10sec boost cooldown. Calling this method will drop one wagon from the train (costing 1 point from the train's score).
+The train will then get a 0.25sec *1.5 speed boost and will enter a 10sec boost cooldown during which the train will not be able to drop wagons. Calling this method will drop one wagon from the train (costing 1 point from the train's score).
 This method is not supposed to be called to deliver the passengers to the delivery zone as the delivery is automatic.
-
-### 2. Graphical Rendering (renderer.py)
-
-You must implement the display of trains and passengers in the renderer. The two methods to implement are:
-
-```python
-def draw_trains(self):
-    """
-    Draws all trains and their wagons.
-    Tip: Use train_data["position"] to access a train's position
-    """
-
-def draw_passengers(self):
-    """
-    Draws all passengers on the grid.
-    Tip: Use passenger["position"] to access a passenger's position
-    """
-```
 
 ## Implementation Tips
 
 1. For the agent:
-   - Display the attributes in the logger to understand their structure (self.all_trains, self.all_passengers, self.delivery_zones, etc.).
+   - Display the attributes (with `print` or using the logger) to understand their structure (self.all_trains, self.all_passengers, self.delivery_zones, etc.).
    - Start with changing the direction if the next position will hit a wall.
    - Implement a simple strategy (e.g., go towards the closest passenger).
    - Gradually add obstacle avoidance (other trains and wagons).
    - Consider handling cases where the direct path is blocked.
-
-2. For the renderer:
-   - Ensure trains and passengers should be clearly visible.
-   - Each train has a color by default, consider using dark blue to display yours (override the color if the train is yours).
 
 ### Other tools in client.py
 
@@ -171,11 +178,13 @@ Some constants are available in the client for debugging:
 
 - `MANUAL_SPAWN`: Automatic respawn when available. False by default, otherwise the player has to press the space bar.
 - `ACTIVATE_AGENT`: Activate the agent. True by default. If set to False, the agent will not be used.
-- `MANUAL_CONTROL`: Activate manual control. False by default, otherwise the player can use the keyboard arrows to control the train. Only meant for debugging, should be False when deployed.
+- `MANUAL_CONTROL`: Activate manual control. False by default, otherwise the player can use the keyboard arrows keys to control the train + `d` key to drop wagons. Only meant for debugging, will be False when grading.
 
 ### Logging System
 
 The game uses Python's built-in logging system to help with debugging and monitoring. Change the logging level in the `logging.basicConfig` function at the beginning of each file from which you want to follow the logs.
+
+Examples: `logger.debug("Debug message")`, `logger.info("Info message")`, `logger.warning("Warning message")`, `logger.error("Error message")`, `logger.critical("Critical message")`.
 
 Available log levels (from most to least verbose):
 

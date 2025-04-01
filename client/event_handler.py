@@ -28,7 +28,7 @@ class EventHandler:
 
             elif event.type == pygame.KEYDOWN:
                 # If game is over, only handle ESC key to exit
-                if hasattr(self.client, "game_over") and self.client.game_over:
+                if self.client.game_over:
                     if event.key == pygame.K_ESCAPE:
                         self.client.running = False
                         return

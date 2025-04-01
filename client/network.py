@@ -83,7 +83,7 @@ class NetworkManager:
             # Don't log connection reset errors for UDP
             return False
         except socket.error as e:
-            if "[WinError 10054]" in str(e):
+            if "[Errno 10054]" in str(e):
                 # This is a connection reset error, which is expected in UDP
                 # Don't log it to keep the console clean
                 pass
@@ -131,7 +131,6 @@ class NetworkManager:
                                 self.client.handle_state_data(message_data["data"])
 
                             elif message_type == "spawn_success":
-                                logger.info("Player spawned successfully")
                                 self.client.agent.is_dead = False
                                 self.client.agent.waiting_for_respawn = False
 
@@ -201,7 +200,7 @@ class NetworkManager:
                                 self.client.handle_death(message_data)
 
                             elif message_type == "disconnect":
-                                logger.info(
+                                logger.warning(
                                     f"Received disconnect request: {message_data['reason']}"
                                 )
                                 self.disconnect(stop_client=True)
@@ -246,13 +245,13 @@ class NetworkManager:
                 # Don't log connection reset errors for UDP
                 time.sleep(0.1)  # Don't break for UDP, just wait and retry
             except socket.error as e:
-                if "[WinError 10054]" in str(e):
+                if "[Errno 10054]" in str(e):
                     # This is a connection reset error, which is expected in UDP
                     # Don't log it to keep the console clean
                     pass
                 elif "timed out" in str(e).lower():
                     # Socket timeout - check if game is over
-                    if hasattr(self.client, "game_over") and self.client.game_over:
+                    if self.client.game_over:
                         logger.info("Server disconnected after game over")
                         # No need to retry if game is over
                         time.sleep(1)

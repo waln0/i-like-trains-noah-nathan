@@ -35,11 +35,9 @@ BOOST_DURATION = 0.25  # Duration of speed boost in seconds
 BOOST_COOLDOWN_DURATION = 10.0  # Cooldown duration for speed boost
 BOOST_INTENSITY = 1.5  # Intensity of speed boost
 
-TICK_RATE = 60  # Ticks per second
-
 
 class Train:
-    def __init__(self, x, y, agent_name, color, handle_train_death):
+    def __init__(self, x, y, agent_name, color, handle_train_death, tick_rate):
         self.position = (x, y)
         self.wagons = []
         self.new_direction = (1, 0)
@@ -54,6 +52,8 @@ class Train:
         self.move_timer = 0
         self.speed = INITIAL_SPEED
         self.last_position = (x, y)
+
+        self.tick_rate = tick_rate
         # Dirty flags to track modifications
         self._dirty = {
             "position": True,
@@ -100,8 +100,8 @@ class Train:
         # Manage speed boost timer
         if self.speed_boost_active:
             self.speed_boost_timer -= (
-                1 / TICK_RATE
-            )  # Decrement by seconds (assuming TICK_RATE ticks per second)
+                1 / self.tick_rate
+            )  # Decrement by seconds (assuming self.tick_rate ticks per second)
             if self.speed_boost_timer <= 0:
                 # Reset speed boost
                 self.speed_boost_active = False
@@ -114,7 +114,7 @@ class Train:
 
         # Manage boost cooldown timer
         if self.boost_cooldown_active:
-            self.boost_cooldown_timer -= 1 / TICK_RATE  # Decrement by seconds
+            self.boost_cooldown_timer -= 1 / self.tick_rate  # Decrement by seconds
             if self.boost_cooldown_timer <= 0:
                 # Reset cooldown
                 self.boost_cooldown_active = False
@@ -123,7 +123,7 @@ class Train:
         self.move_timer += 1
 
         # Check if it's time to move
-        if self.move_timer >= TICK_RATE / self.speed:  # TICK_RATE ticks per second
+        if self.move_timer >= self.tick_rate / self.speed:  # self.tick_rate ticks per second
             self.move_timer = 0
             self.set_direction(self.new_direction)
             self.move(trains, screen_width, screen_height, cell_size)

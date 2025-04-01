@@ -80,7 +80,7 @@ class Passenger:
 
             # Check collision with delivery zone
             delivery_zone = self.game.delivery_zone
-            if delivery_zone.is_position_in_delivery_zone(x, y):
+            if delivery_zone.contains((x, y)):
                 position_is_safe = False
                 break
 

@@ -5,11 +5,17 @@ from network import NetworkManager
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     handlers=[logging.FileHandler("game_debug.log"), logging.StreamHandler()],
 )
 
+BASE_DIRECTIONS = [
+    (0, -1),  # Up
+    (1, 0),  # Right
+    (0, 1),  # Down
+    (-1, 0),  # Left
+]
 
 class BaseAgent(ABC):
     """Base class for all agents, enforcing the implementation of get_direction()."""
@@ -75,6 +81,13 @@ class BaseAgent(ABC):
         if not self.is_dead:
             try:
                 new_direction = self.get_direction()
+                
+                # Check if the direction is in the base directions
+                if new_direction not in BASE_DIRECTIONS:
+                    self.logger.warning(f"Invalid direction: {new_direction}")
+                    return
+                
+                # Check if the direction is different from the current direction
                 if new_direction != self.all_trains[self.agent_name]["direction"]:
                     self.network.send_direction_change(new_direction)
             except Exception as e:

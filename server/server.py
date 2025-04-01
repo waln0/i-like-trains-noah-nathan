@@ -12,8 +12,8 @@ from game import Game
 from passenger import Passenger
 from ai_client import AIClient
 
-# Transfer frequency
-MAX_FREQUENCY = 30
+# Transfer tick rate
+TICK_RATE = 30
 
 # Colors
 WHITE = (255, 255, 255)
@@ -29,9 +29,10 @@ RIGHT = (1, 0)
 
 # Default host
 HOST: str = os.getenv("HOST", "0.0.0.0")
-PORT: int = int(os.getenv("PORT", 5000))
+PORT: int = int(os.getenv("PORT", 5555))
 DEFAULT_NB_PLAYERS_PER_ROOM: int = int(os.getenv("NB_PLAYERS_PER_ROOM", "2"))
-ALLOW_MULTIPLE_CONNECTIONS: bool = bool(os.getenv("ALLOW_MULTIPLE_CONNECTIONS", "True"))
+ALLOW_MULTIPLE_CONNECTIONS: bool = bool(
+    os.getenv("ALLOW_MULTIPLE_CONNECTIONS", "True"))
 
 # Scores file path
 SCORES_FILE_PATH = "player_scores.json"
@@ -62,7 +63,9 @@ AI_NAMES = [
 
 # Client timeout in seconds (how long to wait before considering a client disconnected)
 CLIENT_TIMEOUT = 1.0
-GAME_LIFE_TIME = 60 * 1  # 5 minutes
+
+# Game duration in seconds
+GAME_LIFE_TIME = 60 * 5
 
 # Check if an IP address has been supplied in argument
 if len(sys.argv) > 1:
@@ -199,12 +202,14 @@ class Room:
         self.clients = {}  # {addr: agent_name}
         self.game_thread = None
         self.running = running  # The room is active by default
-        self.waiting_room_thread = threading.Thread(target=self.broadcast_waiting_room)
+        self.waiting_room_thread = threading.Thread(
+            target=self.broadcast_waiting_room)
         self.waiting_room_thread.daemon = True
         self.waiting_room_thread.start()
         self.game_start_time = None  # Track when the game starts
         self.game_over = False  # Track if the game is over
-        logger.info(f"Room {room_id} created with number of players {nb_players}")
+        logger.info(
+            f"Room {room_id} created with number of players {nb_players}")
 
     def start_game(self):
         self.state_thread = threading.Thread(target=self.broadcast_game_state)
@@ -261,7 +266,8 @@ class Room:
         if self.game_over:
             return  # Game already ended
 
-        logger.info(f"Game in room {self.id} has ended after {GAME_LIFE_TIME} seconds")
+        logger.info(
+            f"Game in room {self.id} has ended after {GAME_LIFE_TIME} seconds")
         self.game_over = True
 
         # Collect final scores
@@ -320,11 +326,11 @@ class Room:
         state_json = json.dumps(game_over_data) + "\n"
         for client_addr in list(self.clients.keys()):
             try:
-                self.game.server.server_socket.sendto(state_json.encode(), client_addr)
+                self.game.server.server_socket.sendto(
+                    state_json.encode(), client_addr)
             except Exception as e:
                 logger.error(f"Error sending game over data to client: {e}")
 
-        # Stop the game
         self.game.running = False
 
         # Close the room after a short delay to ensure all clients receive the game over message
@@ -335,7 +341,7 @@ class Room:
             logger.info(f"Closing room {self.id} after game over")
             self.running = False
             # Remove the room from the server
-            if hasattr(self.game, "server") and self.game.server:
+            if self.game.server:
                 self.game.server.remove_room(self.id)
 
         # Start a thread to close the room after a delay
@@ -358,8 +364,8 @@ class Room:
                 if self.clients and not self.game_thread:
                     current_time = time.time()
                     if (
-                        current_time - last_update >= 1.0 / MAX_FREQUENCY
-                    ):  # Limit to MAX_FREQUENCY Hz
+                        current_time - last_update >= 1.0 / TICK_RATE
+                    ):  # Limit to TICK_RATE Hz
                         if self.clients:
                             waiting_room_data = {
                                 "type": "waiting_room",
@@ -384,10 +390,11 @@ class Room:
 
                         last_update = current_time
 
-                time.sleep(1.0 / (MAX_FREQUENCY * 2))  # Sleep for half the period
+                # Sleep for half the period
+                time.sleep(1.0 / (TICK_RATE * 2))
             except Exception as e:
                 logger.error(f"Error in broadcast_waiting_room: {e}")
-                time.sleep(1.0 / MAX_FREQUENCY)
+                time.sleep(1.0 / TICK_RATE)
 
     def broadcast_game_state(self):
         """Thread that periodically sends the game state to clients"""
@@ -420,7 +427,7 @@ class Room:
                 elapsed = current_time - last_update
 
                 # If enough time has passed
-                if elapsed >= 1.0 / MAX_FREQUENCY:
+                if elapsed >= 1.0 / TICK_RATE:
                     # Get the game state with only the modified data
                     state = self.game.get_state()
                     if state:  # If data has been modified
@@ -435,15 +442,16 @@ class Room:
                                     state_json.encode(), client_addr
                                 )
                             except Exception as e:
-                                logger.error(f"Error sending state to client: {e}")
+                                logger.error(
+                                    f"Error sending state to client: {e}")
 
                     last_update = current_time
 
                 # Wait a bit to avoid overloading the CPU
-                time.sleep(1.0 / (MAX_FREQUENCY * 2))
+                time.sleep(1.0 / (TICK_RATE * 2))
             except Exception as e:
                 logger.error(f"Error in broadcast_game_state: {e}")
-                time.sleep(1.0 / MAX_FREQUENCY)
+                time.sleep(1.0 / TICK_RATE)
 
 
 class Server:
@@ -460,8 +468,10 @@ class Server:
 
         # Create UDP socket with proper error handling
         try:
-            self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            self.server_socket = socket.socket(
+                socket.AF_INET, socket.SOCK_DGRAM)
+            self.server_socket.setsockopt(
+                socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             self.server_socket.bind((HOST, PORT))
             logger.info(f"UDP socket created and bound to {HOST}:{PORT}")
         except Exception as e:
@@ -482,11 +492,11 @@ class Server:
 
         # Client activity tracking for disconnection detection
         self.client_timeout = (
-            CLIENT_TIMEOUT  # Consider client disconnected after 2 seconds of inactivity
+            CLIENT_TIMEOUT
         )
 
         # Ping tracking for active connection checking
-        self.ping_interval = self.client_timeout / 2  # Send pings every 1 second
+        self.ping_interval = self.client_timeout / 2
         self.ping_responses = {}  # Track which clients have responded to pings
 
         # Start the ping thread (handles all client timeouts)
@@ -562,20 +572,23 @@ class Server:
                                 f"Invalid JSON received from {addr}: {message_str}"
                             )
                         except Exception as e:
-                            logger.error(f"Error processing message from {addr}: {e}")
+                            logger.error(
+                                f"Error processing message from {addr}: {e}")
             except socket.error as e:
                 # For UDP, we don't know which client caused the error
                 # So we only log the error and don't mark any client as disconnected
-                if "[WinError 10054]" in str(e):
+                if "[Errno 10054]" in str(e):
                     # This is a connection reset error, which is expected in UDP
                     # We'll just log it at a lower level or not at all
                     pass  # Don't log connection reset errors at all
                 else:
                     logger.error(f"Socket error: {e}")
-                time.sleep(0.1)  # Add a small delay to avoid high CPU usage on error
+                # Add a small delay to avoid high CPU usage on error
+                time.sleep(0.1)
             except Exception as e:
                 logger.error(f"Error in accept_clients: {e}")
-                time.sleep(0.1)  # Add a small delay to avoid high CPU usage on error
+                # Add a small delay to avoid high CPU usage on error
+                time.sleep(0.1)
 
     def process_message(self, message, addr):
         """Process incoming messages from clients"""
@@ -641,7 +654,7 @@ class Server:
                 self.handle_new_client(message, addr)
             else:
                 # ask the client to disconnect
-                self.send_disconnect(addr)
+                self.send_disconnect(addr, "Name or sciper not available")
                 logger.warning(f"Name or sciper not available for {addr}")
             return
 
@@ -675,16 +688,17 @@ class Server:
                 # Handle common action messages without logging
                 pass
             else:
-                logger.debug(f"Received message from unknown client {addr}: {message}")
+                logger.debug(
+                    f"Received message from unknown client {addr}: {message}")
                 # ask the client to disconnect
-                self.send_disconnect(addr)
+                self.send_disconnect(addr, "Unknown client or invalid message format")
 
-    def send_disconnect(self, addr):
+    def send_disconnect(self, addr, message="Unknown client or invalid message format"):
         """Disconnect a client from the server"""
         # ask the client to disconnect
         disconnect_message = {
             "type": "disconnect",
-            "reason": "Unknown client or invalid message format",
+            "reason": message,
         }
         try:
             self.server_socket.sendto(
@@ -711,7 +725,8 @@ class Server:
         }
 
         try:
-            self.server_socket.sendto((json.dumps(response) + "\n").encode(), addr)
+            self.server_socket.sendto(
+                (json.dumps(response) + "\n").encode(), addr)
             logger.info(f"Sent high scores to client at {addr}")
         except Exception as e:
             logger.error(f"Error sending high scores: {e}")
@@ -734,7 +749,8 @@ class Server:
                     )
                 except Exception as e:
                     logger.error(f"Error sending name check response: {e}")
-                logger.debug(f"Name check for '{name_to_check}': not available")
+                logger.debug(
+                    f"Name check for '{name_to_check}': not available")
                 return False
 
         # Check if the name exists in any room
@@ -754,7 +770,8 @@ class Server:
             response = {"type": "name_check", "available": name_available}
 
             try:
-                self.server_socket.sendto((json.dumps(response) + "\n").encode(), addr)
+                self.server_socket.sendto(
+                    (json.dumps(response) + "\n").encode(), addr)
                 logger.info(
                     f"Name check for '{name_to_check}': {'available' if name_available else 'not available'}"
                 )
@@ -767,7 +784,8 @@ class Server:
         """Handle sciper check requests"""
         # Update client activity timestamp
         # self.client_last_activity[addr] = time.time()
-        logger.debug(f"Checking sciper availability for {message['agent_sciper']}")
+        logger.debug(
+            f"Checking sciper availability for {message['agent_sciper']}")
 
         sciper_to_check = message.get("agent_sciper", "")
 
@@ -786,7 +804,8 @@ class Server:
                     )
                 except Exception as e:
                     logger.error(f"Error sending sciper check response: {e}")
-                logger.debug(f"Sciper check for '{sciper_to_check}': not available")
+                logger.debug(
+                    f"Sciper check for '{sciper_to_check}': not available")
                 return False
 
         # Check if the sciper exists in our mapping
@@ -804,7 +823,8 @@ class Server:
                 )
 
             try:
-                self.server_socket.sendto((json.dumps(response) + "\n").encode(), addr)
+                self.server_socket.sendto(
+                    (json.dumps(response) + "\n").encode(), addr)
                 logger.info(
                     f"Sciper check for '{sciper_to_check}': {'available' if sciper_available else 'not available'}"
                 )
@@ -882,7 +902,8 @@ class Server:
                 "game_started": selected_room.game_thread is not None,
             },
         }
-        self.server_socket.sendto((json.dumps(game_status) + "\n").encode(), addr)
+        self.server_socket.sendto(
+            (json.dumps(game_status) + "\n").encode(), addr)
 
         # If room is now full, start the game automatically
         if selected_room.is_full():
@@ -911,7 +932,8 @@ class Server:
                     logger.info(
                         f"Ignoring respawn request from {agent_name} as the game is over"
                     )
-                    response = {"type": "respawn_failed", "message": "Game is over"}
+                    response = {"type": "respawn_failed",
+                                "message": "Game is over"}
                     self.server_socket.sendto(
                         (json.dumps(response) + "\n").encode(), addr
                     )
@@ -929,7 +951,8 @@ class Server:
 
                 # Add the train to the game
                 if room.game.add_train(agent_name):
-                    response = {"type": "spawn_success", "agent_name": agent_name}
+                    response = {"type": "spawn_success",
+                                "agent_name": agent_name}
                     self.server_socket.sendto(
                         (json.dumps(response) + "\n").encode(), addr
                     )
@@ -949,7 +972,8 @@ class Server:
                     agent_name
                 ):
                     # logger.debug(f"Received direction change request from {agent_name} {message['direction']}")
-                    room.game.trains[agent_name].change_direction(message["direction"])
+                    room.game.trains[agent_name].change_direction(
+                        message["direction"])
                 # else:
                 #     logger.warning(f"Failed to change direction for train {agent_name}")
 
@@ -958,7 +982,8 @@ class Server:
                     agent_name
                 ):
                     # logger.debug(f"Received drop wagon request from {agent_name}")
-                    last_wagon_position = room.game.trains[agent_name].drop_wagon()
+                    last_wagon_position = room.game.trains[agent_name].drop_wagon(
+                    )
                     if last_wagon_position:
                         # Create a new passenger at the position of the dropped wagon
                         new_passenger = Passenger(room.game)
@@ -1028,7 +1053,6 @@ class Server:
                 room = self.rooms[room_id]
                 room.running = False
 
-                # Stop the game
                 if room.game:
                     room.game.running = False
 
@@ -1047,7 +1071,8 @@ class Server:
                 for addr in list(room.clients.keys()):
                     if addr in self.addr_to_name:
                         agent_name = self.addr_to_name[addr]
-                        logger.info(f"Removing client {agent_name} from room {room_id}")
+                        logger.info(
+                            f"Removing client {agent_name} from room {room_id}")
                         del self.addr_to_name[addr]
                     if addr in self.addr_to_sciper:
                         agent_sciper = self.addr_to_sciper[addr]
@@ -1103,7 +1128,8 @@ class Server:
                         # Add the client to the ping responses dictionary with the current time
                         self.ping_responses[addr] = current_time
                     except Exception as e:
-                        logger.debug(f"Error sending ping to client {addr}: {e}")
+                        logger.debug(
+                            f"Error sending ping to client {addr}: {e}")
 
                 # Wait for responses (half the ping interval)
                 time.sleep(self.ping_interval / 2)
@@ -1124,7 +1150,8 @@ class Server:
                 time.sleep(self.ping_interval / 2)
             except Exception as e:
                 logger.error(f"Error in ping_clients: {e}")
-                time.sleep(self.ping_interval)  # Sleep on error to avoid high CPU usage
+                # Sleep on error to avoid high CPU usage
+                time.sleep(self.ping_interval)
 
     def handle_client_disconnection(self, addr, reason="unknown"):
         """Handle client disconnection - centralized method to avoid code duplication"""
@@ -1133,7 +1160,8 @@ class Server:
 
         # Only log at INFO level if this is a known client
         if agent_name != "Unknown client":
-            logger.info(f"Client {agent_name} disconnected due to {reason}: {addr}")
+            logger.info(
+                f"Client {agent_name} disconnected due to {reason}: {addr}")
 
             # Find the room this client is in and create an AI to control their train
             for room in self.rooms.values():
@@ -1143,7 +1171,8 @@ class Server:
 
                     # Create an AI to control the train if it exists in the game
                     if agent_name in room.game.trains:
-                        logger.info(f"Creating AI client for train {agent_name}")
+                        logger.info(
+                            f"Creating AI client for train {agent_name}")
                         self.create_ai_for_train(room, agent_name)
                     else:
                         logger.info(
@@ -1155,7 +1184,8 @@ class Server:
 
                     # Check if this was the last human client in the room
                     if len(room.clients) == 0:
-                        logger.info(f"Last client left room {room.id}, closing room")
+                        logger.info(
+                            f"Last client left room {room.id}, closing room")
                         room.running = False
                         # Stop all AI clients in this room
                         for ai_name, ai_client in list(self.ai_clients.items()):
@@ -1168,7 +1198,8 @@ class Server:
                     break
         else:
             # Log at debug level for unknown clients to reduce spam
-            logger.debug(f"Unknown client disconnected due to {reason}: {addr}")
+            logger.debug(
+                f"Unknown client disconnected due to {reason}: {addr}")
 
         # Remove from activity tracking and add to disconnected clients
         if addr in self.client_last_activity:
@@ -1191,7 +1222,8 @@ class Server:
             return
 
         # Choose an AI name that's not already in use
-        available_names = [name for name in AI_NAMES if name not in self.used_ai_names]
+        available_names = [
+            name for name in AI_NAMES if name not in self.used_ai_names]
         if not available_names:
             # If all names are used, generate a random name
             ai_name = f"AI_{uuid.uuid4().hex[:6]}"

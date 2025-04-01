@@ -7,8 +7,8 @@ from network import NetworkManager
 from renderer import Renderer
 from event_handler import EventHandler
 from game_state import GameState
-from ui import UI
 from agent import Agent
+import json
 
 
 # Configure logging
@@ -21,15 +21,15 @@ logger = logging.getLogger("client")
 
 # Constants
 DEFAULT_HOST = "127.0.0.1"
-DEFAULT_PORT = 5000
+DEFAULT_PORT = 5555
 SCREEN_WIDTH = 500
 SCREEN_HEIGHT = 360
 CELL_SIZE = 20  # Size of each cell in pixels, overriden by server
 LEADERBOARD_WIDTH = 280  # Width of the leaderboard on the right
 
-MANUAL_SPAWN = False  # Enable manual respawn
-ACTIVATE_AGENT = True  # Enable agent
-MANUAL_CONTROL = True  # Enable manual control
+MANUAL_SPAWN = False
+ACTIVATE_AGENT = False
+MANUAL_CONTROL = True
 
 
 class Client:
@@ -99,7 +99,6 @@ class Client:
         self.renderer = Renderer(self)
         self.event_handler = EventHandler(self, ACTIVATE_AGENT, MANUAL_CONTROL)
         self.game_state = GameState(self, ACTIVATE_AGENT)
-        self.ui = UI(self)
 
         # Reference to the agent (will be initialized later)
         self.agent = None
@@ -148,7 +147,6 @@ class Client:
             return
 
         # Create a temporary window for player name
-        logger.info("Creating temporary window for player name")
         temp_width, temp_height = SCREEN_WIDTH, SCREEN_HEIGHT
         try:
             self.screen = pygame.display.set_mode((temp_width, temp_height))
@@ -157,8 +155,11 @@ class Client:
             logger.error(f"Error creating login window: {e}")
             return
 
-        # Ask player to enter their name and sciper
-        player_name, player_sciper = self.ui.get_player_ids()
+        # Get player name and sciper from config
+        with open("id_config.json", "r") as config_file:
+            config = json.load(config_file)
+            player_sciper = config.get("SCIPER", "0000000")
+            player_name = config.get("TRAIN_NAME", "Player")
 
         # Update agent name
         self.agent.agent_name = player_name
@@ -194,7 +195,6 @@ class Client:
             if self.in_waiting_room:
                 self.network.send_start_game_request()
 
-            # Draw the game
             self.renderer.draw_game()
 
             # Limit FPS
@@ -291,15 +291,7 @@ def main():
     client.set_agent(agent)
 
     # Start the client
-    try:
-        client.run()
-    except KeyboardInterrupt:
-        logger.info("Client stopped by user")
-    except Exception as e:
-        logger.error(f"Error during client execution: {e}")
-    finally:
-        logger.info("Client closed")
-
+    client.run()
 
 if __name__ == "__main__":
     main()

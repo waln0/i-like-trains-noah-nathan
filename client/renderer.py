@@ -38,7 +38,7 @@ class Renderer:
                 return
 
             # If game is over, display game over screen
-            if hasattr(self.client, "game_over") and self.client.game_over:
+            if self.client.game_over:
                 self.draw_game_over_screen()
                 # Update display
                 pygame.display.flip()
@@ -675,7 +675,7 @@ class Renderer:
 
             # Draw message
             font_message = pygame.font.Font(None, 36)
-            if hasattr(self.client, "game_over_data") and self.client.game_over_data:
+            if self.client.game_over_data:
                 message = self.client.game_over_data.get(
                     "message", "Time limit reached."
                 )
@@ -729,7 +729,7 @@ class Renderer:
 
             # Get scores to display
             scores_to_display = []
-            if hasattr(self.client, "final_scores") and self.client.final_scores:
+            if self.client.final_scores:
                 # Use final scores from game over data
                 # logger.debug(f"Final scores: {self.client.final_scores}")
                 for score_data in self.client.final_scores:
