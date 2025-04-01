@@ -51,6 +51,8 @@ To execute the client and connect to the server. Replace `<ip_adress>` and `<por
 python client/client.py <ip_adress> <port>
 ```
 
+You should know that events are not being processed when the pygame title bar is dragged as pygame does not handle events in that case. Doing so will unfortunately freeze your game and disconnect you from the server.
+
 ## How to Play
 
 ### 1. Launch the client
