@@ -80,12 +80,12 @@ class NetworkManager:
             bytes_sent = self.socket.sendto(serialized.encode(), self.server_addr)
             return bytes_sent > 0
         except ConnectionResetError:
-            # Don't log connection reset errors for UDP
             return False
         except socket.error as e:
-            if "[Errno 10054]" in str(e):
-                # This is a connection reset error, which is expected in UDP
-                # Don't log it to keep the console clean
+            # Don't log socket errors
+            if "[WinError 10054]" in str(e):
+                pass
+            elif "[Errno 10038]" in str(e):
                 pass
             else:
                 logger.error(f"Failed to send UDP message: {e}")
