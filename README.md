@@ -43,6 +43,8 @@ You cannot use the same sciper or train name as another player already connected
 
 ### 3. Execute the client
 
+If you are connecting to a remote server, you need to know the IP address and port of the server. If you are outside of EPFL network, you will need to use a VPN to connect to the network.
+
 To execute the client and connect to the server. Replace `<ip_adress>` and `<port>` with the IP address and port of the server (do not enter an IP address if you are connecting to a local server hosted on your machine).
 
 ```bash
