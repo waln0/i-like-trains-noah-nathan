@@ -776,8 +776,6 @@ class Server:
                     )
                 except Exception as e:
                     logger.error(f"Error sending name check response: {e}")
-                logger.debug(
-                    f"Name check for '{name_to_check}': not available")
                 return False
 
         # Check if the name exists in any room
@@ -799,9 +797,6 @@ class Server:
             try:
                 self.server_socket.sendto(
                     (json.dumps(response) + "\n").encode(), addr)
-                logger.info(
-                    f"Name check for '{name_to_check}': {'available' if name_available else 'not available'}"
-                )
             except Exception as e:
                 logger.error(f"Error sending name check response: {e}")
 
@@ -1182,6 +1177,14 @@ class Server:
 
     def handle_client_disconnection(self, addr, reason="unknown"):
         """Handle client disconnection - centralized method to avoid code duplication"""
+        # Check if client is already marked as disconnected
+        if addr in self.disconnected_clients:
+            # Already disconnected, no need to process again
+            return
+            
+        # Mark client as disconnected
+        self.disconnected_clients.add(addr)
+        
         agent_name = self.addr_to_name.get(addr, "Unknown client")
         agent_sciper = self.addr_to_sciper.get(addr, "Unknown client")
 
@@ -1195,20 +1198,17 @@ class Server:
                 if addr in room.clients:
                     # Remove client from room
                     logger.info(f"Removing {agent_name} from room {room.id}")
-
+                    
+                    # Remove the client from the room's client list
+                    if addr in room.clients:
+                        del room.clients[addr]
+                    
                     # Create an AI to control the train if it exists in the game
                     if agent_name in room.game.trains:
                         logger.info(
                             f"Creating AI client for train {agent_name}")
                         self.create_ai_for_train(room, agent_name)
-                    else:
-                        logger.info(
-                            f"Didn't create AI client for train {agent_name} because agent_name in room game.trains is {room.game.trains[agent_name]}"
-                        )
-
-                    # Remove client from room
-                    del room.clients[addr]
-
+                    
                     # Check if this was the last human client in the room
                     if len(room.clients) == 0:
                         logger.info(
@@ -1221,25 +1221,23 @@ class Server:
                                 del self.ai_clients[ai_name]
                         # Remove the room
                         self.remove_room(room.id)
-
+                    
+                    # Clean up client tracking data
+                    if addr in self.addr_to_name:
+                        del self.addr_to_name[addr]
+                    if addr in self.addr_to_sciper:
+                        del self.addr_to_sciper[addr]
+                    if agent_sciper in self.sciper_to_addr:
+                        del self.sciper_to_addr[agent_sciper]
+                    if addr in self.client_last_activity:
+                        del self.client_last_activity[addr]
+                    if addr in self.ping_responses:
+                        del self.ping_responses[addr]
                     break
         else:
             # Log at debug level for unknown clients to reduce spam
             logger.debug(
                 f"Unknown client disconnected due to {reason}: {addr}")
-
-        # Remove from activity tracking and add to disconnected clients
-        if addr in self.client_last_activity:
-            del self.client_last_activity[addr]
-        if addr in self.addr_to_name:
-            del self.addr_to_name[addr]
-        if addr in self.addr_to_sciper:
-            del self.addr_to_sciper[addr]
-        if agent_sciper in self.sciper_to_addr:
-            del self.sciper_to_addr[agent_sciper]
-        if addr in self.ping_responses:
-            del self.ping_responses[addr]
-        self.disconnected_clients.add(addr)
 
     def create_ai_for_train(self, room, train_name):
         """Create an AI client to control a train after a player disconnects"""
@@ -1294,8 +1292,7 @@ class Server:
                     self.server_socket.sendto(state_json.encode(), client_addr)
                 except Exception as e:
                     logger.error(
-                        f"Error sending train rename notification to client: {e}"
-                    )
+                        f"Error sending train rename notification to client: {e}")
 
             # Create the AI client with the new name
             self.ai_clients[ai_name] = AIClient(room, ai_name)

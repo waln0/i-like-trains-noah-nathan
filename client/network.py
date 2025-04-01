@@ -306,7 +306,6 @@ class NetworkManager:
             
             # Generate a unique test name using timestamp
             test_name = f"test_{int(time.time())}"
-            logger.info(f"Verifying connection to server at {self.host}:{self.port} using name check for '{test_name}'")
             
             # Send a name check request (this is allowed for unregistered clients)
             check_message = {"action": "check_name", "agent_name": test_name}

@@ -11,6 +11,7 @@ import os
 
 # Add the client directory to the path so we can import the Agent class
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(__file__)), "client"))
+# Import Agent from client directory
 from agent import Agent
 
 logger = logging.getLogger("server.ai_client")
@@ -89,9 +90,21 @@ class AIClient:
         )  # Use AI name for network interface
 
         # Create agent
-        self.agent = Agent(
-            name, self.network, "server.ai_agent", False
-        )  # Use AI name for agent
+        try:
+            logger.info(f"Trying to import AI agent for {name}")
+            from ai_agent import AI_agent
+            self.agent = AI_agent(
+                name, self.network, "server.ai_agent", False
+            )
+            logger.info(f"AI agent {name} initialized")
+        except ImportError as e:
+            logger.info(f"Failed to import AI agent for {name}, using base agent: {e}")
+            # Use the Agent class imported at the top of the file
+            self.agent = Agent(
+                name, self.network, "server.ai_agent", False
+            )  # Use AI name for agent
+            logger.info(f"Base agent {name} initialized")
+        
         self.agent.delivery_zone = self.game.delivery_zone.to_dict()
 
         # Start the AI thread
@@ -99,6 +112,7 @@ class AIClient:
         self.thread = threading.Thread(target=self.run)
         self.thread.daemon = True
         self.thread.start()
+        logger.info(f"AI client {name} started")
 
         self.update_state()
 
