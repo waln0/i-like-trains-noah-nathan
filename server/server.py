@@ -654,7 +654,7 @@ class Server:
                 self.handle_new_client(message, addr)
             else:
                 # ask the client to disconnect
-                self.send_disconnect(addr, "Name or sciper not available")
+                self.send_disconnect(addr, "Name or sciper not available or invalid")
                 logger.warning(f"Name or sciper not available for {addr}")
             return
 
@@ -788,15 +788,17 @@ class Server:
             f"Checking sciper availability for {message['agent_sciper']}")
 
         sciper_to_check = message.get("agent_sciper", "")
-
+        logger.debug(f"Sciper length: {len(sciper_to_check)}")
         # Check if the sciper is empty or not an int
         if (
             not sciper_to_check
-            or len(sciper_to_check) == 0
+            or len(sciper_to_check) != 6
             or not sciper_to_check.isdigit()
         ):
             if addr:
                 # Empty sciper, considered as not available
+                logger.debug(
+                    f"Sciper check for '{sciper_to_check}': not available")
                 response = {"type": "sciper_check", "available": False}
                 try:
                     self.server_socket.sendto(
@@ -806,6 +808,11 @@ class Server:
                     logger.error(f"Error sending sciper check response: {e}")
                 logger.debug(
                     f"Sciper check for '{sciper_to_check}': not available")
+                return False
+
+            else:
+                logger.debug(
+                    f"No address provided, sciper check for '{sciper_to_check}': not available")
                 return False
 
         # Check if the sciper exists in our mapping
