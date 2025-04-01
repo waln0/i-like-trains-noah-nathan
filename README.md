@@ -27,7 +27,21 @@ Then, open another terminal, go to the project folder, and execute `python clien
 
 If you want to quit the server, you need to hit `ctrl-c` twice.
 
-### 2. Execute the client
+### 2. Enter your player name and sciper in the id_config.json file
+
+The file `id_config.json` should contain your player name and sciper.
+For example:
+
+```json
+{
+    "SCIPER": "000000",
+    "TRAIN_NAME": "Player"
+}
+```
+
+You cannot use the same sciper or train name as another player already connected.
+
+### 3. Execute the client
 
 To execute the client and connect to the server. Replace `<ip_adress>` and `<port>` with the IP address and port of the server (do not enter an IP address if you are connecting to a local server hosted on your machine).
 
@@ -40,9 +54,8 @@ python client/client.py <ip_adress> <port>
 ### 1. Launch the client
 
 1. Launch your client: `python client/client.py <ip_adress> <port>`.
-2. Enter your player name and sciper.
-3. Wait in the waiting room until all players are connected.
-4. Your agent will automatically control your train.
+2. Wait in the waiting room until all players are connected.
+3. Your agent will automatically control your train.
 
 ### 2. Play the game
 

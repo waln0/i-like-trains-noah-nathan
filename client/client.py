@@ -29,7 +29,7 @@ LEADERBOARD_WIDTH = 280  # Width of the leaderboard on the right
 
 MANUAL_SPAWN = False  # Enable manual respawn
 ACTIVATE_AGENT = True  # Enable agent
-MANUAL_CONTROL = False  # Enable manual control
+MANUAL_CONTROL = True  # Enable manual control
 
 
 class Client:
@@ -255,7 +255,7 @@ class Client:
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,  # logging.DEBUG for more details,
+    level=logging.DEBUG,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     handlers=[logging.StreamHandler()],
 )
@@ -290,7 +290,6 @@ def main():
 
     # Start the client
     client.run()
-
 
 if __name__ == "__main__":
     main()
