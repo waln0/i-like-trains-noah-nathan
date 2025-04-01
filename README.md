@@ -4,13 +4,14 @@
 
 ## Overview
 
-I Like Trains is a multiplayer, real-time, network game where trains controlled by computer programs compete. Programs are
+"I Like Trains" is a multiplayer, real-time, network game where trains controlled by computer programs compete. Programs are
 written in Python and Pygame is used to render the playing field. Programs score points by collecting and dropping off
 passengers. The more passengers a train is carrying, the longer and slower it becomes. Programs are therefore expected
-to implement various strategies and avoid collisions.
+to implement various strategies while avoiding collisions.
 
-Your objective will be to modify the client/agent.py file (and only this one) to remotely control a train managed by a server according to his environment.
-The agent must make travel decisions for the train, as well as the game board with the Pygame Library.
+Your objective will be to modify [client/agent.py](/client/agent.py) file and implement logic to control
+your train. You may add additional files to the /client directory but do not
+modify any existing files, except for [client/agent.py](/client/agent.py).
 
 ## Setup Instructions
 
@@ -21,8 +22,10 @@ The agent must make travel decisions for the train, as well as the game board wi
 
 ### 1. (Optional) Start a local server for testing
 
-You can start a local server by executing `python server/server.py` if you want to test the client locally. This will start a server on the default port (5555) of your computer.
-Then, open another terminal, go to the project folder, and execute `python client/client.py` to connect to the local server. This is optional, but recommended for testing before connecting to the distant server.
+You can start a local server by executing `python server/server.py` if you want to test the client locally. This will start a server on `0.0.0.0:5555`.
+Then, open another terminal, go to the project folder, and execute `python client/client.py` to connect to the local server. This is optional, but recommended for testing before connecting to the remote server.
+
+If you want to quit the server, you need to hit `ctrl-c` twice.
 
 ### 2. Execute the client
 
@@ -43,7 +46,7 @@ python client/client.py <ip_adress> <port>
 
 ### 2. Play the game
 
-- The goal is to collect as many passengers (they will appear at random positions on the map), incrementing your number of wagons and then deliver them to the delivery zone. The number above each passenger spot indicates how many passengers are at that location. You can find the list of passengers with `self.passengers` (in `agent.py`).
+- The goal is to collect as many passengers (they will appear at random positions on the map), incrementing your number of wagons, and then deliver them to the delivery zone. The number above each passenger spot indicates how many passengers are at that location. You can find the list of passengers with `self.passengers` (in `client/agent.py`).
 
 - The train cannot change its direction to the opposite, only to the left or right.
 
@@ -62,7 +65,7 @@ python client/client.py <ip_adress> <port>
 The project is divided into two main parts:
 
 #### 1. Server (folder `server/`)
-The server is responsible for managing client connections and game synchronization. It is executed on a distant machine you can connect to.
+The server is responsible for managing client connections and game synchronization. It is executed on a remote machine you can connect to.
 The server files are included here so you can have a better understanding of how the management of the game works. 
 
 - `server.py` : Manages client connections and game synchronization.
@@ -88,7 +91,7 @@ The client is responsible for managing the game display and user interactions. I
 ### How the client data is updated from the server
 
 1. The server hosts the room and calculates the **game state** (information from the server about the game, like the trains positions, the passengers, the delivery zones, etc.)
-2. The client connects to the distant server (by default on localhost:5555)
+2. The client connects to the remote server (by default on localhost:5555)
 3. The client sends its **train name** and **sciper** to the server
 4. The server regularly sends the game state to the clients, and also listens to potential actions (change direction or drop wagon) from the clients to influence the game.
 5. The client receives the game state in the `network.py` and updates the agent's game state from the `handle_state_data()` method in `game_state.py`.
@@ -139,7 +142,7 @@ def get_direction(self, game_width, game_height):
     """
 ```
 
-- Your train exists in a 2D grid. You can tell your train to turn left, right, or continue going straight. Your code should live in agent.py (and additional new files if needed).
+- Your train exists in a 2D grid. You can tell your train to turn left, right, or continue going straight. Your code should live in [client/agent.py](/client/agent.py) and any additional files you might need.
 
 #### Using the network to send actions
 
@@ -162,7 +165,7 @@ Some constants are available in the client for debugging:
 
 - `MANUAL_SPAWN`: Automatic respawn when available. False by default, otherwise the player has to press the space bar.
 - `ACTIVATE_AGENT`: Activate the agent. True by default. If set to False, the agent will not be used.
-- `MANUAL_CONTROL`: Activate manual control. False by default, otherwise the player can use the keyboard arrows to control the train. Only meant for debugging, should be False when deployed.
+- `MANUAL_CONTROL`: Activate manual control. False by default, otherwise the player can use the keyboard arrows keys to control the train + `d` key to drop wagons. Only meant for debugging, will be False when grading.
 
 ### Logging System
 
