@@ -156,7 +156,7 @@ class Client:
                         connection_successful = True
                         break
                     else:
-                        logger.warning("Connection reported success but failed verification")
+                        logger.warning("Connection reported success but failed verification. Check port and server status.")
                 time.sleep(0.5)  # Small delay between connection attempts
             except Exception as e:
                 logger.error(f"Connection attempt failed: {e}")
