@@ -7,8 +7,8 @@ from network import NetworkManager
 from renderer import Renderer
 from event_handler import EventHandler
 from game_state import GameState
-from ui import UI
 from agent import Agent
+import json
 
 
 # Configure logging
@@ -99,7 +99,6 @@ class Client:
         self.renderer = Renderer(self)
         self.event_handler = EventHandler(self, ACTIVATE_AGENT, MANUAL_CONTROL)
         self.game_state = GameState(self, ACTIVATE_AGENT)
-        self.ui = UI(self)
 
         # Reference to the agent (will be initialized later)
         self.agent = None
@@ -156,8 +155,11 @@ class Client:
             logger.error(f"Error creating login window: {e}")
             return
 
-        # Ask player to enter their name and sciper
-        player_name, player_sciper = self.ui.get_player_ids()
+        # Get player name and sciper from config
+        with open("id_config.json", "r") as config_file:
+            config = json.load(config_file)
+            player_sciper = config.get("SCIPER", "0000000")
+            player_name = config.get("TRAIN_NAME", "Player")
 
         # Update agent name
         self.agent.agent_name = player_name
