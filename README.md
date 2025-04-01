@@ -147,7 +147,7 @@ def get_direction(self, game_width, game_height):
 #### Using the network to send actions
 
 The agent can also call the method `self.network.send_drop_wagon_request()` to send a request to the server to drop a wagon.
-The train will then get a 0.25sec *1.5 speed boost and will enter a 10sec boost cooldown. Calling this method will drop one wagon from the train (costing 1 point from the train's score).
+The train will then get a 0.25sec *1.5 speed boost and will enter a 10sec boost cooldown during which the train will not be able to drop wagons. Calling this method will drop one wagon from the train (costing 1 point from the train's score).
 This method is not supposed to be called to deliver the passengers to the delivery zone as the delivery is automatic.
 
 ## Implementation Tips
