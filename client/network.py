@@ -61,6 +61,18 @@ class NetworkManager:
             self.client.running = False
         if self.socket:
             try:
+                # Envoyer un message à nous-même pour débloquer le recvfrom
+                if hasattr(self, 'server_addr'):
+                    try:
+                        # Obtenir l'adresse locale du socket
+                        local_addr = self.socket.getsockname()
+                        # Envoyer un message vide à nous-même pour débloquer le recvfrom
+                        dummy_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                        dummy_socket.sendto(b'', local_addr)
+                        dummy_socket.close()
+                    except Exception as e:
+                        logger.debug(f"Error sending dummy packet: {e}")
+                
                 self.socket.close()
                 self.socket = None  # Set to None after closing
                 logger.info("UDP socket closed")
@@ -83,9 +95,9 @@ class NetworkManager:
             return False
         except socket.error as e:
             # Don't log socket errors
-            if "[WinError 10054]" in str(e):
+            if "10054" in str(e):
                 pass
-            elif "[Errno 10038]" in str(e):
+            elif "10038" in str(e):
                 pass
             else:
                 logger.error(f"Failed to send UDP message: {e}")
@@ -97,11 +109,18 @@ class NetworkManager:
     def receive_game_state(self):
         """Thread that receives game state updates"""
         buffer = ""
-        logger.debug("Starting UDP receive_game_state thread")
-
+        
         while self.running:
             try:
-                # For UDP, we need to use recvfrom which returns data and address
+                # Pour UDP, on utilise recvfrom qui retourne les données et l'adresse
+                if self.socket is None:
+                    logger.debug("Socket closed, exiting receive thread")
+                    break
+                    
+                # Définir un timeout pour permettre de vérifier self.running périodiquement
+                self.socket.settimeout(0.5)
+                
+                # Pour UDP, on utilise recvfrom qui retourne les données et l'adresse
                 data, addr = self.socket.recvfrom(4096)
 
                 if not data:
@@ -249,7 +268,7 @@ class NetworkManager:
                 # Don't log connection reset errors for UDP
                 time.sleep(0.1)  # Don't break for UDP, just wait and retry
             except socket.error as e:
-                if "[Errno 10054]" in str(e):
+                if "10054" in str(e):
                     # This is a connection reset error, which is expected in UDP
                     # Don't log it to keep the console clean
                     pass
@@ -260,7 +279,7 @@ class NetworkManager:
                         # No need to retry if game is over
                         time.sleep(1)
                     else:
-                        logger.warning(f"Socket timeout: {e}")
+                        # logger.warning(f"Socket timeout: {e}")
                         time.sleep(0.1)  # Wait and retry
                 # else:
                 #     logger.error(f"Socket error receiving UDP data: {e}")

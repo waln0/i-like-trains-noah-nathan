@@ -7,6 +7,7 @@ import logging
 import uuid
 import random
 import os
+import signal
 
 from game import Game
 from passenger import Passenger
@@ -577,7 +578,7 @@ class Server:
             except socket.error as e:
                 # For UDP, we don't know which client caused the error
                 # So we only log the error and don't mark any client as disconnected
-                if "[Errno 10054]" in str(e):
+                if "10054" in str(e):
                     # This is a connection reset error, which is expected in UDP
                     # We'll just log it at a lower level or not at all
                     pass  # Don't log connection reset errors at all
@@ -1295,6 +1296,36 @@ class Server:
 
     def run_game(self):
         """Main game loop"""
+        def signal_handler(sig, frame):
+            logger.info("Shutting down server gracefully...")
+            self.running = False
+            
+            # Close all client connections
+            for addr in list(self.addr_to_name.keys()):
+                self.send_disconnect(addr, "Server shutting down")
+            
+            # Close the socket
+            if self.server_socket:
+                try:
+                    self.server_socket.close()
+                    logger.info("Server socket closed")
+                except Exception as e:
+                    logger.error(f"Error closing server socket: {e}")
+            
+            # Wait for threads to finish
+            for thread in self.threads:
+                if thread.is_alive():
+                    thread.join(timeout=1.0)
+            
+            logger.info("Server shutdown complete")
+            sys.exit(0)
+        
+        # Register signal handler for graceful shutdown
+        signal.signal(signal.SIGINT, signal_handler)
+        signal.signal(signal.SIGTERM, signal_handler)
+        
+        logger.info("Server running. Press Ctrl+C to stop.")
+        
         while self.running:
             time.sleep(1)
 
