@@ -193,7 +193,6 @@ class Client:
             if self.in_waiting_room:
                 self.network.send_start_game_request()
 
-            # Draw the game
             self.renderer.draw_game()
 
             # Limit FPS

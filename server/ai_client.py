@@ -147,7 +147,6 @@ class AIClient:
                 self.agent.game_width = self.game_width
                 self.agent.game_height = self.game_height
 
-                # Update the agent
                 self.agent.update_agent()
 
                 # Add automatic respawn logic

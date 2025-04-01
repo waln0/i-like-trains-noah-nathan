@@ -331,7 +331,6 @@ class Room:
             except Exception as e:
                 logger.error(f"Error sending game over data to client: {e}")
 
-        # Stop the game
         self.game.running = False
 
         # Close the room after a short delay to ensure all clients receive the game over message
@@ -342,7 +341,7 @@ class Room:
             logger.info(f"Closing room {self.id} after game over")
             self.running = False
             # Remove the room from the server
-            if hasattr(self.game, "server") and self.game.server:
+            if self.game.server:
                 self.game.server.remove_room(self.id)
 
         # Start a thread to close the room after a delay
@@ -1054,7 +1053,6 @@ class Server:
                 room = self.rooms[room_id]
                 room.running = False
 
-                # Stop the game
                 if room.game:
                     room.game.running = False
 

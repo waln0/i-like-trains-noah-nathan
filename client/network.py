@@ -251,7 +251,7 @@ class NetworkManager:
                     pass
                 elif "timed out" in str(e).lower():
                     # Socket timeout - check if game is over
-                    if hasattr(self.client, "game_over") and self.client.game_over:
+                    if self.client.game_over:
                         logger.info("Server disconnected after game over")
                         # No need to retry if game is over
                         time.sleep(1)
