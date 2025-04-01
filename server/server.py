@@ -607,6 +607,17 @@ class Server:
             if addr in self.ping_responses:
                 del self.ping_responses[addr]  # Remove from pending responses
             return
+            
+        # Handle ping messages from unknown clients (for connection verification)
+        if "type" in message and message["type"] == "ping":
+            # Send a pong response even to unknown clients for connection verification
+            pong_message = {"type": "pong"}
+            try:
+                self.server_socket.sendto(json.dumps(pong_message).encode(), addr)
+                return
+            except Exception as e:
+                logger.error(f"Error sending pong to {addr}: {e}")
+                return
 
         # If this client was previously marked as disconnected
         if addr in self.disconnected_clients:

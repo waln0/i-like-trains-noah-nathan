@@ -102,6 +102,7 @@ class Client:
 
         # Reference to the agent (will be initialized later)
         self.agent = None
+        self.ping_response_received = False  # Added for connection verification
 
     def update_game_window_size(self, width, height):
         """Schedule window size update to be done in main thread"""
@@ -139,11 +140,39 @@ class Client:
         self.agent_name = agent.agent_name
 
     def run(self):
-        logger.info("Starting client loop")
         """Main client loop"""
-        # Connect to server
-        if not self.network.connect():
-            logger.error("Failed to connect to server")
+        logger.info("Starting client loop")
+        # Connect to server with timeout
+        connection_timeout = 5  # 5 seconds timeout
+        connection_start_time = time.time()
+        
+        connection_successful = False
+        while time.time() - connection_start_time < connection_timeout:
+            try:
+                if self.network.connect():
+                    # Verify connection by attempting to receive data
+                    if self.network.verify_connection():
+                        logger.info("Connected to server successfully")
+                        connection_successful = True
+                        break
+                    else:
+                        logger.warning("Connection reported success but failed verification")
+                time.sleep(0.5)  # Small delay between connection attempts
+            except Exception as e:
+                logger.error(f"Connection attempt failed: {e}")
+                time.sleep(0.5)
+        
+        if not connection_successful:
+            logger.error(f"Failed to connect to server after {connection_timeout} seconds timeout")
+            # Show error message to user
+            if self.screen:
+                font = pygame.font.Font(None, 26)
+                text = font.render("Connection to server failed. Check port and server status.", True, (255, 0, 0))
+                self.screen.fill((0, 0, 0))
+                self.screen.blit(text, (SCREEN_WIDTH//2 - text.get_width()//2, SCREEN_HEIGHT//2 - text.get_height()//2))
+                pygame.display.flip()
+                pygame.time.wait(3000)  # Show error for 3 seconds
+            pygame.quit()
             return
 
         # Create a temporary window for player name
