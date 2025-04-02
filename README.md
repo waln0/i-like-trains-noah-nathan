@@ -27,9 +27,9 @@ Then, open another terminal, go to the project folder, and execute `python clien
 
 If you want to quit the server, you need to hit `ctrl-c` twice.
 
-### 2. Enter your player name and sciper in the id_config.json file
+### 2. Enter your player name and sciper in the config.json file
 
-The file `id_config.json` should contain your player name and sciper.
+The file `config.json` should contain your player name and sciper.
 For example:
 
 ```json
@@ -45,11 +45,13 @@ You cannot use the same sciper or train name as another player already connected
 
 If you are connecting to a remote server, you need to know the IP address and port of the server. If you are outside of EPFL network, you will need to use a VPN to connect to the network.
 
-To execute the client and connect to the server. Replace `<ip_adress>` and `<port>` with the IP address and port of the server (do not enter an IP address if you are connecting to a local server hosted on your machine).
+To execute the client and connect to the server. Replace `<ip_adress>` with the IP address of the server (do not enter an IP address if you are connecting to a local server hosted on your machine as the default is already local).
 
 ```bash
-python client/client.py <ip_adress> <port>
+python client/client.py <ip_adress>
 ```
+
+You can add the `<port>` parameter to specify the port of the server you want to connect to (default is 5555). 
 
 You should know that events are not being processed when the pygame title bar is dragged as pygame does not handle events in that case. Doing so will unfortunately freeze your game and disconnect you from the server.
 
@@ -166,6 +168,10 @@ def get_direction(self, game_width, game_height):
 The agent can also call the method `self.network.send_drop_wagon_request()` to send a request to the server to drop a wagon.
 The train will then get a 0.25sec *1.5 speed boost and will enter a 10sec boost cooldown during which the train will not be able to drop wagons. Calling this method will drop one wagon from the train (costing 1 point from the train's score).
 This method is not supposed to be called to deliver the passengers to the delivery zone as the delivery is automatic.
+
+## Evaluation
+
+On the evaluation day, you will have to send us only one agent.py file per team. You should enter all the scipers of the team members in the SCIPERS constant of the file so we can identify your team. DO NOT forget to fill it, otherwise the file will not be graded.
 
 ## Implementation Tips
 

@@ -2,6 +2,8 @@ import random
 from base_agent import BaseAgent
 from network import NetworkManager
 
+# Student scipers, will be automatically used to evaluate your code
+SCIPERS = ["000001", "000002", "000003"]
 
 BASE_DIRECTIONS = [
     (0, -1),  # Up
