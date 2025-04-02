@@ -100,7 +100,6 @@ class Client:
 
     def update_game_window_size(self, width, height):
         """Schedule window size update to be done in main thread"""
-        # logger.info(f"Scheduling window size update to {width}x{height}")
         with self.lock:
             self.window_needs_update = True
             self.window_update_params = {"width": width, "height": height}
@@ -112,7 +111,6 @@ class Client:
                 width = self.window_update_params["width"]
                 height = self.window_update_params["height"]
 
-                # logger.info(f"Updating window size to {width}x{height}")
                 try:
                     self.screen = pygame.display.set_mode(
                         (width, height), pygame.RESIZABLE
@@ -122,7 +120,6 @@ class Client:
                         if self.agent_name
                         else "I Like Trains"
                     )
-                    # logger.info(f"Window updated successfully")
                 except Exception as e:
                     logger.error(f"Error updating window: {e}")
 

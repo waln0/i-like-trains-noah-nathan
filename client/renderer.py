@@ -112,7 +112,6 @@ class Renderer:
             except Exception as e:
                 logger.error("Error drawing leaderboard: " + str(e))
 
-            # logger.debug(f"Drawing game: agent is dead: {self.client.agent.is_dead}, in waiting room: {self.client.in_waiting_room}")
             if self.client.agent.is_dead and not self.client.in_waiting_room:
                 try:
                     self.draw_death_screen()
@@ -150,7 +149,6 @@ class Renderer:
         Draw passengers and their values
         """
         for passenger in self.client.passengers:
-            # logger.debug("Passenger: " + str(passenger))
             try:
                 if isinstance(passenger, dict):
                     if "position" in passenger:
@@ -208,8 +206,6 @@ class Renderer:
             # Only draw if train is alive
             if isinstance(train_data, dict) and not train_data.get("alive", True):
                 continue
-
-            # logger.debug(f"Drawing train: {train_name}, data: {train_data}")
 
             # Check if train data is in new format (dictionary)
             train_position = train_data.get("position", (0, 0))
@@ -731,7 +727,6 @@ class Renderer:
             scores_to_display = []
             if self.client.final_scores:
                 # Use final scores from game over data
-                # logger.debug(f"Final scores: {self.client.final_scores}")
                 for score_data in self.client.final_scores:
                     name = score_data.get("name", "Unknown")
                     best_score = score_data.get("best_score", 0)

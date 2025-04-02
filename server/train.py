@@ -80,7 +80,6 @@ class Train:
 
     def is_opposite_direction(self, new_direction):
         """Check if the new direction is opposite to the previous direction"""
-        # logger.debug(f"Checking if {new_direction} is opposite to {self.direction}: {new_direction == self.get_opposite_direction(self.direction)}")
         return (
             new_direction[0] == -self.direction[0]
             and new_direction[1] == -self.direction[1]
@@ -89,7 +88,6 @@ class Train:
     def change_direction(self, new_direction):
         """Change the train's direction if possible"""
         if not self.is_opposite_direction(new_direction):
-            # logger.debug(f"Changing direction because {new_direction} is not opposite to {self.direction}")
             self.new_direction = new_direction
 
     def update(self, trains, screen_width, screen_height, cell_size):
