@@ -29,9 +29,6 @@ class DeliveryZone:
         self.y = cell_size * random.randint(
             0, (game_height // cell_size - 1 - self.height // cell_size)
         )
-        logger.debug(
-            f"Delivery zone initialized: {self.to_dict()}, game size: {game_width}x{game_height}"
-        )
 
     def contains(self, position):
         x, y = position

@@ -282,7 +282,7 @@ class Game:
                 TICK_RATE,
             )
             self.update_passengers_count()
-            logger.info(f"Train {agent_name} spawned at position {spawn_pos}")
+            logger.debug(f"Train {agent_name} spawned at position {spawn_pos}")
             return True
         return False
 

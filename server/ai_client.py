@@ -96,16 +96,14 @@ class AIClient:
             self.agent = AI_agent(
                 name, self.network, logger="server.ai_agent", is_dead=False
             )
-            logger.info(f"AI agent {name} initialized")
+            logger.info(f"AI agent {name} initialized using AI_agent")
         except ImportError as e:
             logger.info(f"Failed to import AI agent for {name}, using base agent: {e}")
             # Use the Agent class imported at the top of the file
             self.agent = Agent(
                 name, self.network, logger="server.ai_agent", is_dead=False
-            ) 
-            self.agent.logger = "server.ai_agent"
-            self.agent.is_dead = False
-            logger.info(f"Base agent {name} initialized")
+            )
+            logger.info(f"AI agent {name} initialized using base_agent")
         
         self.agent.delivery_zone = self.game.delivery_zone.to_dict()
 
