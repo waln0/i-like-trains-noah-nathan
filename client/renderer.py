@@ -5,7 +5,7 @@ Graphics rendering module for the I Like Trains client
 import pygame
 import logging
 import time
-
+import json
 
 # Configure logger
 logger = logging.getLogger("client.renderer")
@@ -18,6 +18,11 @@ class Renderer:
         """Initialize renderer with a reference to the client"""
         self.client = client
         self.sorted_trains = []
+
+        # Load config
+        with open("config.json", "r") as f:
+            config = json.load(f)
+        self.manual_spawn = config["manual_spawn"]
 
     def draw_game(self):
         """Draws the game."""
@@ -112,7 +117,6 @@ class Renderer:
             except Exception as e:
                 logger.error("Error drawing leaderboard: " + str(e))
 
-            # logger.debug(f"Drawing game: agent is dead: {self.client.agent.is_dead}, in waiting room: {self.client.in_waiting_room}")
             if self.client.agent.is_dead and not self.client.in_waiting_room:
                 try:
                     self.draw_death_screen()
@@ -150,7 +154,6 @@ class Renderer:
         Draw passengers and their values
         """
         for passenger in self.client.passengers:
-            # logger.debug("Passenger: " + str(passenger))
             try:
                 if isinstance(passenger, dict):
                     if "position" in passenger:
@@ -208,8 +211,6 @@ class Renderer:
             # Only draw if train is alive
             if isinstance(train_data, dict) and not train_data.get("alive", True):
                 continue
-
-            # logger.debug(f"Drawing train: {train_name}, data: {train_data}")
 
             # Check if train data is in new format (dictionary)
             train_position = train_data.get("position", (0, 0))
@@ -378,7 +379,7 @@ class Renderer:
             )
             self.client.screen.blit(text, text_rect)
 
-        elif self.client.agent.waiting_for_respawn:
+        elif self.client.agent.waiting_for_respawn and self.manual_spawn:
             # Display respawn message in center of screen
             font = pygame.font.Font(None, 28)
             text = font.render("Press SPACE to spawn", True, (0, 200, 0))
@@ -731,7 +732,6 @@ class Renderer:
             scores_to_display = []
             if self.client.final_scores:
                 # Use final scores from game over data
-                # logger.debug(f"Final scores: {self.client.final_scores}")
                 for score_data in self.client.final_scores:
                     name = score_data.get("name", "Unknown")
                     best_score = score_data.get("best_score", 0)
