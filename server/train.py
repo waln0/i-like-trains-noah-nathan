@@ -355,7 +355,7 @@ class Train:
         x, y = new_position
         # logger.debug(f"Position: {x}, {y}=. Screen size: {screen_width}, {screen_height}. New position: {new_position}")
         if x < 0 or x >= screen_width or y < 0 or y >= screen_height:
-            logger.info(
+            logger.debug(
                 f"Train {self.agent_name} is dead: out of the screen. Coordinates: {new_position}"
             )
             self.set_alive(False)
