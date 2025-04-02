@@ -15,10 +15,10 @@ logger = logging.getLogger("client.game_state")
 class GameState:
     """Class responsible for managing the game state"""
 
-    def __init__(self, client, activate_agent):
+    def __init__(self, client, control_mode):
         """Initialize the game state manager with a reference to the client"""
         self.client = client
-        self.activate_agent = activate_agent
+        self.control_mode = control_mode
         self.lock = (
             threading.Lock()
         )  # Add a threading lock to prevent concurrency issues
@@ -39,7 +39,7 @@ class GameState:
                     # Update the modified attributes
                     self.client.trains[train_name].update(train_data)
 
-                if self.activate_agent:
+                if self.control_mode == "agent":
                     self.client.agent.all_trains = self.client.trains
 
             # Handle renamed train
@@ -48,28 +48,24 @@ class GameState:
                 if old_name in self.client.trains:
                     logger.info(f"Renaming train {old_name} to {new_name}")
                     self.client.trains[new_name] = self.client.trains.pop(old_name)
-                    if self.activate_agent:
+                    if self.control_mode == "agent":
                         self.client.agent.all_trains = self.client.trains
 
             if "passengers" in data:
                 # Adjust passenger positions to be in pixel coordinates
                 self.client.passengers = data["passengers"]
-                if self.activate_agent:
+                if self.control_mode == "agent":
                     self.client.agent.passengers = self.client.passengers
 
             if "delivery_zone" in data:
                 # Update delivery zone
-                logger.debug(f"Delivery zone updated: {data['delivery_zone']}")
                 self.client.delivery_zone = data["delivery_zone"]
-                if self.activate_agent:
+                if self.control_mode == "agent":
                     self.client.agent.delivery_zone = self.client.delivery_zone
 
             if "size" in data:
                 self.client.game_width = data["size"]["game_width"]
                 self.client.game_height = data["size"]["game_height"]
-                logger.info(
-                    f"Game size updated: {self.client.game_width}x{self.client.game_height}"
-                )
                 try:
                     # Recalculate screen dimensions
                     self.client.screen_width = (
@@ -94,7 +90,7 @@ class GameState:
 
                     # Mark as initialized to prevent default window creation
                     self.client.is_initialized = True
-                    if self.activate_agent:
+                    if self.control_mode == "agent":
                         self.client.agent.screen_width = self.client.screen_width
                         self.client.agent.screen_height = self.client.screen_height
 
@@ -104,11 +100,11 @@ class GameState:
             if "cell_size" in data:
                 self.client.cell_size = data["cell_size"]
                 logger.info(f"Cell size updated: {self.client.cell_size}")
-                if self.activate_agent:
+                if self.control_mode == "agent":
                     self.client.agent.cell_size = self.client.cell_size
 
             # Update the agent's state
-            if self.activate_agent:
+            if self.control_mode == "agent":
                 # Make sure any data not updated individually gets updated here
                 if self.client.agent.all_trains is None:
                     self.client.agent.all_trains = self.client.trains
@@ -170,7 +166,6 @@ class GameState:
             self.client.waiting_room_data = data
 
             self.client.leaderboard_height = data.get("nb_players") * 10
-            # logger.debug("Waiting room data updated: ")
 
         except Exception as e:
             logger.error("Error handling waiting room data: " + str(e))
@@ -182,12 +177,20 @@ class GameState:
                 logger.error("Cooldown data is not a dictionary: " + str(data))
                 return
 
+            # Check if the agent is already dead
+            if self.client.agent.is_dead:
+                return
+
+            # Log the cooldown
+            logger.info(
+                f"Train is dead. Cooldown: {data['remaining']}s"
+            )
+
             # Update the agent's cooldown data
             self.client.agent.is_dead = True
             self.client.agent.death_time = time.time()
             self.client.agent.waiting_for_respawn = True
             self.client.agent.respawn_cooldown = data.get("remaining", 0)
-            # logger.info("Cooldown updated: " + str(self.client.agent.respawn_cooldown) + "s")
         except Exception as e:
             logger.error("Error handling cooldown data: " + str(e))
 

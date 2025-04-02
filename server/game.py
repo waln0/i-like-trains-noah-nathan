@@ -205,7 +205,6 @@ class Game:
             )
 
             if self.is_position_safe(x, y):
-                # logger.debug(f"Found safe spawn position at ({x}, {y})")
                 return x, y
 
         # Default position at the center
@@ -264,7 +263,6 @@ class Game:
                 del self.dead_trains[agent_name]
 
         # Create the new train
-        # logger.debug(f"Adding train for agent: {agent_name}")
         spawn_pos = self.get_safe_spawn_position()
         if spawn_pos:
             # If the agent name is in the train_colors dictionary, use the color, otherwise generate a random color
@@ -282,7 +280,6 @@ class Game:
                 TICK_RATE,
             )
             self.update_passengers_count()
-            logger.info(f"Train {agent_name} spawned at position {spawn_pos}")
             return True
         return False
 
@@ -291,7 +288,6 @@ class Game:
         if agent_name in self.trains:
             # Register the death time
             self.dead_trains[agent_name] = time.time()
-            # logger.info(f"Train {agent_name} entered {RESPAWN_COOLDOWN}s cooldown")
 
             # Clean up the last delivery time for this train
             if agent_name in self.last_delivery_times:
@@ -323,7 +319,6 @@ class Game:
             elapsed = time.time() - self.dead_trains[agent_name]
             remaining = max(0, RESPAWN_COOLDOWN - elapsed)
             return remaining
-        # logger.error(f"Train {agent_name} not found in cooldown dictionary")
         return 0
 
     def is_train_alive(self, agent_name):
@@ -332,7 +327,6 @@ class Game:
 
     def check_collisions(self):
         for _, train in self.trains.items():
-            # logger.debug(f"Updating train {train_name} at position {train.position} with direction {train.direction}")
             train.update(
                 self.trains,
                 self.game_width,
@@ -367,12 +361,10 @@ class Game:
                     # Slowly popping wagons and increasing score
                     wagon = train.pop_wagon()
                     if wagon:
-                        # logger.debug(f"Popping wagon {wagon} for train {train.agent_name}")
                         train.update_score(train.score + 1)
                         # Update best score if needed
                         if train.score > self.best_scores.get(train.agent_name, 0):
                             self.best_scores[train.agent_name] = train.score
-                            # logger.debug(f"New best score for {train.agent_name}: {self.best_scores[train.agent_name]}")
                         # Update the last delivery time for this train
                         self.last_delivery_times[train.agent_name] = current_time
 

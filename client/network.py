@@ -199,7 +199,6 @@ class NetworkManager:
                             elif message_type == "drop_wagon_success":
                                 self.client.handle_drop_wagon_success(message_data)
                             elif message_type == "drop_wagon_failed":
-                                # logger.info(f"Failed to activate boost (not enough passengers, boost in cooldown or inactive)")
                                 pass
 
                             elif message_type == "leaderboard":
@@ -214,26 +213,20 @@ class NetworkManager:
 
                             elif message_type == "name_check":
                                 logger.debug(
-                                    f"Received name_check response: {message_data['available']}"
+                                    f"Name available: {message_data['available']}"
                                 )
                                 self.client.name_check_result = message_data.get(
                                     "available", False
                                 )
                                 self.client.name_check_received = True
-                                logger.debug(
-                                    f"Name check response received, available: {self.client.name_check_result}"
-                                )
 
                             elif message_type == "sciper_check":
-                                logger.debug(
-                                    f"Received sciper_check response: {message_data['available']}"
-                                )
                                 self.client.sciper_check_result = message_data.get(
                                     "available", False
                                 )
                                 self.client.sciper_check_received = True
                                 logger.debug(
-                                    f"Sciper check response received, available: {self.client.sciper_check_result}"
+                                    f"Sciper available: {self.client.sciper_check_result}"
                                 )
 
                             elif message_type == "best_score":
@@ -242,9 +235,6 @@ class NetworkManager:
                                 )
 
                             elif message_type == "death":
-                                logger.info(
-                                    f"Train is dead. Cooldown: {message_data['remaining']}s"
-                                )
                                 self.client.handle_death(message_data)
 
                             elif message_type == "disconnect":
@@ -304,7 +294,6 @@ class NetworkManager:
                         # No need to retry if game is over
                         time.sleep(1)
                     else:
-                        # logger.warning(f"Socket timeout: {e}")
                         time.sleep(0.1)  # Wait and retry
                 # else:
                 #     logger.error(f"Socket error receiving UDP data: {e}")
@@ -350,7 +339,6 @@ class NetworkManager:
                 return False
                 
             # If we get here, we received a response
-            logger.info(f"Successfully verified connection to server at {self.host}:{self.port}")
             return True
             
         except Exception as e:

@@ -83,7 +83,6 @@ class BaseAgent:
 
                 # Check if the direction is in the base directions
                 if new_direction not in BASE_DIRECTIONS:
-                    self.logger.warning(f"Invalid direction: {new_direction}")
                     return
 
                 # Check if the direction is different from the current direction

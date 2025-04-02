@@ -29,15 +29,13 @@ class AINetworkInterface:
 
     def send_direction_change(self, direction):
         """Change the direction of the train using the server's function"""
-        # logger.debug(f"AI client {self.train_name} sending direction change: {direction}")
         if self.train_name in self.room.game.trains and self.room.game.is_train_alive(
             self.train_name
         ):
             self.room.game.trains[self.train_name].change_direction(direction)
-            # logger.debug(f"AI client {self.train_name} changed direction to {direction}")
             return True
         else:
-            logger.warning(f"Failed to change direction for train {self.train_name}")
+            logger.warning(f"Failed to change direction for train {self.train_name}. Train in room's trains: {self.train_name in self.room.game.trains}, is train alive: {self.room.game.is_train_alive(self.train_name)}")
         return False
 
     def send_drop_wagon_request(self):
@@ -96,16 +94,14 @@ class AIClient:
             self.agent = AI_agent(
                 name, self.network, logger="server.ai_agent", is_dead=False
             )
-            logger.info(f"AI agent {name} initialized")
+            logger.info(f"AI agent {name} initialized using AI_agent")
         except ImportError as e:
             logger.info(f"Failed to import AI agent for {name}, using base agent: {e}")
             # Use the Agent class imported at the top of the file
             self.agent = Agent(
                 name, self.network, logger="server.ai_agent", is_dead=False
-            ) 
-            self.agent.logger = "server.ai_agent"
-            self.agent.is_dead = False
-            logger.info(f"Base agent {name} initialized")
+            )
+            logger.info(f"AI agent {name} initialized using base_agent")
         
         self.agent.delivery_zone = self.game.delivery_zone.to_dict()
 
@@ -149,12 +145,8 @@ class AIClient:
         """Main AI client loop"""
         while self.running and self.room.running:
             try:
-                # logger.debug(f"AI client {self.agent_name} running")
                 # Update the client state from the game
                 self.update_state()
-
-                # logg the position of the train
-                # logger.debug(f"AI client {self.agent_name} train position: {self.all_trains[self.agent_name]['position']}")
 
                 # Make sure the agent has access to the correct properties
                 self.agent.all_trains = self.all_trains

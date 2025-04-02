@@ -310,8 +310,6 @@ class Room:
         # Sort scores in descending order
         final_scores.sort(key=lambda x: x["best_score"], reverse=True)
 
-        # logger.debug(f"Final scores: {final_scores}")
-
         # Create game over message
         game_over_data = {
             "type": "game_over",
@@ -351,7 +349,6 @@ class Room:
         close_thread.start()
 
     def is_full(self):
-        # logger.debug(f"Room {self.id} has {len(self.clients)} clients and {self.nb_players} max players")
         return len(self.clients) >= self.nb_players
 
     def get_player_count(self):
@@ -462,7 +459,6 @@ class Server:
 
         # Load player scores from file
         self.best_scores = load_best_scores()
-        # logger.info(f"Loaded {len(self.scores)} player scores from file")
 
         # Display high scores
         display_high_scores(self.best_scores)
@@ -525,10 +521,8 @@ class Server:
 
     def get_available_room(self, nb_players):
         """Get an available room or create a new one if needed"""
-        # logger.debug(f"Getting available room for {nb_players} players")
         # First try to find a non-full room
         for room in self.rooms.values():
-            # logger.debug(f"Checking room {room.id} for {nb_players} players")
             if (
                 room.nb_players == nb_players
                 and not room.is_full()
@@ -557,7 +551,6 @@ class Server:
                     continue
 
                 data_str = data.decode()
-                # logger.debug(f"Received UDP data from {addr}: {data_str[:50]}...")
 
                 # Process the incoming message
                 if data_str:
@@ -762,9 +755,6 @@ class Server:
 
     def handle_name_check(self, message, addr):
         """Handle name check requests"""
-        # Update client activity timestamp
-        # self.client_last_activity[addr] = time.time()
-        # logger.debug(f"Checking name availability for {message['agent_name']}")
 
         name_to_check = message.get("agent_name", "")
         if addr:
@@ -913,10 +903,8 @@ class Server:
             },
         }
         self.server_socket.sendto((json.dumps(response) + "\n").encode(), addr)
-        logger.debug(f"Sent join success response to {agent_name}")
 
         # Send initial game state immediately
-        logger.debug(f"Sending initial game state to {agent_name}")
         game_status = {
             "type": "waiting_room",
             "data": {
@@ -995,7 +983,6 @@ class Server:
                 if agent_name in room.game.trains and room.game.is_train_alive(
                     agent_name
                 ):
-                    # logger.debug(f"Received direction change request from {agent_name} {message['direction']}")
                     room.game.trains[agent_name].change_direction(
                         message["direction"])
                 # else:
@@ -1005,7 +992,6 @@ class Server:
                 if agent_name in room.game.trains and room.game.is_train_alive(
                     agent_name
                 ):
-                    # logger.debug(f"Received drop wagon request from {agent_name}")
                     last_wagon_position = room.game.trains[agent_name].drop_wagon(
                     )
                     if last_wagon_position:
@@ -1035,13 +1021,10 @@ class Server:
                         )
 
             elif message.get("action") == "start_game":
-                # logger.info(f"Received start game request from {agent_name}")
-                # Check if the game is already started
                 if not room.game_thread or not room.game_thread.is_alive():
-                    # If the game is not yet started and there are enough players, start it
                     if (
                         room.get_player_count() >= self.nb_players
-                    ):  # Require at least 2 players
+                    ):
                         logger.info(
                             f"Starting game as number of players: {room.get_player_count()} and number of players: {self.nb_players}"
                         )
@@ -1062,8 +1045,7 @@ class Server:
                         self.server_socket.sendto(
                             (json.dumps(response) + "\n").encode(), addr
                         )
-                        # logger.debug(f"Sent cooldown notification to {agent_name}: {cooldown}s")
-                        return  # Once we have found and notified the client, we can exit
+                        return
                     except Exception as e:
                         logger.error(
                             f"Error sending cooldown notification to {agent_name}: {e}"
@@ -1302,7 +1284,6 @@ class Server:
             # Add the ai_client to the game
             room.game.ai_clients[ai_name] = self.ai_clients[ai_name]
 
-            # logger.info(f"Created AI client {ai_name} to control train previously owned by {train_name}")
         else:
             logger.warning(
                 f"Train {train_name} not found in game, cannot create AI client"
@@ -1361,11 +1342,6 @@ class Server:
                 logger.error(f"Error closing server socket: {e}")
         else:
             logger.info("Server socket already closed or not initialized.")
-
-        # 3. Join threads (ensure threads check self.running or handle socket closure)
-        # Note: Check if accept_clients and room threads are correctly managed.
-        # Currently, only self.threads (which is empty) and self.ping_thread are considered.
-        # This might need further refinement based on how threads are actually created and stored.
 
         threads_to_join = []
         if hasattr(self, 'threads'): # Check if attribute exists

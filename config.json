@@ -1,15 +1,14 @@
 {
-    "SCIPER": "000000",
-    "TRAIN_NAME": "Player",
+    "sciper": "000000",
+    "train_name": "Player",
 
-    "DEFAULT_PORT": 5555,
+    "default_port": 5555,
     
-    "SCREEN_WIDTH": 500,
-    "SCREEN_HEIGHT": 360,
-    "CELL_SIZE": 20,
-    "LEADERBOARD_WIDTH": 280,
+    "screen_width": 500,
+    "screen_height": 360,
+    "cell_size": 20,
+    "leaderboard_width": 280,
 
-    "MANUAL_SPAWN": false,
-    "ACTIVATE_AGENT": false,
-    "MANUAL_CONTROL": true
+    "manual_spawn": false,
+    "control_mode": "manual"
 }

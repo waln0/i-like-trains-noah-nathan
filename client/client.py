@@ -28,7 +28,7 @@ DEFAULT_HOST = "localhost"
 class Client:
     """Main client class"""
 
-    def __init__(self, host=DEFAULT_HOST, port=config["DEFAULT_PORT"]):
+    def __init__(self, host=DEFAULT_HOST, port=config["default_port"]):
         """Initialize the client"""
         self.host = host
         self.port = port
@@ -58,19 +58,19 @@ class Client:
         self.passengers = []
         self.delivery_zone = {}
 
-        self.cell_size = config["CELL_SIZE"]
+        self.cell_size = config["cell_size"]
         self.game_width = 200  # Initial game area width
         self.game_height = 200  # Initial game area height
-        self.game_screen_padding = config["CELL_SIZE"]  # Space between game area and leaderboard
-        self.leaderboard_width = config["LEADERBOARD_WIDTH"]
+        self.game_screen_padding = config["cell_size"]  # Space between game area and leaderboard
+        self.leaderboard_width = config["leaderboard_width"]
         self.leaderboard_height = 2 * self.game_screen_padding + self.game_height
 
         self.leaderboard_data = []
         self.waiting_room_data = None
 
         # Calculate screen dimensions based on game area and leaderboard
-        self.screen_width = config["SCREEN_WIDTH"]
-        self.screen_height = config["SCREEN_HEIGHT"]
+        self.screen_width = config["screen_width"]
+        self.screen_height = config["screen_height"]
 
         # Window creation flags and parameters
         self.window_needs_update = False
@@ -90,8 +90,8 @@ class Client:
         # Initialize components
         self.network = NetworkManager(self, host, port)
         self.renderer = Renderer(self)
-        self.event_handler = EventHandler(self, config["ACTIVATE_AGENT"], config["MANUAL_CONTROL"])
-        self.game_state = GameState(self, config["ACTIVATE_AGENT"])
+        self.event_handler = EventHandler(self, config["control_mode"])
+        self.game_state = GameState(self, config["control_mode"])
 
         # Reference to the agent (will be initialized later)
         self.agent = None
@@ -100,7 +100,6 @@ class Client:
 
     def update_game_window_size(self, width, height):
         """Schedule window size update to be done in main thread"""
-        # logger.info(f"Scheduling window size update to {width}x{height}")
         with self.lock:
             self.window_needs_update = True
             self.window_update_params = {"width": width, "height": height}
@@ -112,7 +111,6 @@ class Client:
                 width = self.window_update_params["width"]
                 height = self.window_update_params["height"]
 
-                # logger.info(f"Updating window size to {width}x{height}")
                 try:
                     self.screen = pygame.display.set_mode(
                         (width, height), pygame.RESIZABLE
@@ -122,7 +120,6 @@ class Client:
                         if self.agent_name
                         else "I Like Trains"
                     )
-                    # logger.info(f"Window updated successfully")
                 except Exception as e:
                     logger.error(f"Error updating window: {e}")
 
@@ -163,14 +160,14 @@ class Client:
                 font = pygame.font.Font(None, 26)
                 text = font.render("Connection to server failed. Check port and server status.", True, (255, 0, 0))
                 self.screen.fill((0, 0, 0))
-                self.screen.blit(text, (config["SCREEN_WIDTH"]//2 - text.get_width()//2, config["SCREEN_HEIGHT"]//2 - text.get_height()//2))
+                self.screen.blit(text, (config["screen_width"]//2 - text.get_width()//2, config["screen_height"]//2 - text.get_height()//2))
                 pygame.display.flip()
                 pygame.time.wait(3000)  # Show error for 3 seconds
             pygame.quit()
             return
 
         # Create a temporary window for player name
-        temp_width, temp_height = config["SCREEN_WIDTH"], config["SCREEN_HEIGHT"]
+        temp_width, temp_height = config["screen_width"], config["screen_height"]
         try:
             self.screen = pygame.display.set_mode((temp_width, temp_height))
             pygame.display.set_caption("I Like Trains - Login")
@@ -179,8 +176,8 @@ class Client:
             return
 
         # Get player name and sciper from config
-        player_sciper = config["SCIPER"]
-        player_name = config["TRAIN_NAME"]
+        player_sciper = config["sciper"]
+        player_name = config["train_name"]
 
         # Update agent name
         self.agent.agent_name = player_name
@@ -204,7 +201,7 @@ class Client:
 
             # Add automatic respawn logic
             if (
-                not config["MANUAL_SPAWN"]
+                not config["manual_spawn"]
                 and self.agent.is_dead
                 and self.agent.waiting_for_respawn
                 and not self.game_over
@@ -286,7 +283,7 @@ class Client:
             try:
                 font = pygame.font.SysFont("Arial", 24)
                 text = font.render("Server disconnected. Press any key to exit.", True, (255, 0, 0))
-                text_rect = text.get_rect(center=(config["SCREEN_WIDTH"]//2, config["SCREEN_HEIGHT"]//2))
+                text_rect = text.get_rect(center=(config["screen_width"]//2, config["screen_height"]//2))
                 self.renderer.screen.fill((0, 0, 0))
                 self.renderer.screen.blit(text, text_rect)
                 pygame.display.flip()
@@ -339,7 +336,7 @@ def main():
         host = sys.argv[1]
 
     # Check if a port was provided as an argument
-    port = config["DEFAULT_PORT"]
+    port = config["default_port"]
     if len(sys.argv) > 2:
         port = int(sys.argv[2])
 
