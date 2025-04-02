@@ -19,23 +19,16 @@ logging.basicConfig(
 )
 logger = logging.getLogger("client")
 
-# Constants
-DEFAULT_HOST = "127.0.0.1"
-DEFAULT_PORT = 5555
-SCREEN_WIDTH = 500
-SCREEN_HEIGHT = 360
-CELL_SIZE = 20  # Size of each cell in pixels, overriden by server
-LEADERBOARD_WIDTH = 280  # Width of the leaderboard on the right
+# Constants, imported from config.json
+with open("config.json", "r") as f:
+    config = json.load(f)
 
-MANUAL_SPAWN = False
-ACTIVATE_AGENT = False
-MANUAL_CONTROL = True
-
+DEFAULT_HOST = "localhost"
 
 class Client:
     """Main client class"""
 
-    def __init__(self, host=DEFAULT_HOST, port=DEFAULT_PORT):
+    def __init__(self, host=DEFAULT_HOST, port=config["DEFAULT_PORT"]):
         """Initialize the client"""
         self.host = host
         self.port = port
@@ -65,19 +58,19 @@ class Client:
         self.passengers = []
         self.delivery_zone = {}
 
-        self.cell_size = CELL_SIZE
+        self.cell_size = config["CELL_SIZE"]
         self.game_width = 200  # Initial game area width
         self.game_height = 200  # Initial game area height
-        self.game_screen_padding = CELL_SIZE  # Space between game area and leaderboard
-        self.leaderboard_width = LEADERBOARD_WIDTH
+        self.game_screen_padding = config["CELL_SIZE"]  # Space between game area and leaderboard
+        self.leaderboard_width = config["LEADERBOARD_WIDTH"]
         self.leaderboard_height = 2 * self.game_screen_padding + self.game_height
 
         self.leaderboard_data = []
         self.waiting_room_data = None
 
         # Calculate screen dimensions based on game area and leaderboard
-        self.screen_width = SCREEN_WIDTH
-        self.screen_height = SCREEN_HEIGHT
+        self.screen_width = config["SCREEN_WIDTH"]
+        self.screen_height = config["SCREEN_HEIGHT"]
 
         # Window creation flags and parameters
         self.window_needs_update = False
@@ -97,8 +90,8 @@ class Client:
         # Initialize components
         self.network = NetworkManager(self, host, port)
         self.renderer = Renderer(self)
-        self.event_handler = EventHandler(self, ACTIVATE_AGENT, MANUAL_CONTROL)
-        self.game_state = GameState(self, ACTIVATE_AGENT)
+        self.event_handler = EventHandler(self, config["ACTIVATE_AGENT"], config["MANUAL_CONTROL"])
+        self.game_state = GameState(self, config["ACTIVATE_AGENT"])
 
         # Reference to the agent (will be initialized later)
         self.agent = None
@@ -170,14 +163,14 @@ class Client:
                 font = pygame.font.Font(None, 26)
                 text = font.render("Connection to server failed. Check port and server status.", True, (255, 0, 0))
                 self.screen.fill((0, 0, 0))
-                self.screen.blit(text, (SCREEN_WIDTH//2 - text.get_width()//2, SCREEN_HEIGHT//2 - text.get_height()//2))
+                self.screen.blit(text, (config["SCREEN_WIDTH"]//2 - text.get_width()//2, config["SCREEN_HEIGHT"]//2 - text.get_height()//2))
                 pygame.display.flip()
                 pygame.time.wait(3000)  # Show error for 3 seconds
             pygame.quit()
             return
 
         # Create a temporary window for player name
-        temp_width, temp_height = SCREEN_WIDTH, SCREEN_HEIGHT
+        temp_width, temp_height = config["SCREEN_WIDTH"], config["SCREEN_HEIGHT"]
         try:
             self.screen = pygame.display.set_mode((temp_width, temp_height))
             pygame.display.set_caption("I Like Trains - Login")
@@ -186,10 +179,8 @@ class Client:
             return
 
         # Get player name and sciper from config
-        with open("id_config.json", "r") as config_file:
-            config = json.load(config_file)
-            player_sciper = config.get("SCIPER", "0000000")
-            player_name = config.get("TRAIN_NAME", "Player")
+        player_sciper = config["SCIPER"]
+        player_name = config["TRAIN_NAME"]
 
         # Update agent name
         self.agent.agent_name = player_name
@@ -213,7 +204,7 @@ class Client:
 
             # Add automatic respawn logic
             if (
-                not MANUAL_SPAWN
+                not config["MANUAL_SPAWN"]
                 and self.agent.is_dead
                 and self.agent.waiting_for_respawn
                 and not self.game_over
@@ -295,7 +286,7 @@ class Client:
             try:
                 font = pygame.font.SysFont("Arial", 24)
                 text = font.render("Server disconnected. Press any key to exit.", True, (255, 0, 0))
-                text_rect = text.get_rect(center=(SCREEN_WIDTH/2, SCREEN_HEIGHT/2))
+                text_rect = text.get_rect(center=(config["SCREEN_WIDTH"]//2, config["SCREEN_HEIGHT"]//2))
                 self.renderer.screen.fill((0, 0, 0))
                 self.renderer.screen.blit(text, text_rect)
                 pygame.display.flip()
@@ -339,9 +330,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger("main")
 
-# Default host
-DEFAULT_HOST = "localhost"
-
 
 def main():
     """Main function"""
@@ -351,7 +339,7 @@ def main():
         host = sys.argv[1]
 
     # Check if a port was provided as an argument
-    port = DEFAULT_PORT
+    port = config["DEFAULT_PORT"]
     if len(sys.argv) > 2:
         port = int(sys.argv[2])
 
