@@ -63,7 +63,7 @@ AI_NAMES = [
 ]
 
 # Client timeout in seconds (how long to wait before considering a client disconnected)
-CLIENT_TIMEOUT = 1.0
+CLIENT_TIMEOUT = 2.0
 
 # Game duration in seconds
 GAME_LIFE_TIME = 60 * 5
