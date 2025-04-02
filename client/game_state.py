@@ -59,7 +59,6 @@ class GameState:
 
             if "delivery_zone" in data:
                 # Update delivery zone
-                logger.debug(f"Delivery zone updated: {data['delivery_zone']}")
                 self.client.delivery_zone = data["delivery_zone"]
                 if self.activate_agent:
                     self.client.agent.delivery_zone = self.client.delivery_zone
@@ -67,9 +66,6 @@ class GameState:
             if "size" in data:
                 self.client.game_width = data["size"]["game_width"]
                 self.client.game_height = data["size"]["game_height"]
-                logger.info(
-                    f"Game size updated: {self.client.game_width}x{self.client.game_height}"
-                )
                 try:
                     # Recalculate screen dimensions
                     self.client.screen_width = (
@@ -181,6 +177,15 @@ class GameState:
             if not isinstance(data, dict):
                 logger.error("Cooldown data is not a dictionary: " + str(data))
                 return
+
+            # Check if the agent is already dead
+            if self.client.agent.is_dead:
+                return
+
+            # Log the cooldown
+            logger.info(
+                f"Train is dead. Cooldown: {data['remaining']}s"
+            )
 
             # Update the agent's cooldown data
             self.client.agent.is_dead = True

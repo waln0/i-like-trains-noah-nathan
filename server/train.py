@@ -332,7 +332,9 @@ class Train:
                 collision_msg = f"Train {self.agent_name} collided with stationary train {train.agent_name}"
                 logger.info(collision_msg)
                 self.client_logger.info(collision_msg)
-                self.set_alive(False)  # Seul le train en mouvement meurt
+                # kill both the trains
+                self.set_alive(False)
+                train.set_alive(False)
                 return True
 
             # Check collision with wagons
@@ -341,7 +343,9 @@ class Train:
                     collision_msg = f"Train {self.agent_name} collided with wagon of train {train.agent_name}"
                     logger.info(collision_msg)
                     self.client_logger.info(collision_msg)
+                    # kill both the trains
                     self.set_alive(False)
+                    train.set_alive(False)
                     return True
 
         return False
