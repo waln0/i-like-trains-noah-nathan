@@ -1,6 +1,5 @@
 import logging
 import time
-from abc import ABC, abstractmethod
 from network import NetworkManager
 
 # Configure logging
@@ -17,7 +16,8 @@ BASE_DIRECTIONS = [
     (-1, 0),  # Left
 ]
 
-class BaseAgent(ABC):
+
+class BaseAgent:
     """Base class for all agents, enforcing the implementation of get_direction()."""
 
     def __init__(
@@ -65,7 +65,6 @@ class BaseAgent(ABC):
         self.passengers = None
         self.delivery_zone = None
 
-    @abstractmethod
     def get_direction(self):
         """
         Abstract method to be implemented by subclasses.
@@ -81,12 +80,12 @@ class BaseAgent(ABC):
         if not self.is_dead:
             try:
                 new_direction = self.get_direction()
-                
+
                 # Check if the direction is in the base directions
                 if new_direction not in BASE_DIRECTIONS:
                     self.logger.warning(f"Invalid direction: {new_direction}")
                     return
-                
+
                 # Check if the direction is different from the current direction
                 if new_direction != self.all_trains[self.agent_name]["direction"]:
                     self.network.send_direction_change(new_direction)

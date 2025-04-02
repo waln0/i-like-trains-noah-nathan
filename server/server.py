@@ -7,6 +7,7 @@ import logging
 import uuid
 import random
 import os
+import signal
 
 from game import Game
 from passenger import Passenger
@@ -62,7 +63,7 @@ AI_NAMES = [
 ]
 
 # Client timeout in seconds (how long to wait before considering a client disconnected)
-CLIENT_TIMEOUT = 1.0
+CLIENT_TIMEOUT = 2.0
 
 # Game duration in seconds
 GAME_LIFE_TIME = 60 * 5
@@ -489,6 +490,8 @@ class Server:
         )  # Track disconnected clients by full address tuple (IP, port)
         self.ai_clients = {}  # Maps train names to AI clients
         self.used_ai_names = set()  # Track AI names that are already in use
+        self.unknown_clients_sent_disconnect = {}  # Unknown client address -> timestamp of last disconnect message
+        self.threads = []  # Initialize threads attribute
 
         # Client activity tracking for disconnection detection
         self.client_timeout = (
@@ -508,7 +511,8 @@ class Server:
         self.create_room(self.nb_players, True)
 
         # Start accepting clients
-        threading.Thread(target=self.accept_clients).start()
+        accept_thread = threading.Thread(target=self.accept_clients, daemon=True)
+        accept_thread.start()
         logger.info(f"Server started on {HOST}:{PORT}")
 
     def create_room(self, nb_players, running):
@@ -577,7 +581,7 @@ class Server:
             except socket.error as e:
                 # For UDP, we don't know which client caused the error
                 # So we only log the error and don't mark any client as disconnected
-                if "[Errno 10054]" in str(e):
+                if "10054" in str(e):
                     # This is a connection reset error, which is expected in UDP
                     # We'll just log it at a lower level or not at all
                     pass  # Don't log connection reset errors at all
@@ -607,6 +611,17 @@ class Server:
             if addr in self.ping_responses:
                 del self.ping_responses[addr]  # Remove from pending responses
             return
+            
+        # Handle ping messages from unknown clients (for connection verification)
+        if "type" in message and message["type"] == "ping":
+            # Send a pong response even to unknown clients for connection verification
+            pong_message = {"type": "pong"}
+            try:
+                self.server_socket.sendto(json.dumps(pong_message).encode(), addr)
+                return
+            except Exception as e:
+                logger.error(f"Error sending pong to {addr}: {e}")
+                return
 
         # If this client was previously marked as disconnected
         if addr in self.disconnected_clients:
@@ -620,6 +635,17 @@ class Server:
             elif "agent_name" not in message or "agent_sciper" not in message:
                 # Don't log a warning for every message, just silently ignore it
                 return
+
+        # Check if this is an unknown client that we've already asked to disconnect
+        if addr not in self.addr_to_name and addr in self.unknown_clients_sent_disconnect:
+            # Check if we've sent a disconnect request recently (within the last 5 seconds)
+            last_disconnect_time = self.unknown_clients_sent_disconnect[addr]
+            if time.time() - last_disconnect_time < 5:
+                # We've already asked this client to disconnect recently, ignore the message
+                return
+            else:
+                # It's been a while, we can remove them from the list and process normally
+                del self.unknown_clients_sent_disconnect[addr]
 
         # For name check requests
         if "action" in message and message["action"] == "check_name":
@@ -654,8 +680,8 @@ class Server:
                 self.handle_new_client(message, addr)
             else:
                 # ask the client to disconnect
-                self.send_disconnect(addr, "Name or sciper not available")
-                logger.warning(f"Name or sciper not available for {addr}")
+                self.send_disconnect(addr, "Name or sciper not available or invalid")
+                logger.warning(f"Name or sciper not available or invalid for {addr}")
             return
 
         # For all other messages, find the client's room and handle the message
@@ -688,10 +714,13 @@ class Server:
                 # Handle common action messages without logging
                 pass
             else:
-                logger.debug(
-                    f"Received message from unknown client {addr}: {message}")
-                # ask the client to disconnect
-                self.send_disconnect(addr, "Unknown client or invalid message format")
+                # This is an unknown client sending a message that's not a common type
+                logger.debug(f"Received message from unknown client {addr}: {message}")
+                # Send a disconnect request to the client
+                self.send_disconnect(addr, "Unknown client")
+                # Record that we've sent a disconnect request to this client
+                self.unknown_clients_sent_disconnect[addr] = time.time()
+                logger.info(f"Sent disconnect request to unknown client {addr}")
 
     def send_disconnect(self, addr, message="Unknown client or invalid message format"):
         """Disconnect a client from the server"""
@@ -749,8 +778,6 @@ class Server:
                     )
                 except Exception as e:
                     logger.error(f"Error sending name check response: {e}")
-                logger.debug(
-                    f"Name check for '{name_to_check}': not available")
                 return False
 
         # Check if the name exists in any room
@@ -772,9 +799,6 @@ class Server:
             try:
                 self.server_socket.sendto(
                     (json.dumps(response) + "\n").encode(), addr)
-                logger.info(
-                    f"Name check for '{name_to_check}': {'available' if name_available else 'not available'}"
-                )
             except Exception as e:
                 logger.error(f"Error sending name check response: {e}")
 
@@ -792,7 +816,7 @@ class Server:
         # Check if the sciper is empty or not an int
         if (
             not sciper_to_check
-            or len(sciper_to_check) == 0
+            or len(sciper_to_check) != 6
             or not sciper_to_check.isdigit()
         ):
             if addr:
@@ -804,8 +828,8 @@ class Server:
                     )
                 except Exception as e:
                     logger.error(f"Error sending sciper check response: {e}")
-                logger.debug(
-                    f"Sciper check for '{sciper_to_check}': not available")
+                return False
+            else:
                 return False
 
         # Check if the sciper exists in our mapping
@@ -1155,6 +1179,14 @@ class Server:
 
     def handle_client_disconnection(self, addr, reason="unknown"):
         """Handle client disconnection - centralized method to avoid code duplication"""
+        # Check if client is already marked as disconnected
+        if addr in self.disconnected_clients:
+            # Already disconnected, no need to process again
+            return
+            
+        # Mark client as disconnected
+        self.disconnected_clients.add(addr)
+        
         agent_name = self.addr_to_name.get(addr, "Unknown client")
         agent_sciper = self.addr_to_sciper.get(addr, "Unknown client")
 
@@ -1168,20 +1200,17 @@ class Server:
                 if addr in room.clients:
                     # Remove client from room
                     logger.info(f"Removing {agent_name} from room {room.id}")
+                    
+                    # Remove the client from the room's client list
+                    if addr in room.clients:
+                        del room.clients[addr]
 
-                    # Create an AI to control the train if it exists in the game
-                    if agent_name in room.game.trains:
+                    # Create an AI to control the train if it exists in the game and if the room is not empty
+                    if agent_name in room.game.trains and len(room.clients) > 0:
                         logger.info(
                             f"Creating AI client for train {agent_name}")
                         self.create_ai_for_train(room, agent_name)
-                    else:
-                        logger.info(
-                            f"Didn't create AI client for train {agent_name} because agent_name in room game.trains is {room.game.trains[agent_name]}"
-                        )
-
-                    # Remove client from room
-                    del room.clients[addr]
-
+                    
                     # Check if this was the last human client in the room
                     if len(room.clients) == 0:
                         logger.info(
@@ -1194,25 +1223,23 @@ class Server:
                                 del self.ai_clients[ai_name]
                         # Remove the room
                         self.remove_room(room.id)
-
+                    
+                    # Clean up client tracking data
+                    if addr in self.addr_to_name:
+                        del self.addr_to_name[addr]
+                    if addr in self.addr_to_sciper:
+                        del self.addr_to_sciper[addr]
+                    if agent_sciper in self.sciper_to_addr:
+                        del self.sciper_to_addr[agent_sciper]
+                    if addr in self.client_last_activity:
+                        del self.client_last_activity[addr]
+                    if addr in self.ping_responses:
+                        del self.ping_responses[addr]
                     break
         else:
             # Log at debug level for unknown clients to reduce spam
             logger.debug(
                 f"Unknown client disconnected due to {reason}: {addr}")
-
-        # Remove from activity tracking and add to disconnected clients
-        if addr in self.client_last_activity:
-            del self.client_last_activity[addr]
-        if addr in self.addr_to_name:
-            del self.addr_to_name[addr]
-        if addr in self.addr_to_sciper:
-            del self.addr_to_sciper[addr]
-        if agent_sciper in self.sciper_to_addr:
-            del self.sciper_to_addr[agent_sciper]
-        if addr in self.ping_responses:
-            del self.ping_responses[addr]
-        self.disconnected_clients.add(addr)
 
     def create_ai_for_train(self, room, train_name):
         """Create an AI client to control a train after a player disconnects"""
@@ -1267,8 +1294,7 @@ class Server:
                     self.server_socket.sendto(state_json.encode(), client_addr)
                 except Exception as e:
                     logger.error(
-                        f"Error sending train rename notification to client: {e}"
-                    )
+                        f"Error sending train rename notification to client: {e}")
 
             # Create the AI client with the new name
             self.ai_clients[ai_name] = AIClient(room, ai_name)
@@ -1284,8 +1310,86 @@ class Server:
 
     def run_game(self):
         """Main game loop"""
+        def signal_handler(sig, frame):
+            # Only set the running flag to false. Cleanup happens after the main loop.
+            logger.info("Shutdown signal received. Initiating graceful shutdown...")
+            self.running = False
+            # Removed direct cleanup and sys.exit from here
+
+        # Register signal handler for graceful shutdown
+        signal.signal(signal.SIGINT, signal_handler)
+        signal.signal(signal.SIGTERM, signal_handler)
+
+        logger.info("Server running. Press Ctrl+C to stop.")
+
         while self.running:
-            time.sleep(1)
+            # Main loop waits for running flag to become false
+            try:
+                # Use a timeout to allow checking self.running more frequently
+                # and prevent blocking indefinitely if no other activity occurs.
+                time.sleep(0.5)
+            except InterruptedError:
+                # Catch potential interruption if sleep is interrupted by signal
+                continue # Check self.running again
+
+        # --- Shutdown sequence starts here, after the loop ---
+        logger.info("Shutting down server...")
+
+        # 1. Disconnect clients (must happen before closing the socket)
+        client_addresses = list(self.addr_to_name.keys()) # Copy keys
+        if client_addresses:
+            logger.info(f"Disconnecting {len(client_addresses)} clients...")
+            for addr in client_addresses:
+                # Add try-except around send_disconnect in case socket is already bad
+                try:
+                    self.send_disconnect(addr, "Server shutting down")
+                    # Optional small delay to increase chance of message delivery
+                    time.sleep(0.01)
+                except Exception as e:
+                    logger.error(f"Error sending disconnect to {addr}: {e}")
+        else:
+            logger.info("No clients connected to disconnect.")
+
+
+        # 2. Close the main server socket
+        if self.server_socket:
+            logger.info("Closing server socket...")
+            try:
+                self.server_socket.close()
+                logger.info("Server socket closed")
+            except Exception as e:
+                logger.error(f"Error closing server socket: {e}")
+        else:
+            logger.info("Server socket already closed or not initialized.")
+
+        # 3. Join threads (ensure threads check self.running or handle socket closure)
+        # Note: Check if accept_clients and room threads are correctly managed.
+        # Currently, only self.threads (which is empty) and self.ping_thread are considered.
+        # This might need further refinement based on how threads are actually created and stored.
+
+        threads_to_join = []
+        if hasattr(self, 'threads'): # Check if attribute exists
+             threads_to_join.extend(self.threads)
+        if hasattr(self, 'ping_thread') and self.ping_thread is not None: # Check ping_thread exists and is not None
+             threads_to_join.append(self.ping_thread)
+        # Add other relevant threads if they exist and need joining, e.g., accept_clients thread if stored.
+
+        active_threads = [t for t in threads_to_join if t and t.is_alive()] # Check for None threads too
+
+        if active_threads:
+            logger.info(f"Waiting for {len(active_threads)} threads to finish...")
+            for thread in active_threads:
+                try:
+                    thread.join(timeout=1.0) # Use timeout
+                    if thread.is_alive():
+                        logger.warning(f"Thread {thread.name} did not finish within timeout.")
+                except Exception as e:
+                     logger.error(f"Error joining thread {thread.name}: {e}")
+        else:
+            logger.info("No active threads found to join.")
+
+        logger.info("Server shutdown complete")
+        # No sys.exit(0) here, allow the function to return naturally
 
 
 if __name__ == "__main__":
