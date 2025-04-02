@@ -37,7 +37,7 @@ class AINetworkInterface:
             # logger.debug(f"AI client {self.train_name} changed direction to {direction}")
             return True
         else:
-            logger.warning(f"Failed to change direction for train {self.train_name}")
+            logger.warning(f"Failed to change direction for train {self.train_name}. Train in room's trains: {self.train_name in self.room.game.trains}, is train alive: {self.room.game.is_train_alive(self.train_name)}")
         return False
 
     def send_drop_wagon_request(self):
