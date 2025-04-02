@@ -1202,9 +1202,9 @@ class Server:
                     # Remove the client from the room's client list
                     if addr in room.clients:
                         del room.clients[addr]
-                    
-                    # Create an AI to control the train if it exists in the game
-                    if agent_name in room.game.trains:
+
+                    # Create an AI to control the train if it exists in the game and if the room is not empty
+                    if agent_name in room.game.trains and len(room.clients) > 0:
                         logger.info(
                             f"Creating AI client for train {agent_name}")
                         self.create_ai_for_train(room, agent_name)
