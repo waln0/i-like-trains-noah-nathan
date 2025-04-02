@@ -166,7 +166,6 @@ class GameState:
             self.client.waiting_room_data = data
 
             self.client.leaderboard_height = data.get("nb_players") * 10
-            # logger.debug("Waiting room data updated: ")
 
         except Exception as e:
             logger.error("Error handling waiting room data: " + str(e))
@@ -192,7 +191,6 @@ class GameState:
             self.client.agent.death_time = time.time()
             self.client.agent.waiting_for_respawn = True
             self.client.agent.respawn_cooldown = data.get("remaining", 0)
-            # logger.info("Cooldown updated: " + str(self.client.agent.respawn_cooldown) + "s")
         except Exception as e:
             logger.error("Error handling cooldown data: " + str(e))
 

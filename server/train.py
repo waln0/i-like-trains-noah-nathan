@@ -80,7 +80,6 @@ class Train:
 
     def is_opposite_direction(self, new_direction):
         """Check if the new direction is opposite to the previous direction"""
-        # logger.debug(f"Checking if {new_direction} is opposite to {self.direction}: {new_direction == self.get_opposite_direction(self.direction)}")
         return (
             new_direction[0] == -self.direction[0]
             and new_direction[1] == -self.direction[1]
@@ -89,7 +88,6 @@ class Train:
     def change_direction(self, new_direction):
         """Change the train's direction if possible"""
         if not self.is_opposite_direction(new_direction):
-            # logger.debug(f"Changing direction because {new_direction} is not opposite to {self.direction}")
             self.new_direction = new_direction
 
     def update(self, trains, screen_width, screen_height, cell_size):
@@ -188,8 +186,6 @@ class Train:
         if not self.alive:
             return
 
-        # logger.debug(f"Moving train {self.agent_name} from {self.position} in direction {self.direction}")
-
         # Save the last position before moving
         if isinstance(self.position, tuple) and len(self.position) == 2:
             self.last_position = self.position
@@ -203,28 +199,27 @@ class Train:
         new_x = self.position[0] + self.direction[0] * cell_size
         new_y = self.position[1] + self.direction[1] * cell_size
         new_position = (new_x, new_y)
-        # logger.debug(f"New position for train {self.agent_name}: {new_position}")
 
         # Check collisions and bounds
-        if self.check_collisions(new_position, trains) or self.check_out_of_bounds(
-            new_position, screen_width, screen_height
-        ):
-            self.set_alive(False)
-            self.handle_death(self.agent_name)
-            self.reset()
+        self.check_collisions(new_position, trains)
+        self.check_out_of_bounds(new_position, screen_width, screen_height)
+
+        if not self.alive:
             return
 
         # Update wagons
-        # logger.debug(f"Moving wagons for train {self.agent_name}, current wagons: {self.wagons}")
         if self.wagons:
             self.wagons.insert(0, self.position)
             self.wagons.pop()
             self._dirty["wagons"] = True
-        # logger.debug(f"New wagons for train {self.agent_name}: {self.wagons}")
 
         # Update position
-        # logger.debug(f"Moving train to {new_position} in direction {self.direction}")
         self.set_position(new_position)
+
+    def kill(self):
+        self.set_alive(False)
+        self.handle_death(self.agent_name)
+        self.reset()
 
     def serialize(self):
         """
@@ -241,15 +236,13 @@ class Train:
         }
 
     def to_dict(self):
-        # logger.debug(f"Converting train {self.agent_name} to dictionary")
         """Convert train to dictionary, returning only modified data"""
         data = {}
         if self._dirty["position"]:
             data["position"] = self.position
             self._dirty["position"] = False
         if self._dirty["wagons"]:
-            # Vérifier que tous les wagons ont des positions valides
-            # logger.debug(f"Converting wagons to dict for train {self.agent_name}, current wagons: {self.wagons}")
+            # Verify that all wagons have valid positions
             valid_wagons = []
             for wagon in self.wagons:
                 if (
@@ -265,7 +258,6 @@ class Train:
                         f"Invalid wagon found in to_dict for train {self.agent_name}: {wagon}, skipping"
                     )
             data["wagons"] = valid_wagons
-            # logger.debug(f"Valid wagons for train {self.agent_name}: {valid_wagons}")
             self._dirty["wagons"] = False
         if self._dirty["direction"]:
             data["direction"] = self.direction
@@ -277,7 +269,6 @@ class Train:
             data["color"] = self.color
             self._dirty["color"] = False
         if self._dirty["alive"]:
-            # logger.debug(f"Setting alive to {self.alive}")
             data["alive"] = self.alive
             self._dirty["alive"] = False
         if self._dirty["speed"]:
@@ -309,7 +300,6 @@ class Train:
 
     def set_alive(self, alive):
         """Update train alive status"""
-        # logger.debug(f"Setting alive to {alive} for train {self.agent_name}")
         if self.alive != alive:
             self.alive = alive
             self._dirty["alive"] = True
@@ -320,7 +310,7 @@ class Train:
                 collision_msg = f"Train {self.agent_name} collided with its own wagon at {wagon_pos}"
                 logger.info(collision_msg)
                 self.client_logger.info(collision_msg)
-                self.set_alive(False)
+                self.kill()
                 return True
 
         for train in all_trains.values():
@@ -329,12 +319,11 @@ class Train:
                 continue
 
             if new_position == train.position:
-                collision_msg = f"Train {self.agent_name} collided with stationary train {train.agent_name}"
+                collision_msg = f"Train {self.agent_name} collided with train {train.agent_name}"
                 logger.info(collision_msg)
                 self.client_logger.info(collision_msg)
-                # kill both the trains
-                self.set_alive(False)
-                train.set_alive(False)
+                train.kill()
+                self.kill()
                 return True
 
             # Check collision with wagons
@@ -343,9 +332,7 @@ class Train:
                     collision_msg = f"Train {self.agent_name} collided with wagon of train {train.agent_name}"
                     logger.info(collision_msg)
                     self.client_logger.info(collision_msg)
-                    # kill both the trains
-                    self.set_alive(False)
-                    train.set_alive(False)
+                    self.kill()
                     return True
 
         return False
@@ -353,21 +340,17 @@ class Train:
     def check_out_of_bounds(self, new_position, screen_width, screen_height):
         """Check if the train is out of the screen"""
         x, y = new_position
-        # logger.debug(f"Position: {x}, {y}=. Screen size: {screen_width}, {screen_height}. New position: {new_position}")
         if x < 0 or x >= screen_width or y < 0 or y >= screen_height:
+            self.kill()
             logger.debug(
                 f"Train {self.agent_name} is dead: out of the screen. Coordinates: {new_position}"
             )
-            self.set_alive(False)
             return True
         return False
 
     def reset(self):
-        # Set position to a valid coordinate outside the visible area
-        # This avoids the 'position' error in broadcast_game_state
         self.position = (-1, -1)  # Use an off-screen position instead of None
         self.wagons = []
-        # Reset direction to a valid value
         self.direction = (1, 0)
         self.new_direction = (1, 0)
         self.previous_direction = (1, 0)

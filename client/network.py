@@ -199,7 +199,6 @@ class NetworkManager:
                             elif message_type == "drop_wagon_success":
                                 self.client.handle_drop_wagon_success(message_data)
                             elif message_type == "drop_wagon_failed":
-                                # logger.info(f"Failed to activate boost (not enough passengers, boost in cooldown or inactive)")
                                 pass
 
                             elif message_type == "leaderboard":
@@ -295,7 +294,6 @@ class NetworkManager:
                         # No need to retry if game is over
                         time.sleep(1)
                     else:
-                        # logger.warning(f"Socket timeout: {e}")
                         time.sleep(0.1)  # Wait and retry
                 # else:
                 #     logger.error(f"Socket error receiving UDP data: {e}")
