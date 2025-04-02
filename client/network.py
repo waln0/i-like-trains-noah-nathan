@@ -33,7 +33,7 @@ class NetworkManager:
         
         # Variables pour surveiller les pings du serveur
         self.last_ping_time = 0
-        self.server_timeout = 1.0  # Temps après lequel on considère le serveur comme déconnecté
+        self.server_timeout = 2.0  # Temps après lequel on considère le serveur comme déconnecté
 
     def connect(self):
         """Establish connection with server"""
