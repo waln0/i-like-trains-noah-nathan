@@ -491,6 +491,7 @@ class Server:
         self.ai_clients = {}  # Maps train names to AI clients
         self.used_ai_names = set()  # Track AI names that are already in use
         self.unknown_clients_sent_disconnect = {}  # Unknown client address -> timestamp of last disconnect message
+        self.threads = []  # Initialize threads attribute
 
         # Client activity tracking for disconnection detection
         self.client_timeout = (
@@ -510,7 +511,8 @@ class Server:
         self.create_room(self.nb_players, True)
 
         # Start accepting clients
-        threading.Thread(target=self.accept_clients).start()
+        accept_thread = threading.Thread(target=self.accept_clients, daemon=True)
+        accept_thread.start()
         logger.info(f"Server started on {HOST}:{PORT}")
 
     def create_room(self, nb_players, running):
@@ -1309,37 +1311,85 @@ class Server:
     def run_game(self):
         """Main game loop"""
         def signal_handler(sig, frame):
-            logger.info("Shutting down server gracefully...")
+            # Only set the running flag to false. Cleanup happens after the main loop.
+            logger.info("Shutdown signal received. Initiating graceful shutdown...")
             self.running = False
-            
-            # Close all client connections
-            for addr in list(self.addr_to_name.keys()):
-                self.send_disconnect(addr, "Server shutting down")
-            
-            # Close the socket
-            if self.server_socket:
-                try:
-                    self.server_socket.close()
-                    logger.info("Server socket closed")
-                except Exception as e:
-                    logger.error(f"Error closing server socket: {e}")
-            
-            # Wait for threads to finish
-            for thread in self.threads:
-                if thread.is_alive():
-                    thread.join(timeout=1.0)
-            
-            logger.info("Server shutdown complete")
-            sys.exit(0)
-        
+            # Removed direct cleanup and sys.exit from here
+
         # Register signal handler for graceful shutdown
         signal.signal(signal.SIGINT, signal_handler)
         signal.signal(signal.SIGTERM, signal_handler)
-        
+
         logger.info("Server running. Press Ctrl+C to stop.")
-        
+
         while self.running:
-            time.sleep(1)
+            # Main loop waits for running flag to become false
+            try:
+                # Use a timeout to allow checking self.running more frequently
+                # and prevent blocking indefinitely if no other activity occurs.
+                time.sleep(0.5)
+            except InterruptedError:
+                # Catch potential interruption if sleep is interrupted by signal
+                continue # Check self.running again
+
+        # --- Shutdown sequence starts here, after the loop ---
+        logger.info("Shutting down server...")
+
+        # 1. Disconnect clients (must happen before closing the socket)
+        client_addresses = list(self.addr_to_name.keys()) # Copy keys
+        if client_addresses:
+            logger.info(f"Disconnecting {len(client_addresses)} clients...")
+            for addr in client_addresses:
+                # Add try-except around send_disconnect in case socket is already bad
+                try:
+                    self.send_disconnect(addr, "Server shutting down")
+                    # Optional small delay to increase chance of message delivery
+                    time.sleep(0.01)
+                except Exception as e:
+                    logger.error(f"Error sending disconnect to {addr}: {e}")
+        else:
+            logger.info("No clients connected to disconnect.")
+
+
+        # 2. Close the main server socket
+        if self.server_socket:
+            logger.info("Closing server socket...")
+            try:
+                self.server_socket.close()
+                logger.info("Server socket closed")
+            except Exception as e:
+                logger.error(f"Error closing server socket: {e}")
+        else:
+            logger.info("Server socket already closed or not initialized.")
+
+        # 3. Join threads (ensure threads check self.running or handle socket closure)
+        # Note: Check if accept_clients and room threads are correctly managed.
+        # Currently, only self.threads (which is empty) and self.ping_thread are considered.
+        # This might need further refinement based on how threads are actually created and stored.
+
+        threads_to_join = []
+        if hasattr(self, 'threads'): # Check if attribute exists
+             threads_to_join.extend(self.threads)
+        if hasattr(self, 'ping_thread') and self.ping_thread is not None: # Check ping_thread exists and is not None
+             threads_to_join.append(self.ping_thread)
+        # Add other relevant threads if they exist and need joining, e.g., accept_clients thread if stored.
+
+        active_threads = [t for t in threads_to_join if t and t.is_alive()] # Check for None threads too
+
+        if active_threads:
+            logger.info(f"Waiting for {len(active_threads)} threads to finish...")
+            for thread in active_threads:
+                try:
+                    thread.join(timeout=1.0) # Use timeout
+                    if thread.is_alive():
+                        logger.warning(f"Thread {thread.name} did not finish within timeout.")
+                except Exception as e:
+                     logger.error(f"Error joining thread {thread.name}: {e}")
+        else:
+            logger.info("No active threads found to join.")
+
+        logger.info("Server shutdown complete")
+        # No sys.exit(0) here, allow the function to return naturally
 
 
 if __name__ == "__main__":
