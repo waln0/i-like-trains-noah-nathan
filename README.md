@@ -34,8 +34,8 @@ For example:
 
 ```json
 {
-    "SCIPER": "000000",
-    "TRAIN_NAME": "Player"
+    "sciper": "000000",
+    "train_name": "Player"
 }
 ```
 
@@ -182,13 +182,17 @@ On the evaluation day, you will have to send us only one agent.py file per team.
    - Gradually add obstacle avoidance (other trains and wagons).
    - Consider handling cases where the direct path is blocked.
 
-### Other tools in client.py
+### Tools and parameters in config.json
 
-Some constants are available in the client for debugging:
+Some constants are available in the config.json file to customize your graphical interface:
+- `screen_width`: width of the game window. 
+- `screen_height`: height of the game window.
+- `cell_size`: size of each cell in the grid.
+- `leaderboard_width`: width of the leaderboard.
 
-- `MANUAL_SPAWN`: Automatic respawn when available. False by default, otherwise the player has to press the space bar.
-- `ACTIVATE_AGENT`: Activate the agent. True by default. If set to False, the agent will not be used.
-- `MANUAL_CONTROL`: Activate manual control. False by default, otherwise the player can use the keyboard arrows keys to control the train + `d` key to drop wagons. Only meant for debugging, will be False when grading.
+Some constants are available for debugging:
+- `manual_spawn`: Automatic respawn when available. False by default, otherwise the player has to press the space bar.
+- `control_mode`: `manual` (by default) enables manual control of your train with keyboard arrows. `agent` enables agent automatic control.
 
 ### Logging System
 

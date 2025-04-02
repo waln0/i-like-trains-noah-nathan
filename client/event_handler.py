@@ -13,11 +13,10 @@ logger = logging.getLogger("client.event_handler")
 class EventHandler:
     """Class responsible for handling client events"""
 
-    def __init__(self, client, activate_agent, manual_control):
+    def __init__(self, client, control_mode):
         """Initialize the event handler with a reference to the client"""
         self.client = client
-        self.activate_agent = activate_agent
-        self.manual_control = manual_control
+        self.control_mode = control_mode
 
     def handle_events(self):
         """Handle pygame events"""
@@ -48,7 +47,7 @@ class EventHandler:
                     if self.client.in_waiting_room:
                         self.client.network.send_start_game_request()
 
-                if self.manual_control:
+                if self.control_mode == "manual":
                     # Change the train's direction based on the pressed keys
                     if event.key == pygame.K_UP:
                         self.client.network.send_direction_change((0, -1))

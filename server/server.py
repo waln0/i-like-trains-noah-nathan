@@ -1362,11 +1362,6 @@ class Server:
         else:
             logger.info("Server socket already closed or not initialized.")
 
-        # 3. Join threads (ensure threads check self.running or handle socket closure)
-        # Note: Check if accept_clients and room threads are correctly managed.
-        # Currently, only self.threads (which is empty) and self.ping_thread are considered.
-        # This might need further refinement based on how threads are actually created and stored.
-
         threads_to_join = []
         if hasattr(self, 'threads'): # Check if attribute exists
              threads_to_join.extend(self.threads)
