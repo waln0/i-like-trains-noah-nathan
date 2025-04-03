@@ -1119,12 +1119,30 @@ class Server:
         if room_id in self.rooms:
             logger.info(f"Removing room {room_id}")
             room = self.rooms[room_id]
-            room.running = False  # Ensure all threads in the room stop
 
-            # Stop and clean up AI clients associated with this room FIRST
+            # 1. Signal the game to stop (if it exists and is running)
+            if room.game and room.game.running:
+                logger.debug(f"Signaling game in room {room_id} to stop.")
+                room.game.running = False
+                
+            # 2. Signal the room's threads to stop
+            if room.running:
+                logger.debug(f"Signaling room {room_id} threads to stop.")
+                room.running = False
+
+            # 3. Wait for the game thread to finish if it's running
+            if room.game_thread and room.game_thread.is_alive():
+                logger.info(f"Waiting for game thread in room {room_id} to terminate before removal")
+                room.game_thread.join(timeout=2.0) # Wait a bit
+                if room.game_thread.is_alive():
+                    logger.warning(f"Game thread for room {room_id} did not terminate gracefully.")
+            
+            # 4. Stop and clean up AI clients associated with this room
             ai_to_remove = []
-            for ai_name, ai_client in self.ai_clients.items():
-                if ai_client.room.id == room_id:
+            # Use list() to avoid modification during iteration if necessary, although it might not be strictly needed here
+            for ai_name, ai_client in list(self.ai_clients.items()): 
+                # Check if ai_client.room exists before accessing id
+                if ai_client.room and ai_client.room.id == room_id:
                     logger.debug(f"Stopping AI client {ai_name} in room {room_id}")
                     ai_client.stop()
                     ai_to_remove.append(ai_name)
@@ -1133,16 +1151,10 @@ class Server:
                  if ai_name in self.ai_clients:
                     del self.ai_clients[ai_name]
                  if ai_name in self.used_ai_names:
-                    self.used_ai_names.remove(ai_name)
+                     # Use discard to avoid KeyError if name somehow already removed
+                    self.used_ai_names.discard(ai_name) 
 
-            # Wait for the game thread to finish if it's running
-            if room.game_thread and room.game_thread.is_alive():
-                logger.info(f"Waiting for game thread in room {room_id} to terminate before removal")
-                room.game_thread.join(timeout=2.0) # Wait a bit
-                if room.game_thread.is_alive():
-                    logger.warning(f"Game thread for room {room_id} did not terminate gracefully.")
-            
-            # Now remove the room itself
+            # 5. Now remove the room itself
             del self.rooms[room_id]
             logger.info(f"Room {room_id} removed successfully")
         else:
