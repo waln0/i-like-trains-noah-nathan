@@ -321,14 +321,31 @@ class Renderer:
                 )
                 self.client.screen.blit(count_text, (50, 80))
 
+                # Display waiting time if available
+                waiting_time = self.client.waiting_room_data.get("waiting_time", None)
+                if waiting_time is not None and waiting_time > 0:
+                    time_text = font.render(
+                        f"Starting in: {waiting_time} seconds",
+                        True,
+                        (200, 0, 0),  # Red color for emphasis
+                    )
+                    self.client.screen.blit(time_text, (50, 110))
+                elif waiting_time is not None and waiting_time == 0 and players_count < nb_players:
+                    time_text = font.render(
+                        "Adding bots and starting game...",
+                        True,
+                        (200, 0, 0),  # Red color for emphasis
+                    )
+                    self.client.screen.blit(time_text, (50, 110))
+
                 # Player list title
                 players_title = font.render("Players:", True, (0, 0, 100))
-                self.client.screen.blit(players_title, (50, 120))
+                self.client.screen.blit(players_title, (50, 150))  # Moved down to make room for waiting time
 
                 # Column configuration
                 column_width = 150
                 players_per_column = 10
-                start_y = 160
+                start_y = 190  # Moved down to make room for waiting time
 
                 # List players in two columns
                 for i, player in enumerate(players):
