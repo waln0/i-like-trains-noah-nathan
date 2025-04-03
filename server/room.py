@@ -71,6 +71,7 @@ class Room:
         self.game_start_time = None  # Track when the game starts
         self.game_over = False  # Track if the game is over
         self.room_creation_time = time.time()  # Track when the room was created
+        self.first_client_join_time = None # Track when the first client joins
         self.has_human_players = False  # Track if the room has at least one human player
         logger.info(
             f"Room {room_id} created with number of players {nb_players}")
@@ -239,7 +240,9 @@ class Room:
                             # Calculate remaining time before adding bots
                             remaining_time = 0
                             if self.has_human_players:
-                                elapsed_time = current_time - self.room_creation_time
+                                # Use the time the first client joined if available, otherwise creation time
+                                start_time = self.first_client_join_time if self.first_client_join_time is not None else self.room_creation_time
+                                elapsed_time = current_time - start_time
                                 remaining_time = max(0, WAITING_TIME_BEFORE_BOTS - elapsed_time)
                                 
                                 # If time is up and room is not full, add bots and start the game

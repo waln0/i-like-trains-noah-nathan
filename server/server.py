@@ -596,6 +596,11 @@ class Server:
         # Mark the room as having at least one human player
         selected_room.has_human_players = True
         
+        # Record the time the first client joined this room
+        if selected_room.first_client_join_time is None:
+            selected_room.first_client_join_time = time.time()
+            logger.info(f"First human client ({agent_name}) joined room {selected_room.id}. Starting waiting timer.")
+        
         logger.info(
             f"Agent {agent_name} (sciper: {agent_sciper}) joined room {selected_room.id}"
         )
@@ -823,6 +828,11 @@ class Server:
             if room.game.add_train(ai_name):
                 # Add the AI client to the room
                 room.clients[("AI", ai_name)] = ai_name
+                
+                # Record the time the first client joined this room (if it's an AI)
+                if room.first_client_join_time is None:
+                    room.first_client_join_time = time.time()
+                    logger.info(f"First client (AI: {ai_name}) joined room {room.id}. Starting waiting timer.")
                 
                 # Create the AI client with the new name
                 self.ai_clients[ai_name] = AIClient(room, ai_name)
