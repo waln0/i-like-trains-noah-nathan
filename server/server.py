@@ -1344,53 +1344,50 @@ class Server:
             # Find the room this client is in and create an AI to control their train
             for room in self.rooms.values():
                 if addr in room.clients:
-                    # Remove client from room
-                    logger.info(f"Removing {agent_name} from room {room.id}")
+                    # Store the name before removing the client
+                    original_train_name = room.clients[addr] 
+                    logger.info(f"Removing {original_train_name} from room {room.id}")
                     
-                    # Remove the client from the room's client list
-                    if addr in room.clients:
-                        del room.clients[addr]
+                    # Remove the client from the room's client list first
+                    del room.clients[addr]
 
-                    # Create an AI to control the train if it exists in the game and if the room is not empty
-                    if agent_name in room.game.trains and len(room.clients) > 0:
-                        logger.info(
-                            f"Creating AI client for train {agent_name}")
-                        self.create_ai_for_train(room, agent_name)
-                    
-                    # Check if this was the last human client in the room
+                    # Now, check if any human clients remain
                     human_clients_count = 0
-                    for client_addr in room.clients.keys():
+                    for client_addr_check in room.clients.keys():
                         # Count only human clients (not AI clients)
-                        if not (isinstance(client_addr, tuple) and len(client_addr) == 2 and client_addr[0] == "AI"):
+                        if not (isinstance(client_addr_check, tuple) and len(client_addr_check) == 2 and client_addr_check[0] == "AI"):
                             human_clients_count += 1
                     
                     if human_clients_count == 0:
+                        # Last human left, close the room. No need to create AI.
                         logger.info(
-                            f"Last human client left room {room.id}, closing room")
-                        room.running = False
-                        # Stop all AI clients in this room
-                        for ai_name, ai_client in list(self.ai_clients.items()):
-                            if ai_client.room.id == room.id:
-                                ai_client.stop()
-                                del self.ai_clients[ai_name]
-                        # Remove the room
+                            f"Last human client {original_train_name} left room {room.id}, closing room")
+                        # remove_room handles setting flags, stopping threads, and cleanup
                         self.remove_room(room.id)
+                    else:
+                        # Other human players remain. Create an AI for the disconnecting player's train if it exists.
+                        if original_train_name in room.game.trains:
+                            logger.info(
+                                f"Creating AI client for train {original_train_name}")
+                            self.create_ai_for_train(room, original_train_name)
+                        # else: Train might not exist or is already AI, log if necessary for debug
                     
-                    # Clean up client tracking data
+                    # Common cleanup for the disconnected client's address info
                     if addr in self.addr_to_name:
                         del self.addr_to_name[addr]
                     if addr in self.addr_to_sciper:
                         # agent_sciper was retrieved earlier using .get()
                         # Only try to remove from sciper_to_addr if it's not the default value
-                        if agent_sciper != "Unknown client" and agent_sciper in self.sciper_to_addr:
-                            del self.sciper_to_addr[agent_sciper]
+                        sciper_to_remove = self.addr_to_sciper[addr] # Get the sciper before deleting the addr key
+                        if sciper_to_remove != "Unknown client" and sciper_to_remove in self.sciper_to_addr:
+                            del self.sciper_to_addr[sciper_to_remove]
                         # Now delete from addr_to_sciper
                         del self.addr_to_sciper[addr]
                     if addr in self.client_last_activity:
                         del self.client_last_activity[addr]
                     if addr in self.ping_responses:
                         del self.ping_responses[addr]
-                    break
+                    break # Exit the room loop as we found and processed the client
         else:
             # Log at debug level for unknown clients to reduce spam
             logger.debug(
