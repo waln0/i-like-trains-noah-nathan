@@ -182,9 +182,7 @@ class GameState:
                 return
 
             # Log the cooldown
-            logger.info(
-                f"Train is dead. Cooldown: {data['remaining']}s"
-            )
+            logger.info(f"Train is dead. Cooldown: {data['remaining']}s")
 
             # Update the agent's cooldown data
             self.client.agent.is_dead = True

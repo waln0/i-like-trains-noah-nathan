@@ -12,13 +12,14 @@ logger = logging.getLogger("server.room")
 GAME_LIFE_TIME = 60 * 5
 
 # Waiting time before adding bots (in seconds)
-WAITING_TIME_BEFORE_BOTS = 30 # 30 seconds
+WAITING_TIME_BEFORE_BOTS = 30  # 30 seconds
 
 # Scores file path
 SCORES_FILE_PATH = "player_scores.json"
 
 # Transfer tick rate
 TICK_RATE = 30
+
 
 def update_best_score(player_sciper, score, scores_dict):
     """Update player's best score if the new score is higher"""
@@ -31,7 +32,8 @@ def update_best_score(player_sciper, score, scores_dict):
         scores_dict[player_sciper] = score
         return True
     return False
-    
+
+
 def save_scores(scores):
     """Save player scores to file"""
     try:
@@ -39,6 +41,7 @@ def save_scores(scores):
             json.dump(scores, f, indent=4)
     except Exception as e:
         logger.error(f"Error saving scores to file: {e}")
+
 
 def load_best_scores():
     """Load player scores from file"""
@@ -54,6 +57,7 @@ def load_best_scores():
             return {}
     return {}
 
+
 class Room:
     def __init__(self, room_id, nb_players, running, server):
         self.id = room_id
@@ -64,17 +68,17 @@ class Room:
         self.clients = {}  # {addr: agent_name}
         self.game_thread = None
         self.running = running  # The room is active by default
-        self.waiting_room_thread = threading.Thread(
-            target=self.broadcast_waiting_room)
+        self.waiting_room_thread = threading.Thread(target=self.broadcast_waiting_room)
         self.waiting_room_thread.daemon = True
         self.waiting_room_thread.start()
         self.game_start_time = None  # Track when the game starts
         self.game_over = False  # Track if the game is over
         self.room_creation_time = time.time()  # Track when the room was created
-        self.first_client_join_time = None # Track when the first client joins
-        self.has_human_players = False  # Track if the room has at least one human player
-        logger.info(
-            f"Room {room_id} created with number of players {nb_players}")
+        self.first_client_join_time = None  # Track when the first client joins
+        self.has_human_players = (
+            False  # Track if the room has at least one human player
+        )
+        logger.info(f"Room {room_id} created with number of players {nb_players}")
 
     def start_game(self):
         self.state_thread = threading.Thread(target=self.broadcast_game_state)
@@ -104,7 +108,11 @@ class Room:
             for client_addr in list(self.clients.keys()):
                 try:
                     # Skip AI clients - they don't need network messages
-                    if isinstance(client_addr, tuple) and len(client_addr) == 2 and client_addr[0] == "AI":
+                    if (
+                        isinstance(client_addr, tuple)
+                        and len(client_addr) == 2
+                        and client_addr[0] == "AI"
+                    ):
                         continue
                     self.game.server.server_socket.sendto(
                         (json.dumps(response) + "\n").encode(), client_addr
@@ -134,8 +142,7 @@ class Room:
         if self.game_over:
             return  # Game already ended
 
-        logger.info(
-            f"Game in room {self.id} has ended after {GAME_LIFE_TIME} seconds")
+        logger.info(f"Game in room {self.id} has ended after {GAME_LIFE_TIME} seconds")
         self.game_over = True
 
         # Collect final scores
@@ -162,9 +169,7 @@ class Room:
 
             # Update best score in the scores file if we have a valid sciper
             if player_sciper:
-                if update_best_score(
-                    player_sciper, best_score, scores_dict
-                ):
+                if update_best_score(player_sciper, best_score, scores_dict):
                     scores_updated = True
                     logger.info(
                         f"Updated best score for {train_name} (sciper: {player_sciper}): {best_score}"
@@ -193,12 +198,14 @@ class Room:
         for client_addr in list(self.clients.keys()):
             try:
                 # Skip AI clients - they don't need network messages
-                if isinstance(client_addr, tuple) and len(client_addr) == 2 and client_addr[0] == "AI":
+                if (
+                    isinstance(client_addr, tuple)
+                    and len(client_addr) == 2
+                    and client_addr[0] == "AI"
+                ):
                     continue
-                    
-                self.game.server.server_socket.sendto(
-                    state_json.encode(), client_addr
-                )
+
+                self.game.server.server_socket.sendto(state_json.encode(), client_addr)
             except Exception as e:
                 logger.error(f"Error sending game over data to client: {e}")
 
@@ -241,15 +248,27 @@ class Room:
                             remaining_time = 0
                             if self.has_human_players:
                                 # Use the time the first client joined if available, otherwise creation time
-                                start_time = self.first_client_join_time if self.first_client_join_time is not None else self.room_creation_time
+                                start_time = (
+                                    self.first_client_join_time
+                                    if self.first_client_join_time is not None
+                                    else self.room_creation_time
+                                )
                                 elapsed_time = current_time - start_time
-                                remaining_time = max(0, WAITING_TIME_BEFORE_BOTS - elapsed_time)
-                                
+                                remaining_time = max(
+                                    0, WAITING_TIME_BEFORE_BOTS - elapsed_time
+                                )
+
                                 # If time is up and room is not full, add bots and start the game
-                                if remaining_time == 0 and not self.is_full() and not self.game_thread:
-                                    logger.info(f"Waiting time expired for room {self.id}, adding bots and starting game")
+                                if (
+                                    remaining_time == 0
+                                    and not self.is_full()
+                                    and not self.game_thread
+                                ):
+                                    logger.info(
+                                        f"Waiting time expired for room {self.id}, adding bots and starting game"
+                                    )
                                     self.fill_with_bots()
-                            
+
                             waiting_room_data = {
                                 "type": "waiting_room",
                                 "data": {
@@ -265,7 +284,11 @@ class Room:
                             for client_addr in list(self.clients.keys()):
                                 try:
                                     # Skip AI clients - they don't need network messages
-                                    if isinstance(client_addr, tuple) and len(client_addr) == 2 and client_addr[0] == "AI":
+                                    if (
+                                        isinstance(client_addr, tuple)
+                                        and len(client_addr) == 2
+                                        and client_addr[0] == "AI"
+                                    ):
                                         continue
 
                                     self.game.server.server_socket.sendto(
@@ -302,7 +325,11 @@ class Room:
         for client_addr in list(self.clients.keys()):
             try:
                 # Skip AI clients - they don't need network messages
-                if isinstance(client_addr, tuple) and len(client_addr) == 2 and client_addr[0] == "AI":
+                if (
+                    isinstance(client_addr, tuple)
+                    and len(client_addr) == 2
+                    and client_addr[0] == "AI"
+                ):
                     continue
                 self.game.server.server_socket.sendto(
                     initial_state_json.encode(), client_addr
@@ -330,15 +357,18 @@ class Room:
                         for client_addr in list(self.clients.keys()):
                             try:
                                 # Skip AI clients - they don't need network messages
-                                if isinstance(client_addr, tuple) and len(client_addr) == 2 and client_addr[0] == "AI":
+                                if (
+                                    isinstance(client_addr, tuple)
+                                    and len(client_addr) == 2
+                                    and client_addr[0] == "AI"
+                                ):
                                     continue
 
                                 self.game.server.server_socket.sendto(
                                     state_json.encode(), client_addr
                                 )
                             except Exception as e:
-                                logger.error(
-                                    f"Error sending state to client: {e}")
+                                logger.error(f"Error sending state to client: {e}")
 
                     last_update = current_time
 
@@ -353,15 +383,15 @@ class Room:
         server = self.game.server
         current_players = len(self.clients)
         bots_needed = self.nb_players - current_players
-        
+
         if bots_needed <= 0:
             return
-        
+
         logger.info(f"Adding {bots_needed} bots to room {self.id}")
-        
+
         # Add bots to the room
         for _ in range(bots_needed):
             server.create_ai_for_train(self)
-        
+
         # Start the game
         self.start_game()

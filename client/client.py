@@ -25,6 +25,7 @@ with open("config.json", "r") as f:
 
 DEFAULT_HOST = "localhost"
 
+
 class Client:
     """Main client class"""
 
@@ -61,7 +62,9 @@ class Client:
         self.cell_size = config["cell_size"]
         self.game_width = 200  # Initial game area width
         self.game_height = 200  # Initial game area height
-        self.game_screen_padding = config["cell_size"]  # Space between game area and leaderboard
+        self.game_screen_padding = config[
+            "cell_size"
+        ]  # Space between game area and leaderboard
         self.leaderboard_width = config["leaderboard_width"]
         self.leaderboard_height = 2 * self.game_screen_padding + self.game_height
 
@@ -136,7 +139,7 @@ class Client:
         # Connect to server with timeout
         connection_timeout = 5  # 5 seconds timeout
         connection_start_time = time.time()
-        
+
         connection_successful = False
         while time.time() - connection_start_time < connection_timeout:
             try:
@@ -147,20 +150,34 @@ class Client:
                         connection_successful = True
                         break
                     else:
-                        logger.warning("Connection reported success but failed verification")
+                        logger.warning(
+                            "Connection reported success but failed verification"
+                        )
                 time.sleep(0.5)  # Small delay between connection attempts
             except Exception as e:
                 logger.error(f"Connection attempt failed: {e}")
                 time.sleep(0.5)
-        
+
         if not connection_successful:
-            logger.error(f"Failed to connect to server after {connection_timeout} seconds timeout")
+            logger.error(
+                f"Failed to connect to server after {connection_timeout} seconds timeout"
+            )
             # Show error message to user
             if self.screen:
                 font = pygame.font.Font(None, 26)
-                text = font.render("Connection to server failed. Check port and server status.", True, (255, 0, 0))
+                text = font.render(
+                    "Connection to server failed. Check port and server status.",
+                    True,
+                    (255, 0, 0),
+                )
                 self.screen.fill((0, 0, 0))
-                self.screen.blit(text, (config["screen_width"]//2 - text.get_width()//2, config["screen_height"]//2 - text.get_height()//2))
+                self.screen.blit(
+                    text,
+                    (
+                        config["screen_width"] // 2 - text.get_width() // 2,
+                        config["screen_height"] // 2 - text.get_height() // 2,
+                    ),
+                )
                 pygame.display.flip()
                 pygame.time.wait(3000)  # Show error for 3 seconds
             pygame.quit()
@@ -277,17 +294,21 @@ class Client:
         logger.warning("Server disconnected, shutting down client...")
         self.server_disconnected = True
         self.running = False
-        
+
         # Afficher un message à l'utilisateur si pygame est initialisé
-        if hasattr(self, 'renderer') and self.renderer and pygame.display.get_init():
+        if hasattr(self, "renderer") and self.renderer and pygame.display.get_init():
             try:
                 font = pygame.font.SysFont("Arial", 24)
-                text = font.render("Server disconnected. Press any key to exit.", True, (255, 0, 0))
-                text_rect = text.get_rect(center=(config["screen_width"]//2, config["screen_height"]//2))
+                text = font.render(
+                    "Server disconnected. Press any key to exit.", True, (255, 0, 0)
+                )
+                text_rect = text.get_rect(
+                    center=(config["screen_width"] // 2, config["screen_height"] // 2)
+                )
                 self.renderer.screen.fill((0, 0, 0))
                 self.renderer.screen.blit(text, text_rect)
                 pygame.display.flip()
-                
+
                 # Attendre que l'utilisateur appuie sur une touche
                 waiting = True
                 while waiting:
@@ -297,22 +318,22 @@ class Client:
                     time.sleep(0.1)
             except Exception as e:
                 logger.error(f"Error displaying disconnection message: {e}")
-        
+
         # Fermer proprement
         self.cleanup()
-        
+
     def cleanup(self):
         """Clean up resources before exiting"""
         logger.info("Cleaning up resources...")
-        
+
         # Fermer la connexion réseau
-        if hasattr(self, 'network') and self.network:
+        if hasattr(self, "network") and self.network:
             self.network.disconnect()
-            
+
         # Quitter pygame
         if pygame.display.get_init():
             pygame.quit()
-            
+
         # Quitter le programme
         if self.server_disconnected:
             logger.info("Exiting due to server disconnection")
@@ -353,6 +374,7 @@ def main():
 
     # Start the client
     client.run()
+
 
 if __name__ == "__main__":
     main()
