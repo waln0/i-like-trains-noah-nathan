@@ -9,7 +9,23 @@
         "cell_size": 20,
         "leaderboard_width": 280,
         "manual_spawn": false,
-        "control_mode": "manual"
+        "control_mode": "manual",
+        "game_mode": "online",
+
+        "online_agent": {
+            "name": "Player",
+            "path": "agents//agent.py"
+        },
+        "local_agents": [
+            {
+                "name": "Agent1",
+                "path": "agents//agent1.py"
+            },
+            {
+                "name": "Agent2",
+                "path": "agents//agent2.py"
+            }
+        ]
     },
     "server": {
         "host": "0.0.0.0",
