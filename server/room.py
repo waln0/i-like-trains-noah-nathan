@@ -12,7 +12,7 @@ logger = logging.getLogger("server.room")
 GAME_LIFE_TIME = 60 * 5
 
 # Waiting time before adding bots (in seconds)
-WAITING_TIME_BEFORE_BOTS = 60 # 60 seconds
+WAITING_TIME_BEFORE_BOTS = 30 # 30 seconds
 
 # Scores file path
 SCORES_FILE_PATH = "player_scores.json"
