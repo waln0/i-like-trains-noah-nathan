@@ -479,6 +479,11 @@ class Server:
         # Check if name not in the ai names
         if name_to_check in AI_NAMES:
             name_available = False
+            
+        # Check if name starts with "Bot " (invalid)
+        if name_to_check.startswith("Bot "):
+            name_available = False
+            logger.debug(f"Name '{name_to_check}' starts with 'Bot ', not available")
 
         if addr:
             # Prepare the response with best score if available
