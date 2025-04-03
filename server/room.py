@@ -12,7 +12,7 @@ logger = logging.getLogger("server.room")
 GAME_LIFE_TIME = 60 * 5
 
 # Waiting time before adding bots (in seconds)
-WAITING_TIME_BEFORE_BOTS = 5 # 30 seconds
+WAITING_TIME_BEFORE_BOTS = 60 # 60 seconds
 
 # Scores file path
 SCORES_FILE_PATH = "player_scores.json"
@@ -20,7 +20,7 @@ SCORES_FILE_PATH = "player_scores.json"
 # Transfer tick rate
 TICK_RATE = 30
 
-def update_best_score(player_name, player_sciper, score, scores_dict):
+def update_best_score(player_sciper, score, scores_dict):
     """Update player's best score if the new score is higher"""
     # Use sciper as the unique identifier for scores
     if player_sciper in scores_dict:
@@ -162,7 +162,7 @@ class Room:
             # Update best score in the scores file if we have a valid sciper
             if player_sciper:
                 if update_best_score(
-                    train_name, player_sciper, best_score, scores_dict
+                    player_sciper, best_score, scores_dict
                 ):
                     scores_updated = True
                     logger.info(
