@@ -31,7 +31,60 @@ The file `config.json` should contain your train_name and sciper.
 
 You cannot use the same sciper or train_name as another player already connected.
 
-### 3. Run the client
+```json
+{
+    "sciper": "000000",
+    "train_name": "Player"
+}
+```
+
+You cannot use the same sciper or train name as another player already connected.
+
+### 3. Game Modes
+
+The game supports two different modes that can be set in the `config.json` file:
+
+- **Online Mode** (`"game_mode": "online"`): In this mode, the client connects to a remote server to compete against other players' agents in a battle. The client uses the agent specified in the `online_agent` field of the configuration file.
+
+- **Local Evaluation Mode** (`"game_mode": "local_evaluation"`): This mode allows you to run a local evaluation by loading multiple agents from your machine. The agents specified in the `local_agents` list in `config.json` will compete against each other, allowing you to test and compare different versions of your agents. For better organization, it's recommended to store your agents in the "agents" folder.
+
+Example configuration in `config.json`:
+```json
+{
+    "game_mode": "online",  // or "local_evaluation"
+    "remote_ip": "<ip_address>",  // IP address for online mode. Replace <ip_address> with the actual IP address.
+    
+    "online_agent": {
+        "name": "MyOnlineAgent", 
+        "path_to_agent": "agents.my_best_agent"
+    },
+    
+    "local_agents": [
+        {
+            "name": "Agent1", 
+            "path_to_agent": "agents.agent1"
+        },
+        {
+            "name": "Agent2", 
+            "path_to_agent": "agents.agent2"
+        }
+    ]
+}
+```
+
+How the modes affect the client and server:
+
+- In **Online Mode**:
+  - The client connects to the remote IP specified in the configuration.
+  - The client initializes with the agent specified in `online_agent`.
+  - The server hosts a game on `0.0.0.0` allowing multiple clients to connect and compete.
+
+- In **Local Evaluation Mode**:
+  - The client connects to localhost and acts as an observer, only displaying the game.
+  - The server creates a room with one slot for the observer client and fills the rest with AI clients based on the agents specified in `local_agents`.
+  - This allows you to watch different versions of your agents compete against each other.
+
+### 4. Run the client
 
 If you are connecting to a remote server, you need to know the IP address and port of the server. If you are outside of EPFL network, you will need to use a VPN to connect to the network.
 
