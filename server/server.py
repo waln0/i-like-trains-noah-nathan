@@ -5,6 +5,7 @@ import time
 import logging
 import uuid
 import random
+import os
 import signal
 
 from common.config import Config
@@ -147,7 +148,7 @@ class Server:
         # First try to find a non-full room
         for room in self.rooms.values():
             if (
-                room.nb_clients == nb_clients
+                room.nb_clients_max == nb_clients
                 and not room.is_full()
                 and not room.game_thread
             ):
@@ -317,7 +318,7 @@ class Server:
                 self.handle_client_message(addr, message, client_room)
             else:
                 logger.warning(
-                    f"Received message from {addr} ({agent_sciper}) but client not in any room"
+                    f"Received message from {addr} ({agent_sciper}) but client not in any room. Message: {message}"
                 )
         else:
             # Check if this is a message from a client that was in a recently closed room
@@ -823,7 +824,7 @@ class Server:
                             logger.info(
                                 f"Creating AI client for train {original_train_name}"
                             )
-                            self.create_ai_for_train(room, original_train_name)
+                            room.create_ai_for_train(original_train_name)
                         # else: Train might not exist or is already AI, log if necessary for debug
 
                     # Common cleanup for the disconnected client's address info

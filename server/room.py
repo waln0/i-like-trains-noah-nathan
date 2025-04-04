@@ -49,19 +49,25 @@ class Room:
 
         self.clients = {}  # {addr: agent_name}
         self.game_thread = None
+
+        self.waiting_room_thread = None
+        self.game_over = False  # Track if the game is over
+        self.room_creation_time = time.time()  # Track when the room was created
+        self.first_client_join_time = None  # Track when the first client joins
+        self.stop_waiting_room = False # Flag to stop the waiting room thread - Initialized BEFORE thread start
+
+        # Start waiting room broadcast thread
         self.waiting_room_thread = threading.Thread(target=self.broadcast_waiting_room)
         self.waiting_room_thread.daemon = True
         self.waiting_room_thread.start()
 
         self.game_start_time = None  # Track when the game starts
-        self.game_over = False  # Track if the game is over
-        self.room_creation_time = time.time()  # Track when the room was created
-        self.first_client_join_time = None  # Track when the first client joins
 
         self.has_clients = False  # Track if the room has at least one human player
 
         self.used_ai_names = set()  # Track AI names that are already in use
         self.ai_clients = {}  # Maps train names to AI clients
+        self.AI_NAMES = AI_NAMES  # Store the AI names as an instance attribute
 
         logger.info(f"Room {room_id} created with number of clients {nb_clients_max}")
 
@@ -76,8 +82,9 @@ class Room:
         self.game_timer_thread.daemon = True
         self.game_timer_thread.start()
 
-        # Stop the waiting room thread
-        self.waiting_room_thread.join()
+        # Stop the waiting room thread by setting the flag
+        self.stop_waiting_room = True
+        # self.waiting_room_thread.join() # Cannot join from the same thread
 
         logger.info(f"\nStarting game for room {self.id}")
         if not self.game_thread:
@@ -115,7 +122,7 @@ class Room:
 
     def get_available_ai_name(self):
         """Get an available AI name that is not already in use"""
-        for name in AI_NAMES:
+        for name in self.AI_NAMES:
             if name not in self.used_ai_names:
                 self.used_ai_names.add(name)
                 return name
@@ -140,11 +147,11 @@ class Room:
                 self.clients[("AI", ai_name)] = ai_name
 
                 # Record the time the first client joined this room (if it's an AI)
-                if self.first_client_join_time is None:
-                    self.first_client_join_time = time.time()
-                    logger.info(
-                        f"First client (AI: {ai_name}) joined room {self.id}. Starting waiting timer."
-                    )
+                # if self.first_client_join_time is None:
+                #     self.first_client_join_time = time.time()
+                #     logger.info(
+                #         f"First client (AI: {ai_name}) joined room {self.id}. Starting waiting timer."
+                #     )
 
                 # Create the AI client with the new name
                 self.ai_clients[ai_name] = AIClient(self, ai_name)
@@ -332,7 +339,7 @@ class Room:
     def broadcast_waiting_room(self):
         """Broadcast waiting room data to all clients"""
         last_update = time.time()
-        while self.running:
+        while self.running and not self.stop_waiting_room:
             try:
                 if self.clients and not self.game_thread:
                     current_time = time.time()
