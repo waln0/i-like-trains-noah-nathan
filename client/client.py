@@ -232,7 +232,6 @@ class Client:
         while self.running:
             # Handle events
             self.event_handler.handle_events()
-
             # Handle any pending window updates in the main thread
             self.handle_window_updates()
 

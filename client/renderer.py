@@ -115,11 +115,12 @@ class Renderer:
             except Exception as e:
                 logger.error("Error drawing leaderboard: " + str(e))
 
-            if self.client.agent.is_dead and not self.client.in_waiting_room:
-                try:
-                    self.draw_death_screen()
-                except Exception as e:
-                    logger.error("Error drawing death screen: " + str(e))
+            if self.client.agent:
+                if self.client.agent.is_dead and not self.client.in_waiting_room:
+                    try:
+                        self.draw_death_screen()
+                    except Exception as e:
+                        logger.error("Error drawing death screen: " + str(e))
 
             # Update display
             pygame.display.flip()
@@ -224,9 +225,9 @@ class Renderer:
 
             # Draw main train
             color = train_color
-            if train_name == self.client.agent_name:
-                color = (0, 0, 255)  # Blue for player's train
-
+            if self.client.agent:
+                if train_name == self.client.agent_name:
+                    color = (0, 0, 255)  # Blue for player's train
             # Draw train with more elaborate shape
             pygame.draw.rect(
                 self.client.screen,
@@ -267,8 +268,9 @@ class Renderer:
                 wagon_x += self.client.game_screen_padding
                 wagon_y += self.client.game_screen_padding
                 wagon_color = train_wagon_color
-                if train_name == self.client.agent_name:
-                    wagon_color = (50, 50, 200)  # Darker blue for player's wagons
+                if self.client.agent:
+                    if train_name == self.client.agent_name:
+                        wagon_color = (50, 50, 200)  # Darker blue for player's wagons
 
                 pygame.draw.rect(
                     self.client.screen,
@@ -575,12 +577,13 @@ class Renderer:
                     rank_color = (100, 100, 100)  # Gray
 
                 # Highlight current player's row
-                if train_name == self.client.agent_name:
-                    pygame.draw.rect(
-                        self.client.screen,
-                        (220, 220, 255),  # Light blue background
-                        pygame.Rect(
-                            self.client.game_width
+                if self.client.agent:
+                    if train_name == self.client.agent_name:
+                        pygame.draw.rect(
+                            self.client.screen,
+                            (220, 220, 255),  # Light blue background
+                            pygame.Rect(
+                                self.client.game_width
                             + 2 * self.client.game_screen_padding
                             + 5,
                             y_offset - 2,
@@ -595,8 +598,9 @@ class Renderer:
                     train_data = self.client.trains[train_name]
                     if isinstance(train_data, dict) and "color" in train_data:
                         train_color = train_data["color"]
-                    if train_name == self.client.agent_name:
-                        train_color = (0, 0, 255)  # Blue for player's train
+                    if self.client.agent:
+                        if train_name == self.client.agent_name:
+                            train_color = (0, 0, 255)  # Blue for player's train
 
                 # Display rank
                 rank_text = player_font.render(str(i + 1), True, rank_color)
@@ -782,17 +786,21 @@ class Renderer:
                     rank_color = (255, 255, 255)  # White
 
                 # Highlight current player
-                if player_name == self.client.agent_name:
-                    # Draw highlight rectangle
-                    pygame.draw.rect(
-                        self.client.screen,
-                        (0, 0, 100),  # Blue
-                        pygame.Rect(
-                            col1_x - 30, y_offset - 10, col3_x - col1_x + 160, 40
-                        ),
-                        border_radius=5,
-                    )
-                    rank_color = (255, 255, 255)
+                if self.client.agent:
+                    if player_name == self.client.agent_name:
+                        # Draw highlight rectangle
+                        pygame.draw.rect(
+                            self.client.screen,
+                            (0, 0, 100),  # Blue
+                            pygame.Rect(
+                                col1_x - 30,
+                                y_offset - 10,
+                                col3_x - col1_x + 160,
+                                40,
+                            ),
+                            border_radius=5,
+                        )
+                        rank_color = (255, 255, 255)
 
                 # Draw rank
                 rank_text = font_scores.render(f"#{i + 1}", True, rank_color)

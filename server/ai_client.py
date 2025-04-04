@@ -13,6 +13,7 @@ import os
 import importlib
 import json
 
+
 # Add the project root to the path
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
@@ -82,42 +83,41 @@ class AIClient:
     AI client that controls a train on the server side
     using the Agent class from the client
     """
-
-    def __init__(self, room, name):
+    def __init__(self, room, agent_name, path_to_agent=None):
+        """Initialize the AI client"""
         self.room = room
         self.game = room.game
-        self.agent_name = name  # The AI agent name
-        self.train_name = name  # Use the AI name as the train name
+        self.agent_name = agent_name  # The AI agent name
+        self.train_name = agent_name  # Use the AI name as the train name
 
         # Create network interface
         self.network = AINetworkInterface(
-            room, name
+            room, agent_name
         )  # Use AI name for network interface
 
-        # Create agent
-        
-        logger.info(f"Trying to import AI agent for {name}")
-        module = importlib.import_module("agents.ai_agent")
-        self.agent = module.AI_agent(
-            name, self.network, logger="server.ai_agent", is_dead=False
-        )
-        logger.info(f"AI agent {name} initialized using AI_agent")
-        # except ImportError as e:
-        #     try:
-        #         logger.info(f"Failed to import AI agent for {name}, using base agent: {e}")
-        #         # randomly import an agent from "local_agents" in config.json
-        #         agent_config = random.choice(LOCAL_AGENTS_CONFIG)
-        #         agent_path = agent_config["path_to_agent"]
-        #         agent_name = agent_config["name"]
-        #         module = importlib.import_module(agent_path)
-
-        #         self.agent = module.Agent(
-        #             agent_name, self.network, logger="server.ai_agent", is_dead=False
-        #         )
-        #         logger.info(f"AI agent {name} initialized using base_agent")
-        #     except ImportError as e:
-        #         logger.error(f"Failed to import base agent for {name}: {e}")
-        #         sys.exit(1)
+        # Initialize agent if path_to_agent is provided
+        if agent_name and path_to_agent:
+            try:
+                logger.info(f"Trying to import AI agent for {agent_name}")
+                module = importlib.import_module(path_to_agent)
+                self.agent = module.Agent(
+                    agent_name, self.network, logger="server.ai_agent", is_dead=False
+                )
+                logger.info(f"AI agent {agent_name} initialized using {path_to_agent}")
+            except ImportError as e:
+                logger.error(f"Failed to import AI agent for {agent_name}: {e}")
+                sys.exit(1)
+        else:
+            try:
+                logger.info(f"Trying to import AI agent for {agent_name}")
+                module = importlib.import_module("agents.ai_agent")
+                self.agent = module.AI_agent(
+                    agent_name, self.network, logger="server.ai_agent", is_dead=False
+                )
+                logger.info(f"AI agent {agent_name} initialized using AI_agent")
+            except ImportError as e:
+                logger.error(f"Failed to import AI agent for {agent_name}: {e}")
+                sys.exit(1)
 
         self.agent.delivery_zone = self.game.delivery_zone.to_dict()
 
@@ -126,7 +126,7 @@ class AIClient:
         self.thread = threading.Thread(target=self.run)
         self.thread.daemon = True
         self.thread.start()
-        logger.info(f"AI client {name} started")
+        logger.info(f"AI client {agent_name} started")
 
         self.update_state()
 
