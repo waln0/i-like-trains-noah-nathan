@@ -1,8 +1,7 @@
-{
-    "game_mode": "local_evaluation",
+{    "game_mode": "online",
+
     "default_port": 5555,
 
-    
     "online_agent": {
         "sciper": "000000",
         "name":"Player", 
@@ -27,8 +26,7 @@
     "manual_spawn": false,
     "control_mode": "manual",
 
-
     "default_nb_players_per_room": 2,
     "allow_multiple_connections": true,
-    "waiting_time_before_bots": 5
+    "waiting_time_before_bots": 2
 }

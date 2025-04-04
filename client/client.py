@@ -3,10 +3,10 @@ import logging
 import time
 import threading
 import sys
-from network import NetworkManager
-from renderer import Renderer
-from event_handler import EventHandler
-from game_state import GameState
+from client.network import NetworkManager
+from client.renderer import Renderer
+from client.event_handler import EventHandler
+from client.game_state import GameState
 import importlib
 import json
 import os
@@ -102,7 +102,7 @@ class Client:
         if self.game_mode == "online":
             agent_info = config.get("online_agent", {})
             if agent_info and "path_to_agent" in agent_info:
-                try:
+                # try:
                     module_path = agent_info["path_to_agent"]
                     # Add parent directory to Python path to allow importing agents package
                     parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -111,9 +111,9 @@ class Client:
                     self.agent_name = agent_info["name"]
                     self.agent_sciper = agent_info["sciper"]
                     self.agent = module.Agent(self.agent_name, self.network)
-                except ImportError as e:
-                    logger.error(f"Failed to import agent from {module_path}: {e}")
-                    sys.exit(1)
+                # except ImportError as e:
+                #     logger.error(f"Failed to import agent from {module_path}: {e}")
+                #     sys.exit(1)
 
         self.ping_response_received = False
         self.server_disconnected = False

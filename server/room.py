@@ -13,9 +13,6 @@ logger = logging.getLogger("server.room")
 # Game duration in seconds
 GAME_LIFE_TIME = 60 * 5
 
-# Waiting time before adding bots (in seconds)
-WAITING_TIME_BEFORE_BOTS = 10  # 30 seconds
-
 # Scores file path
 SCORES_FILE_PATH = "player_scores.json"
 
@@ -97,6 +94,7 @@ class Room:
         addr_to_sciper,
         remove_room,
         server_socket,
+        WAITING_TIME_BEFORE_BOTS,
     ):
         self.id = room_id
         self.nb_clients_max = nb_clients_max
@@ -109,6 +107,7 @@ class Room:
         self.addr_to_sciper = addr_to_sciper
         self.remove_room = remove_room
         self.local_agents_config = local_agents_config
+        self.WAITING_TIME_BEFORE_BOTS = WAITING_TIME_BEFORE_BOTS
 
         self.game = Game(send_cooldown_notification, nb_clients_max)
         self.game.room_id = room_id  # Store the room ID in the Game object
@@ -413,7 +412,7 @@ class Room:
                             )
                             elapsed_time = current_time - start_time
                             remaining_time = max(
-                                0, WAITING_TIME_BEFORE_BOTS - elapsed_time
+                                0, self.WAITING_TIME_BEFORE_BOTS - elapsed_time
                             )
 
                             # If time is up and room is not full, add bots and start the game
@@ -427,8 +426,6 @@ class Room:
                                 )
                                 self.fill_with_bots()
                                 self.start_game()
-                            else:
-                                logger.debug(f"game mode: {self.game_mode}, remaining time: {remaining_time}, is full: {self.is_full()}, game thread: {self.game_thread}")
 
                         waiting_room_data = {
                             "type": "waiting_room",

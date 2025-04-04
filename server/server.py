@@ -240,7 +240,8 @@ class Server:
             self.get_best_scores,
             self.addr_to_sciper,
             self.remove_room,
-            self.server_socket
+            self.server_socket,
+            WAITING_TIME_BEFORE_BOTS,
         )
         logger.info(f"Created new room {room_id} with {self.nb_clients_per_room} clients")
         self.rooms[room_id] = new_room
@@ -266,6 +267,7 @@ class Server:
         error_count = {}  # Track error count per client
 
         while self.running:
+            # TODO RESTORE
             try:
                 # Receive data from any client
                 data, addr = self.server_socket.recvfrom(1024)
@@ -287,16 +289,16 @@ class Server:
                         if not message_str:
                             continue
 
-                        try:
-                            message = json.loads(message_str)
-                            # Process the message
-                            self.process_message(message, addr)
-                        except json.JSONDecodeError:
-                            logger.warning(
-                                f"Invalid JSON received from {addr}: {message_str}"
-                            )
-                        except Exception as e:
-                            logger.error(f"Error processing message from {addr}: {e}")
+                        # try: // TODO RESTORE
+                        message = json.loads(message_str)
+                        # Process the message
+                        self.process_message(message, addr)
+                        # except json.JSONDecodeError:
+                        #     logger.warning(
+                        #         f"Invalid JSON received from {addr}: {message_str}"
+                        #     )
+                        # except Exception as e:
+                        #     logger.error(f"Error processing message from {addr}: {e}")
             except socket.error as e:
                 # For UDP, we don't know which client caused the error
                 # So we only log the error and don't mark any client as disconnected
@@ -322,32 +324,9 @@ class Server:
 
     def process_message(self, message, addr):
         """Process incoming messages from clients"""
-        # # Check if this is an unknown client that we have already asked to disconnect
-        # if (
-        #     addr not in self.addr_to_name
-        #     and addr in self.unknown_clients_sent_disconnect
-        # ):
-        #     # Check if we've sent a disconnect request recently (within the last 5 seconds)
-        #     last_disconnect_time = self.unknown_clients_sent_disconnect[addr]
-        #     if time.time() - last_disconnect_time < 5:
-        #         # We've already asked this client to disconnect recently, ignore the message
-        #         return
-        #     else:
-        #         # It's been a while, we can remove them from the list and process normally
-        #         del self.unknown_clients_sent_disconnect[addr]
-
-        # If this client was previously marked as disconnected
         if addr in self.disconnected_clients:
-            # # Allow check_name and check_sciper actions even if client was previously disconnected
-            # if "action" in message and message["action"] in [
-            #     "check_name",
-            #     "check_sciper",
-            # ]:
-            #     # Process these actions normally
-            #     pass
-            # elif "agent_name" not in message or "agent_sciper" not in message:
-                # Don't log a warning for every message, just silently ignore it
-                return
+            # Remove the client from the disconnected clients list
+            self.disconnected_clients.remove(addr)
 
         # Check if we need to handle agent initialization
         if self.game_mode == "online":
@@ -370,9 +349,6 @@ class Server:
                     # ask the client to disconnect
                     self.send_disconnect(addr, "Name or sciper not available or invalid")
                     logger.warning(f"Name or sciper not available or invalid for {addr}")
-
-            else:
-                logger.debug(f"'type' in message: {'type' in message}, message type: {message.get('type')}, agent_sciper in message: {'agent_sciper' in message}, addr in self.addr_to_name: {addr in self.addr_to_name}")
 
         # In local_evaluation mode, the only client connecting is the observer, handle it directly
         elif self.game_mode == "local_evaluation":
@@ -401,24 +377,6 @@ class Server:
                 logger.error(f"Error sending pong to {addr}: {e}")
                 return
 
-        # if "action" in message and message["action"] not in [
-        #     "check_name",
-        #     "check_sciper",
-        # ]:
-        #     # Update client activity timestamp
-        #     self.client_last_activity[addr] = time.time()
-
-        # For name check requests
-        # if "action" in message and message["action"] == "check_name":
-        #     logger.debug(f"Received name check request from {addr}")
-        #     self.handle_name_check(message, addr)
-        #     return
-
-        # # For sciper check requests
-        # if "action" in message and message["action"] == "check_sciper":
-        #     self.handle_sciper_check(message, addr)
-        #     return
-
         agent_sciper = self.addr_to_sciper.get(addr)
 
         if agent_sciper:
@@ -431,18 +389,6 @@ class Server:
                     f"Received message from {addr} ({agent_sciper}) but client not in any room. Message: {message}"
                 )
         else:
-            # Check if this is a message from a client that was in a recently closed room
-            # Only log at debug level if it's not a common message type
-            # if "type" in message and message["type"] in ["pong", "high_scores"]:
-            #     # These are common messages, don't log them to reduce spam
-            #     pass
-            # elif "action" in message and message["action"] in ["check_name"]:
-            #     # Handle common action messages without logging
-            #     pass
-            # elif "action" in message and message["action"] in ["check_sciper"]:
-            #     # Handle common action messages without logging
-            #     pass
-            # else:
                 # This is an unknown client sending a message that's not a common type
                 logger.debug(f"Received message from unknown client {addr}: {message}")
                 # Send a disconnect request to the client
@@ -512,18 +458,30 @@ class Server:
 
         # Check if the name exists in any room
         name_available = True
-        for room_id, room in self.rooms.items():
-            if name_to_check in room.clients.values():
-                name_available = False
-                logger.debug(f"Name '{name_to_check}' found in room {room_id}")
+        room = None  # Initialize room to None to avoid reference error
+        
+        for room_id, current_room in self.rooms.items():
+            room = current_room  # Keep a reference to the last room
+            for client_addr, client_name in current_room.clients.items():
+                if client_name == name_to_check:
+                    # Check if the client with this name is in disconnected_clients
+                    if client_addr in self.disconnected_clients:
+                        # Client is disconnected, name can be reused
+                        logger.debug(f"Name '{name_to_check}' found in room {room_id} but client is disconnected, considering it available")
+                        continue
+                    # Client is connected, name is not available
+                    name_available = False
+                    logger.debug(f"Name '{name_to_check}' found in room {room_id}")
+                    break
+            if not name_available:
                 break
 
-        # Check if name not in the ai names
-        if name_to_check in room.AI_NAMES:
+        # Check if name not in the ai names (only if we have at least one room)
+        if room and name_available and name_to_check in room.AI_NAMES:
             name_available = False
 
         # Check if name starts with "Bot " (invalid)
-        if name_to_check.startswith("Bot "):
+        if name_available and name_to_check.startswith("Bot "):
             name_available = False
             logger.debug(f"Name '{name_to_check}' starts with 'Bot ', not available")
 
@@ -567,6 +525,14 @@ class Server:
 
         # Check if the sciper exists in our mapping
         sciper_available = sciper_to_check not in self.sciper_to_addr
+        
+        # If sciper is not available, check if the associated address is in disconnected_clients
+        if not sciper_available and sciper_to_check in self.sciper_to_addr:
+            old_addr = self.sciper_to_addr[sciper_to_check]
+            if old_addr in self.disconnected_clients:
+                # If the address is in disconnected_clients, consider the sciper as available
+                sciper_available = True
+                logger.info(f"Sciper {sciper_to_check} found but associated address {old_addr} is disconnected, considering it available")
 
         if addr:
             # Prepare the response with best score if available
@@ -611,32 +577,43 @@ class Server:
             if not agent_sciper:
                 logger.warning("No agent sciper provided")
                 return
+            
+            logger.info(f"\nNew client {agent_name} (sciper: {agent_sciper}) connecting from {addr}")
 
             # Initialize client activity tracking
             self.client_last_activity[addr] = time.time()
-
-            # Check if this address is already associated with a different name or sciper
-            if addr in self.addr_to_name and self.addr_to_name[addr] != agent_name:
-                old_name = self.addr_to_name[addr]
-                logger.info(
-                    f"Client at {addr} changed name from {old_name} to {agent_name}"
-                )
-
-                # Update the name in any rooms where this client exists
-                for room in self.rooms.values():
-                    if addr in room.clients:
-                        room.clients[addr] = agent_name
-                        break
 
             # Log new client connection
             logger.info(
                 f"New client {agent_name} (sciper: {agent_sciper}) connecting from {addr}"
             )
 
+        # Check if this sciper was previously connected and clean up any old references
+        if agent_sciper in self.sciper_to_addr:
+            old_addr = self.sciper_to_addr[agent_sciper]
+            if old_addr != addr:  # Only if it's a different address
+                logger.info(f"Cleaning up previous connection for sciper {agent_sciper} at {old_addr}")
+                # Remove from disconnected_clients if present
+                if old_addr in self.disconnected_clients:
+                    self.disconnected_clients.remove(old_addr)
+                # Clean up other mappings
+                if old_addr in self.addr_to_name:
+                    del self.addr_to_name[old_addr]
+                if old_addr in self.addr_to_sciper:
+                    del self.addr_to_sciper[old_addr]
+                if old_addr in self.client_last_activity:
+                    del self.client_last_activity[old_addr]
+                if old_addr in self.ping_responses:
+                    del self.ping_responses[old_addr]
+
         # Associate address with name and sciper
         self.addr_to_name[addr] = agent_name
         self.addr_to_sciper[addr] = agent_sciper
         self.sciper_to_addr[agent_sciper] = addr
+
+        # Remove from disconnected_clients if present (just in case)
+        if addr in self.disconnected_clients:
+            self.disconnected_clients.remove(addr)
 
         # Assign to a room
         selected_room = self.get_available_room(self.nb_clients_per_room)
@@ -1065,17 +1042,6 @@ class Server:
                     logger.error(f"Error sending disconnect to {addr}: {e}")
         else:
             logger.info("No clients connected to disconnect.")
-
-        # 2. Close the main server socket
-        if self.server_socket:
-            logger.info("Closing server socket...")
-            try:
-                self.server_socket.close()
-                logger.info("Server socket closed")
-            except Exception as e:
-                logger.error(f"Error closing server socket: {e}")
-        else:
-            logger.info("Server socket already closed or not initialized.")
 
         threads_to_join = []
         if hasattr(self, "threads"):  # Check if attribute exists
