@@ -26,6 +26,7 @@ class GameState:
     def handle_state_data(self, data):
         """Handle game state data received from the server"""
         try:
+            logger.debug("Received state data: " + str(data))
             if not isinstance(data, dict):
                 logger.warning("Received non-dictionary state data: " + str(data))
                 return

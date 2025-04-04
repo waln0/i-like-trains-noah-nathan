@@ -24,24 +24,19 @@ logger = logging.getLogger("client")
 with open("config.json", "r") as f:
     config = json.load(f)
 
-DEFAULT_HOST = "localhost"
+LOCAL_HOST = "localhost"
 
 
 class Client:
     """Main client class"""
 
-    def __init__(self, host=None, port=config["default_port"]):
+    def __init__(self, host, port=config["default_port"]):
         """Initialize the client"""
         self.game_mode = config.get("game_mode", "online")
         if self.game_mode == "local_evaluation":
-            self.host = "localhost"
-        elif self.game_mode == "online":
-            self.host = config.get("remote_ip", "localhost")
-        else:
+            host = LOCAL_HOST
+        elif self.game_mode != "online":
             raise ValueError(f"Invalid game mode: {self.game_mode}")
-        if host:  # Override host if provided
-            self.host = host
-        self.port = port
 
         # Initialize state variables
         self.running = True
@@ -97,7 +92,7 @@ class Client:
         self.is_initialized = True
 
         # Initialize components
-        self.network = NetworkManager(self, self.host, port)
+        self.network = NetworkManager(self, host, port)
         self.renderer = Renderer(self)
         self.event_handler = EventHandler(self, config["control_mode"])
         self.game_state = GameState(self, config["control_mode"])
@@ -358,7 +353,7 @@ logger = logging.getLogger("main")
 def main():
     """Main function"""
     # Check if an IP address was provided as an argument
-    host = DEFAULT_HOST
+    host = LOCAL_HOST
     if len(sys.argv) > 1:
         host = sys.argv[1]
 

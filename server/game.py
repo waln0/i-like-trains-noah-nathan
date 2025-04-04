@@ -134,7 +134,6 @@ class Game:
         return state
 
     def run(self):
-        logger.info("Game loop started")
         while self.running:
             self.update()
             import time
@@ -245,9 +244,6 @@ class Game:
             self._dirty["size"] = True
             self._dirty["cell_size"] = True
             self.game_started = True
-            logger.info(
-                f"Game started with size {self.game_width}x{self.game_height} for {num_clients} clients"
-            )
 
     def add_train(self, agent_name):
         """Add a new train to the game"""

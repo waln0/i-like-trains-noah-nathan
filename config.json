@@ -1,6 +1,5 @@
 {
-    "game_mode": "online",
-    "remote_ip": "127.0.0.1",
+    "game_mode": "local_evaluation",
     "default_port": 5555,
 
     
