@@ -3,9 +3,9 @@
     "remote_ip": "127.0.0.1",
     "default_port": 5555,
 
-    "sciper": "000000",
     
     "online_agent": {
+        "sciper": "000000",
         "name":"Player", 
         "path_to_agent":"agents.agent1"
     },
@@ -26,7 +26,7 @@
     "leaderboard_width": 280,
 
     "manual_spawn": false,
-    "control_mode": "agent",
+    "control_mode": "manual",
 
 
     "default_nb_players_per_room": 2,

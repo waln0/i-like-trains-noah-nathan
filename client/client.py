@@ -9,6 +9,7 @@ from event_handler import EventHandler
 from game_state import GameState
 import importlib
 import json
+import os
 
 
 # Configure logging
@@ -66,12 +67,10 @@ class Client:
         self.passengers = []
         self.delivery_zone = {}
 
-        self.cell_size = config["cell_size"]
+        self.cell_size = 0
         self.game_width = 200  # Initial game area width
         self.game_height = 200  # Initial game area height
-        self.game_screen_padding = config[
-            "cell_size"
-        ]  # Space between game area and leaderboard
+        self.game_screen_padding = 20  # Space between game area and leaderboard
         self.leaderboard_width = config["leaderboard_width"]
         self.leaderboard_height = 2 * self.game_screen_padding + self.game_height
 
@@ -110,6 +109,9 @@ class Client:
             if agent_info and "path_to_agent" in agent_info:
                 try:
                     module_path = agent_info["path_to_agent"]
+                    # Add parent directory to Python path to allow importing agents package
+                    parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                    sys.path.append(parent_dir)
                     module = importlib.import_module(module_path)
                     self.agent_name = agent_info["name"]
                     self.agent_sciper = agent_info["sciper"]
@@ -138,7 +140,7 @@ class Client:
                     self.screen = pygame.display.set_mode(
                         (width, height), pygame.RESIZABLE
                     )
-                    pygame.display.set_caption(f"I Like Trains")
+                    pygame.display.set_caption("I Like Trains")
                 except Exception as e:
                     logger.error(f"Error updating window: {e}")
 

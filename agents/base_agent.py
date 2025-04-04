@@ -1,6 +1,10 @@
 import logging
 import time
-from network import NetworkManager
+
+# Remove redundant path manipulation
+# sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+
+from client.network import NetworkManager
 
 # Configure logging
 logging.basicConfig(
