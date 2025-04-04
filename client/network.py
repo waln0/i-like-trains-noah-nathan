@@ -179,7 +179,6 @@ class NetworkManager:
                                 # Process the message based on its type
                                 if "type" in message_data:
                                     message_type = message_data["type"]
-                                    logger.debug(f"Received message type: {message_type}")
 
                                     if message_type == "state":
                                         self.client.handle_state_data(message_data["data"])
