@@ -60,10 +60,6 @@ class AINetworkInterface:
                 return self.room.game.add_train(self.train_name)
         return False
 
-    def send_start_game_request(self):
-        """Not needed for server-side AI client"""
-        return True
-
 
 class AIClient:
     """

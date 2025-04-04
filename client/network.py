@@ -184,12 +184,11 @@ class NetworkManager:
                             elif message_type == "ping":
                                 # Respond to ping with a pong
                                 self.send_message({"type": "pong"})
-                                # Mettre à jour le temps du dernier ping reçu
                                 self.last_ping_time = time.time()
 
-                            elif message_type == "pong":
-                                # Mark that we received a response to our ping
-                                self.client.ping_response_received = True
+                            # elif message_type == "pong":
+                            #     # Mark that we received a response to our ping
+                            #     self.client.ping_response_received = True
 
                             elif message_type == "game_status":
                                 self.client.handle_game_status(message_data)
@@ -442,11 +441,6 @@ class NetworkManager:
     def send_spawn_request(self):
         """Send spawn request to server"""
         message = {"action": "respawn"}
-        return self.send_message(message)
-
-    def send_start_game_request(self):
-        """Send request to start game"""
-        message = {"action": "start_game"}
         return self.send_message(message)
 
     def send_drop_wagon_request(self):

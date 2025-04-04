@@ -3,6 +3,8 @@ import logging
 import time
 import threading
 import sys
+import importlib
+
 from client.network import NetworkManager
 from client.renderer import Renderer
 from client.event_handler import EventHandler
@@ -21,6 +23,7 @@ logging.basicConfig(
 logger = logging.getLogger("client")
 
 
+
 class Client:
     """Main client class"""
 
@@ -29,9 +32,14 @@ class Client:
 
         self.config = config.client
 
-        # TODO(alok): delete self.host and self.port, we can use self.config when needed
-        self.host = self.config.host
-        self.port = self.config.port
+        # Overwrite host and port if provided
+        self.game_mode = config.get("game_mode", "online")
+        if self.game_mode == "local_evaluation":
+            self.host = "localhost"
+        elif self.game_mode == "online":
+            self.host = config.get("remote_ip", "localhost")
+        else:
+            raise ValueError(f"Invalid game mode: {self.game_mode}")
 
         # Initialize state variables
         self.running = True
@@ -53,7 +61,6 @@ class Client:
         self.sciper_check_result = False
 
         # Game data
-        self.agent_name = ""
         self.trains = {}
         self.passengers = []
         self.delivery_zone = {}
@@ -62,8 +69,9 @@ class Client:
         self.cell_size = self.config.cell_size
         self.game_width = 200  # Initial game area width
         self.game_height = 200  # Initial game area height
+        
         # Space between game area and leaderboard
-        self.game_screen_padding = self.config.cell_size
+        self.game_screen_padding = 20
         self.leaderboard_width = self.config.leaderboard_width
         self.leaderboard_height = 2 * self.game_screen_padding + self.game_height
 
@@ -91,16 +99,29 @@ class Client:
         self.is_initialized = True
 
         # Initialize components
-        self.network = NetworkManager(self, self.host, self.port)
+        self.network = NetworkManager(self, self.host, self.config.port)
         self.renderer = Renderer(self)
 
         # TODO(alok): drop the value for control_mode
         self.event_handler = EventHandler(self, self.config.control_mode.value)
         self.game_state = GameState(self, self.config.control_mode.value)
 
-        # Reference to the agent (will be initialized later)
+        # Initialize agent based on game mode
         self.agent = None
-        self.ping_response_received = False  # Added for connection verification
+        if self.game_mode == "online":
+            agent_info = self.config.get("online_agent", {})
+            if agent_info and "path_to_agent" in agent_info:
+                try:
+                    module_path = agent_info["path_to_agent"]
+                    module = importlib.import_module(module_path)
+                    self.agent_name = agent_info["name"]
+                    self.agent_sciper = agent_info["sciper"]
+                    self.agent = module.Agent(self.agent_name, self.network)
+                except ImportError as e:
+                    logger.error(f"Failed to import agent from {module_path}: {e}")
+                    sys.exit(1)
+
+        self.ping_response_received = False
         self.server_disconnected = False
 
     def update_game_window_size(self, width, height):
@@ -120,20 +141,11 @@ class Client:
                     self.screen = pygame.display.set_mode(
                         (width, height), pygame.RESIZABLE
                     )
-                    pygame.display.set_caption(
-                        f"I Like Trains - {self.agent_name}"
-                        if self.agent_name
-                        else "I Like Trains"
-                    )
+                    pygame.display.set_caption(f"I Like Trains")
                 except Exception as e:
                     logger.error(f"Error updating window: {e}")
 
                 self.window_needs_update = False
-
-    def set_agent(self, agent):
-        """Set the agent for the client"""
-        self.agent = agent
-        self.agent_name = agent.agent_name
 
     def run(self):
         """Main client loop"""
@@ -205,10 +217,11 @@ class Client:
         self.agent_name = player_name
         self.agent_sciper = player_sciper  # Store sciper for future use
 
-        # Send agent name to server
-        if not self.network.send_agent_ids(self.agent_name, self.agent_sciper):
-            logger.error("Failed to send agent name to server")
-            return
+        # Send agent name to server if in online mode
+        if self.game_mode == "online":
+            if not self.network.send_agent_ids(self.agent_name, self.agent_sciper):
+                logger.error("Failed to send agent name to server")
+                return
 
         # Main loop
         clock = pygame.time.Clock()
@@ -220,6 +233,10 @@ class Client:
             # Handle any pending window updates in the main thread
             self.handle_window_updates()
 
+            # If no agent is set, skip the rest of the loop
+            if not self.agent:
+                continue
+
             # Add automatic respawn logic
             if (
                 not self.config.manual_spawn
@@ -230,9 +247,6 @@ class Client:
                 elapsed = time.time() - self.agent.death_time
                 if elapsed >= self.agent.respawn_cooldown:
                     self.network.send_spawn_request()
-
-            if self.in_waiting_room:
-                self.network.send_start_game_request()
 
             self.renderer.draw_game()
 

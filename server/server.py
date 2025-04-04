@@ -13,30 +13,8 @@ from server.passenger import Passenger
 from server.ai_client import AIClient
 from server.room import Room
 
-
-# List of names for AI-controlled clients
-AI_NAMES = [
-    "Bot Adrian",
-    "Bot Albert",
-    "Bot Allen",
-    "Bot Andy",
-    "Bot Arnold",
-    "Bot Bert",
-    "Bot Cecil",
-    "Bot Charles",
-    "Bot Clarence",
-    "Bot Elmer",
-    "Bot Ernest",
-    "Bot Felix",
-    "Bot Frank",
-    "Bot Fred",
-    "Bot Gilbert",
-    "Bot Gus",
-    "Bot Hank",
-    "Bot Howard",
-    "Bot James",
-    "Bot Lester",
-]
+from passenger import Passenger
+from room import Room
 
 
 def setup_server_logger():
@@ -115,7 +93,7 @@ class Server:
         self.running = True
 
         # TODO(alok): delete self.nb_players and use self.config.players_per_room instead
-        self.nb_players = self.config.players_per_room if self.config.game_mode == "online" else 1
+        self.nb_clients = self.config.players_per_room if self.config.game_mode == "online" else 1
         self.addr_to_name = {}  # Maps client addresses to agent names
         self.addr_to_sciper = {}  # Maps client addresses to scipers
         self.sciper_to_addr = {}  # Maps scipers to client addresses
@@ -123,8 +101,6 @@ class Server:
         self.disconnected_clients = (
             set()
         )  # Track disconnected clients by full address tuple (IP, port)
-        self.ai_clients = {}  # Maps train names to AI clients
-        self.used_ai_names = set()  # Track AI names that are already in use
         self.unknown_clients_sent_disconnect = {}  # Unknown client address -> timestamp of last disconnect message
         self.threads = []  # Initialize threads attribute
 
@@ -161,6 +137,7 @@ class Server:
             logger.info(f"Creating online room {room_id} with default size {nb_clients}.")
         
         new_room = Room(self.config, room_id, nb_clients, running, server=self)
+        
         logger.info(f"Created new room {room_id} with {nb_clients} clients")
         self.rooms[room_id] = new_room
         return new_room
@@ -400,6 +377,13 @@ class Server:
         except Exception as e:
             logger.error(f"Error sending high scores: {e}")
 
+    def get_best_scores(self, limit=10):
+        """Get the top scores from the scores file"""
+        sorted_scores = sorted(
+            self.best_scores.items(), key=lambda x: x[1], reverse=True
+        )
+        return sorted_scores[:limit]
+
     def handle_name_check(self, message, addr):
         """Handle name check requests"""
 
@@ -426,7 +410,7 @@ class Server:
                 break
 
         # Check if name not in the ai names
-        if name_to_check in AI_NAMES:
+        if name_to_check in room.AI_NAMES:
             name_available = False
 
         # Check if name starts with "Bot " (invalid)
@@ -540,7 +524,7 @@ class Server:
         selected_room.clients[addr] = agent_name
 
         # Mark the room as having at least one human player
-        selected_room.has_human_players = True
+        selected_room.has_clients = True
 
         # Record the time the first client joined this room
         if selected_room.first_client_join_time is None:
@@ -559,7 +543,7 @@ class Server:
             "data": {
                 "room_id": selected_room.id,
                 "current_players": len(selected_room.clients),
-                "max_players": selected_room.nb_players,
+                "max_players": selected_room.nb_clients_max,
             },
         }
         self.server_socket.sendto((json.dumps(response) + "\n").encode(), addr)
@@ -570,7 +554,7 @@ class Server:
             "data": {
                 "room_id": selected_room.id,
                 "players": list(selected_room.clients.values()),
-                "nb_players": selected_room.nb_players,
+                "nb_players": selected_room.nb_clients_max,
                 "game_started": selected_room.game_thread is not None,
                 "waiting_time": int(
                     max(
@@ -579,7 +563,7 @@ class Server:
                         - (time.time() - selected_room.room_creation_time),
                     )
                 )
-                if selected_room.has_human_players
+                if selected_room.has_clients
                 else 0,
             },
         }
@@ -587,6 +571,17 @@ class Server:
 
         # If room is now full, start the game automatically
         if selected_room.is_full():
+            # if not room.game_thread or not room.game_thread.is_alive():
+            #     if (
+            #         room.get_player_count() >= self.nb_clients
+            #     ):
+            #         logger.info(
+            #             f"Starting game as number of players: {room.get_player_count()} and number of players: {self.nb_clients}"
+            #         )
+            #         room.start_game()
+            #         logger.info(f"Game started by {agent_name}")
+            #     else:
+            #         return
             selected_room.start_game()
 
     def handle_client_message(self, addr, message, room):
@@ -684,18 +679,6 @@ class Server:
                             (json.dumps(response) + "\n").encode(), addr
                         )
 
-            elif message.get("action") == "start_game":
-                if not room.game_thread or not room.game_thread.is_alive():
-                    if (
-                        room.get_player_count() >= self.nb_clients
-                    ):
-                        logger.info(
-                            f"Starting game as number of players: {room.get_player_count()} and number of players: {self.nb_clients}"
-                        )
-                        room.start_game()
-                        logger.info(f"Game started by {agent_name}")
-                    else:
-                        return
         except Exception as e:
             logger.error(f"Error handling client message: {e}")
 
@@ -878,7 +861,7 @@ class Server:
             if room.game and room.game.running:
                 logger.debug(f"Signaling game in room {room_id} to stop.")
                 room.game.running = False
-                
+
             # 2. Signal the room's threads to stop
             if room.running:
                 logger.debug(f"Signaling room {room_id} threads to stop.")
@@ -886,135 +869,37 @@ class Server:
 
             # 3. Wait for the game thread to finish if it's running
             if room.game_thread and room.game_thread.is_alive():
-                logger.info(f"Waiting for game thread in room {room_id} to terminate before removal")
-                room.game_thread.join(timeout=2.0) # Wait a bit
+                logger.info(
+                    f"Waiting for game thread in room {room_id} to terminate before removal"
+                )
+                room.game_thread.join(timeout=2.0)  # Wait a bit
                 if room.game_thread.is_alive():
-                    logger.warning(f"Game thread for room {room_id} did not terminate gracefully.")
-            
+                    logger.warning(
+                        f"Game thread for room {room_id} did not terminate gracefully."
+                    )
+
             # 4. Stop and clean up AI clients associated with this room
             ai_to_remove = []
             # Use list() to avoid modification during iteration if necessary, although it might not be strictly needed here
-            for ai_name, ai_client in list(self.ai_clients.items()): 
+            for ai_name, ai_client in list(self.rooms[room_id].ai_clients.items()):
                 # Check if ai_client.room exists before accessing id
                 if ai_client.room and ai_client.room.id == room_id:
                     logger.debug(f"Stopping AI client {ai_name} in room {room_id}")
                     ai_client.stop()
                     ai_to_remove.append(ai_name)
-            
+
             for ai_name in ai_to_remove:
-                 if ai_name in self.ai_clients:
-                    del self.ai_clients[ai_name]
-                 if ai_name in self.used_ai_names:
-                     # Use discard to avoid KeyError if name somehow already removed
-                    self.used_ai_names.discard(ai_name) 
+                if ai_name in self.rooms[room_id].ai_clients:
+                    del self.rooms[room_id].ai_clients[ai_name]
+                if ai_name in self.rooms[room_id].used_ai_names:
+                    # Use discard to avoid KeyError if name somehow already removed
+                    self.rooms[room_id].used_ai_names.discard(ai_name)
 
             # 5. Now remove the room itself
             del self.rooms[room_id]
             logger.info(f"Room {room_id} removed successfully")
         else:
             logger.warning(f"Attempted to remove non-existent room {room_id}")
-
-    def create_ai_for_train(self, room, train_name=None):
-        """Create an AI client to control a train"""
-        # Choose an AI name that's not already in use
-        ai_name = self.get_available_ai_name()
-        
-        if train_name is None:
-            # Creating a new AI train (not replacing an existing one)
-            logger.info(f"Creating new AI train with name {ai_name}")
-            
-            # Add the train to the game
-            if room.game.add_train(ai_name):
-                # Add the AI client to the room
-                room.clients[("AI", ai_name)] = ai_name
-                
-                # Record the time the first client joined this room (if it's an AI)
-                if room.first_client_join_time is None:
-                    room.first_client_join_time = time.time()
-                    logger.info(f"First client (AI: {ai_name}) joined room {room.id}. Starting waiting timer.")
-                
-                # Create the AI client with the new name
-                self.ai_clients[ai_name] = AIClient(room, ai_name)
-                
-                # Add the ai_client to the game
-                room.game.ai_clients[ai_name] = self.ai_clients[ai_name]
-                
-                logger.info(f"Added new AI train {ai_name} to room {room.id}")
-                return ai_name
-            else:
-                logger.error(f"Failed to add new AI train {ai_name} to game")
-                return None
-        
-        # Check if there's already an AI controlling this train
-        if train_name in self.ai_clients:
-            logger.warning(f"AI already exists for train {train_name}")
-            return
-
-        # Change the train's name in the game
-        if train_name in room.game.trains:
-            # Save the train's color
-            if train_name in room.game.train_colors:
-                train_color = room.game.train_colors[train_name]
-                room.game.train_colors[ai_name] = train_color
-                del room.game.train_colors[train_name]
-
-            # Get the train object
-            train = room.game.trains[train_name]
-
-            # Update the train's name
-            train.agent_name = ai_name
-
-            # Move the train to the new key in the dictionary
-            room.game.trains[ai_name] = train
-            del room.game.trains[train_name]
-            logger.debug(f"Moved train {train_name} to {ai_name} in game")
-
-            # # Mark trains as dirty to update clients
-            # room.game._dirty["trains"] = True
-
-            # Notify clients about the train rename
-            state_data = {
-                "type": "state",
-                "data": {"rename_train": [train_name, ai_name]},
-            }
-
-            state_json = json.dumps(state_data) + "\n"
-            # Iterate over a copy of the client addresses to avoid issues if the list changes
-            # Only send to non-AI clients
-            for client_addr in list(room.clients.keys()): 
-                # Ensure it's a real client address tuple (IP, port), not an AI marker
-                if isinstance(client_addr, tuple) and len(client_addr) == 2 and isinstance(client_addr[1], int):
-                    try:
-                        self.server_socket.sendto(
-                            state_json.encode(), client_addr
-                        )
-                    except Exception as e:
-                        # Log error but continue trying other clients
-                        logger.error(
-                            f"Error sending train rename notification to client {client_addr}: {e}")
-                # else: # Optional: Log skipped AI clients if needed for debugging
-                #    logger.debug(f"Skipping rename notification for AI client: {client_addr}")
-
-            # Create the AI client with the new name
-            self.ai_clients[ai_name] = AIClient(room, ai_name)
-
-        else:
-            logger.warning(
-                f"Train {train_name} not found in game, cannot create AI client"
-            )
-
-    def get_available_ai_name(self):
-        """Get an available AI name that is not already in use"""
-        for name in AI_NAMES:
-            if name not in self.used_ai_names:
-                self.used_ai_names.add(name)
-                return name
-        
-        # If all names are used, create a generic name with a random number
-        generic_name = f"Bot {random.randint(1000, 9999)}"
-        self.used_ai_names.add(generic_name)
-        return generic_name
-
 
     def run(self):
         """Main game loop"""
