@@ -121,7 +121,9 @@ class Train:
         self.move_timer += 1
 
         # Check if it's time to move
-        if self.move_timer >= self.tick_rate / self.speed:  # self.tick_rate ticks per second
+        if (
+            self.move_timer >= self.tick_rate / self.speed
+        ):  # self.tick_rate ticks per second
             self.move_timer = 0
             self.set_direction(self.new_direction)
             self.move(trains, screen_width, screen_height, cell_size)
@@ -319,7 +321,9 @@ class Train:
                 continue
 
             if new_position == train.position:
-                collision_msg = f"Train {self.agent_name} collided with train {train.agent_name}"
+                collision_msg = (
+                    f"Train {self.agent_name} collided with train {train.agent_name}"
+                )
                 logger.info(collision_msg)
                 self.client_logger.info(collision_msg)
                 train.kill()
