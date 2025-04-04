@@ -7,6 +7,7 @@ import uuid
 import random
 import os
 import signal
+import random
 
 from common.config import Config
 from server.high_score import HighScore
@@ -102,7 +103,6 @@ class Server:
         self.disconnected_clients = (
             set()
         )  # Track disconnected clients by full address tuple (IP, port)
-        self.unknown_clients_sent_disconnect = {}  # Unknown client address -> timestamp of last disconnect message
         self.threads = []  # Initialize threads attribute
 
         # Ping tracking for active connection checking
@@ -115,7 +115,7 @@ class Server:
         self.ping_thread.start()
 
         # Create the first room
-        self.create_room(self.nb_clients, True)
+        self.create_room(True)
 
         # Start accepting clients
         accept_thread = threading.Thread(target=self.accept_clients, daemon=True)
@@ -155,7 +155,7 @@ class Server:
                 return room
         logger.debug(f"No suitable room found for {nb_clients} clients")
         # If no suitable room found, create a new one
-        return self.create_room(nb_clients, True)
+        return self.create_room(True)
 
     def accept_clients(self):
         """Thread that waits for new connections"""
@@ -210,17 +210,76 @@ class Server:
                 # Add a small delay to avoid high CPU usage on error
                 time.sleep(0.1)
 
+    def find_client_room(self, agent_sciper):
+        for room in self.rooms.values():
+            for addr in room.clients:
+                if addr in self.addr_to_sciper and self.addr_to_sciper[addr] == agent_sciper:
+                    return room
+        return None
+
     def process_message(self, message, addr):
         """Process incoming messages from clients"""
+        # # Check if this is an unknown client that we have already asked to disconnect
+        # if (
+        #     addr not in self.addr_to_name
+        #     and addr in self.unknown_clients_sent_disconnect
+        # ):
+        #     # Check if we've sent a disconnect request recently (within the last 5 seconds)
+        #     last_disconnect_time = self.unknown_clients_sent_disconnect[addr]
+        #     if time.time() - last_disconnect_time < 5:
+        #         # We've already asked this client to disconnect recently, ignore the message
+        #         return
+        #     else:
+        #         # It's been a while, we can remove them from the list and process normally
+        #         del self.unknown_clients_sent_disconnect[addr]
 
-        if "action" in message and message["action"] not in [
-            "check_name",
-            "check_sciper",
-        ]:
-            # Update client activity timestamp
+        # If this client was previously marked as disconnected
+        if addr in self.disconnected_clients:
+            # # Allow check_name and check_sciper actions even if client was previously disconnected
+            # if "action" in message and message["action"] in [
+            #     "check_name",
+            #     "check_sciper",
+            # ]:
+            #     # Process these actions normally
+            #     pass
+            # elif "agent_name" not in message or "agent_sciper" not in message:
+                # Don't log a warning for every message, just silently ignore it
+                return
+
+        # Check if we need to handle agent initialization
+        if self.game_mode == "online":
+            if (
+                "type" in message
+                and message["type"] == "agent_ids"
+                and "agent_name" in message
+                and "agent_sciper" in message
+            and addr not in self.addr_to_name
+            ):
+                # use handle_name_check and handle_sciper_check to check if the name and sciper are available
+                logger.debug(
+                    f"Checking name and sciper availability for {message['agent_name']} ({message['agent_sciper']})"
+                )
+                if self.handle_name_check(message, None) and self.handle_sciper_check(
+                    message, None
+                ):
+                    self.handle_new_client(message, addr)
+                else:
+                    # ask the client to disconnect
+                    self.send_disconnect(addr, "Name or sciper not available or invalid")
+                    logger.warning(f"Name or sciper not available or invalid for {addr}")
+
+            else:
+                logger.debug(f"'type' in message: {'type' in message}, message type: {message.get('type')}, agent_sciper in message: {'agent_sciper' in message}, addr in self.addr_to_name: {addr in self.addr_to_name}")
+
+        # In local_evaluation mode, the only client connecting is the observer, handle it directly
+        elif self.game_mode == "local_evaluation":
             self.client_last_activity[addr] = time.time()
+            # Assuming the first message in local_evaluation is implicitly a connection request
+            # We might need a specific message type later if this assumption is wrong
+            if addr not in self.addr_to_sciper:  # Only handle if it's a new client address
+                self.handle_new_client(message, addr)
 
-        # Handle ping responses
+        # Handle ping responses for everyone
         if "type" in message and message["type"] == "pong":
             self.client_last_activity[addr] = time.time()
             # Client has responded to a ping, update the ping responses dictionary
@@ -233,87 +292,35 @@ class Server:
             # Send a pong response even to unknown clients for connection verification
             pong_message = {"type": "pong"}
             try:
-                self.server_socket.sendto(json.dumps(pong_message).encode(), addr)
+                self.server_socket.sendto((json.dumps(pong_message) + "\n\n").encode(), addr)
                 return
             except Exception as e:
                 logger.error(f"Error sending pong to {addr}: {e}")
                 return
 
-        # If this client was previously marked as disconnected
-        if addr in self.disconnected_clients:
-            # Allow check_name and check_sciper actions even if client was previously disconnected
-            if "action" in message and message["action"] in [
-                "check_name",
-                "check_sciper",
-            ]:
-                # Process these actions normally
-                pass
-            elif "agent_name" not in message or "agent_sciper" not in message:
-                # Don't log a warning for every message, just silently ignore it
-                return
-
-        # Check if this is an unknown client that we've already asked to disconnect
-        if (
-            addr not in self.addr_to_name
-            and addr in self.unknown_clients_sent_disconnect
-        ):
-            # Check if we've sent a disconnect request recently (within the last 5 seconds)
-            last_disconnect_time = self.unknown_clients_sent_disconnect[addr]
-            if time.time() - last_disconnect_time < 5:
-                # We've already asked this client to disconnect recently, ignore the message
-                return
-            else:
-                # It's been a while, we can remove them from the list and process normally
-                del self.unknown_clients_sent_disconnect[addr]
+        # if "action" in message and message["action"] not in [
+        #     "check_name",
+        #     "check_sciper",
+        # ]:
+        #     # Update client activity timestamp
+        #     self.client_last_activity[addr] = time.time()
 
         # For name check requests
-        if "action" in message and message["action"] == "check_name":
-            self.handle_name_check(message, addr)
-            return
+        # if "action" in message and message["action"] == "check_name":
+        #     logger.debug(f"Received name check request from {addr}")
+        #     self.handle_name_check(message, addr)
+        #     return
 
-        # For sciper check requests
-        if "action" in message and message["action"] == "check_sciper":
-            self.handle_sciper_check(message, addr)
-            return
+        # # For sciper check requests
+        # if "action" in message and message["action"] == "check_sciper":
+        #     self.handle_sciper_check(message, addr)
+        #     return
 
-        # For high scores request
-        if "type" in message and message["type"] == "high_scores":
-            self.handle_high_scores_request(addr)
-            return
-
-        # For agent name initialization
-        if (
-            "type" in message
-            and message["type"] == "agent_ids"
-            and "agent_name" in message
-            and "agent_sciper" in message
-            and addr not in self.addr_to_name
-        ):
-            # use handle_name_check and handle_sciper_check to check if the name and sciper are available
-            logger.debug(
-                f"Checking name and sciper availability for {message['agent_name']} ({message['agent_sciper']})"
-            )
-            if self.handle_name_check(message, None) and self.handle_sciper_check(
-                message, None
-            ):
-                self.handle_new_client(message, addr)
-            else:
-                # ask the client to disconnect
-                self.send_disconnect(addr, "Name or sciper not available or invalid")
-                logger.warning(f"Name or sciper not available or invalid for {addr}")
-            return
-
-        # For all other messages, find the client's room and handle the message
         agent_sciper = self.addr_to_sciper.get(addr)
 
         if agent_sciper:
             # Find which room this client belongs to
-            client_room = None
-            for room in self.rooms.values():
-                if addr in room.clients:
-                    client_room = room
-                    break
-
+            client_room = self.find_client_room(agent_sciper)
             if client_room:
                 self.handle_client_message(addr, message, client_room)
             else:
@@ -323,22 +330,20 @@ class Server:
         else:
             # Check if this is a message from a client that was in a recently closed room
             # Only log at debug level if it's not a common message type
-            if "type" in message and message["type"] in ["pong", "high_scores"]:
-                # These are common messages, don't log them to reduce spam
-                pass
-            elif "action" in message and message["action"] in ["check_name"]:
-                # Handle common action messages without logging
-                pass
-            elif "action" in message and message["action"] in ["check_sciper"]:
-                # Handle common action messages without logging
-                pass
-            else:
+            # if "type" in message and message["type"] in ["pong", "high_scores"]:
+            #     # These are common messages, don't log them to reduce spam
+            #     pass
+            # elif "action" in message and message["action"] in ["check_name"]:
+            #     # Handle common action messages without logging
+            #     pass
+            # elif "action" in message and message["action"] in ["check_sciper"]:
+            #     # Handle common action messages without logging
+            #     pass
+            # else:
                 # This is an unknown client sending a message that's not a common type
                 logger.debug(f"Received message from unknown client {addr}: {message}")
                 # Send a disconnect request to the client
                 self.send_disconnect(addr, "Unknown client")
-                # Record that we've sent a disconnect request to this client
-                self.unknown_clients_sent_disconnect[addr] = time.time()
                 logger.info(f"Sent disconnect request to unknown client {addr}")
 
     def send_disconnect(self, addr, message="Unknown client or invalid message format"):
@@ -486,34 +491,44 @@ class Server:
 
         agent_name = message.get("agent_name", "")
         agent_sciper = message.get("agent_sciper", "")
-        if not agent_name:
-            logger.warning("No agent name provided")
-            return
 
-        if not agent_sciper:
-            logger.warning("No agent sciper provided")
-            return
+        if self.game_mode == "local_evaluation":
+            logger.info(f"New client connected in local_evaluation mode: {addr}")
+            self.client_last_activity[addr] = time.time()
 
-        # Initialize client activity tracking
-        self.client_last_activity[addr] = time.time()
+            # generate a random name and sciper
+            agent_name = f"Observer_{random.randint(1000, 9999)}"
+            agent_sciper = str(random.randint(100000, 999999))
 
-        # Check if this address is already associated with a different name or sciper
-        if addr in self.addr_to_name and self.addr_to_name[addr] != agent_name:
-            old_name = self.addr_to_name[addr]
+        elif self.game_mode == "online":
+            if not agent_name:
+                logger.warning("No agent name provided")
+                return
+
+            if not agent_sciper:
+                logger.warning("No agent sciper provided")
+                return
+
+            # Initialize client activity tracking
+            self.client_last_activity[addr] = time.time()
+
+            # Check if this address is already associated with a different name or sciper
+            if addr in self.addr_to_name and self.addr_to_name[addr] != agent_name:
+                old_name = self.addr_to_name[addr]
+                logger.info(
+                    f"Client at {addr} changed name from {old_name} to {agent_name}"
+                )
+
+                # Update the name in any rooms where this client exists
+                for room in self.rooms.values():
+                    if addr in room.clients:
+                        room.clients[addr] = agent_name
+                        break
+
+            # Log new client connection
             logger.info(
-                f"Client at {addr} changed name from {old_name} to {agent_name}"
+                f"New client {agent_name} (sciper: {agent_sciper}) connecting from {addr}"
             )
-
-            # Update the name in any rooms where this client exists
-            for room in self.rooms.values():
-                if addr in room.clients:
-                    room.clients[addr] = agent_name
-                    break
-
-        # Log new client connection
-        logger.info(
-            f"New client {agent_name} (sciper: {agent_sciper}) connecting from {addr}"
-        )
 
         # Associate address with name and sciper
         self.addr_to_name[addr] = agent_name
@@ -521,7 +536,7 @@ class Server:
         self.sciper_to_addr[agent_sciper] = addr
 
         # Assign to a room
-        selected_room = self.get_available_room(self.nb_clients)
+        selected_room = self.get_available_room(self.nb_clients_per_room)
         selected_room.clients[addr] = agent_name
 
         # Mark the room as having at least one human player
@@ -530,9 +545,6 @@ class Server:
         # Record the time the first client joined this room
         if selected_room.first_client_join_time is None:
             selected_room.first_client_join_time = time.time()
-            logger.info(
-                f"First human client ({agent_name}) joined room {selected_room.id}. Starting waiting timer."
-            )
 
         logger.info(
             f"Agent {agent_name} (sciper: {agent_sciper}) joined room {selected_room.id}"
@@ -549,29 +561,30 @@ class Server:
         }
         self.server_socket.sendto((json.dumps(response) + "\n").encode(), addr)
 
-        # Send initial game state immediately
-        game_status = {
-            "type": "waiting_room",
-            "data": {
-                "room_id": selected_room.id,
-                "players": list(selected_room.clients.values()),
-                "nb_players": selected_room.nb_clients_max,
-                "game_started": selected_room.game_thread is not None,
-                "waiting_time": int(
-                    max(
-                        0,
-                        self.config.wait_time_before_bots_seconds
-                        - (time.time() - selected_room.room_creation_time),
+        if self.game_mode == "online":
+            # Send initial game state immediately
+            game_status = {
+                "type": "waiting_room",
+                "data": {
+                    "room_id": selected_room.id,
+                    "players": list(selected_room.clients.values()),
+                    "nb_players": selected_room.nb_clients_max,
+                    "game_started": selected_room.game_thread is not None,
+                    "waiting_time": int(
+                        max(
+                            0,
+                            self.config.wait_time_before_bots_seconds
+                            - (time.time() - selected_room.room_creation_time),
+                        )
                     )
-                )
-                if selected_room.has_clients
-                else 0,
-            },
-        }
-        self.server_socket.sendto((json.dumps(game_status) + "\n").encode(), addr)
+                    if selected_room.has_clients
+                    else 0,
+                },
+            }
+            self.server_socket.sendto((json.dumps(game_status) + "\n").encode(), addr)
 
         # If room is now full, start the game automatically
-        if selected_room.is_full():
+        # if selected_room.is_full():
             # if not room.game_thread or not room.game_thread.is_alive():
             #     if (
             #         room.get_player_count() >= self.nb_clients
@@ -580,10 +593,11 @@ class Server:
             #             f"Starting game as number of players: {room.get_player_count()} and number of players: {self.nb_clients}"
             #         )
             #         room.start_game()
-            #         logger.info(f"Game started by {agent_name}")
+                    # logger.info(f"Game started by {agent_name}")
             #     else:
             #         return
-            selected_room.start_game()
+            # selected_room.complete_with_bots()
+            # selected_room.start_game()
 
     def handle_client_message(self, addr, message, room):
         """Handles messages received from the client"""
@@ -591,7 +605,6 @@ class Server:
             # Update client activity timestamp
 
             agent_name = room.clients.get(addr)
-
             if message.get("action") == "check_name":
                 self.handle_name_check(message, addr)
                 return
@@ -679,6 +692,11 @@ class Server:
                         self.server_socket.sendto(
                             (json.dumps(response) + "\n").encode(), addr
                         )
+            
+            # For high scores request
+            if "type" in message and message["type"] == "high_scores":
+                self.handle_high_scores_request(addr)
+                return
 
         except Exception as e:
             logger.error(f"Error handling client message: {e}")

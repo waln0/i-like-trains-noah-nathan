@@ -86,7 +86,6 @@ class Room:
         self.stop_waiting_room = True
         # self.waiting_room_thread.join() # Cannot join from the same thread
 
-        logger.info(f"\nStarting game for room {self.id}")
         if not self.game_thread:
             # Initialize game size based on connected players
             self.game.initialize_game_size(len(self.clients))
@@ -363,49 +362,51 @@ class Room:
                                     - elapsed_time,
                                 )
 
-                                # If time is up and room is not full, add bots and start the game
+                            # If time is up and room is not full, add bots and start the game
+                            if (
+                                ((self.game_mode == "online" and remaining_time == 0)
+                                or (self.game_mode == "local_evaluation" and self.is_full()))
+                                and not self.game_thread
+                            ):
+                                logger.info(
+                                    f"Waiting time expired for room {self.id}, adding bots and starting game"
+                                )
+                                self.fill_with_bots()
+                                self.start_game()
+                            else:
+                                logger.debug(f"game mode: {self.game_mode}, remaining time: {remaining_time}, is full: {self.is_full()}, game thread: {self.game_thread}")
+
+                        waiting_room_data = {
+                            "type": "waiting_room",
+                            "data": {
+                                "room_id": self.id,
+                                "players": list(self.clients.values()),
+                                "nb_players": self.nb_clients_max,
+                                "game_started": self.game_thread is not None,
+                                "waiting_time": int(remaining_time),
+                            },
+                        }
+
+                        state_json = json.dumps(waiting_room_data) + "\n"
+                        for client_addr in list(self.clients.keys()):
+                            try:
+                                # Skip AI clients - they don't need network messages
                                 if (
-                                    self.game_mode == "online"
-                                    and remaining_time == 0
-                                    and not self.is_full()
-                                    and not self.game_thread
+                                    isinstance(client_addr, tuple)
+                                    and len(client_addr) == 2
+                                    and client_addr[0] == "AI"
                                 ):
-                                    logger.info(
-                                        f"Waiting time expired for room {self.id}, adding bots and starting game"
-                                    )
-                                    self.fill_with_bots()
+                                    continue
 
-                            waiting_room_data = {
-                                "type": "waiting_room",
-                                "data": {
-                                    "room_id": self.id,
-                                    "players": list(self.clients.values()),
-                                    "nb_players": self.nb_clients_max,
-                                    "game_started": self.game_thread is not None,
-                                    "waiting_time": int(remaining_time),
-                                },
-                            }
+                                self.server_socket.sendto(
+                                    state_json.encode(), client_addr
+                                )
+                            except Exception as e:
+                                logger.error(
+                                    f"Error sending waiting room data to client: {e}"
+                                )
 
-                            state_json = json.dumps(waiting_room_data) + "\n"
-                            for client_addr in list(self.clients.keys()):
-                                try:
-                                    # Skip AI clients - they don't need network messages
-                                    if (
-                                        isinstance(client_addr, tuple)
-                                        and len(client_addr) == 2
-                                        and client_addr[0] == "AI"
-                                    ):
-                                        continue
-
-                                    self.server_socket.sendto(
-                                        state_json.encode(), client_addr
-                                    )
-                                except Exception as e:
-                                    logger.error(
-                                        f"Error sending waiting room data to client: {e}"
-                                    )
-
-                        last_update = current_time
+                    last_update = current_time
 
                 # Sleep for half the period
                 time.sleep(1.0 / (self.config.tick_rate * 2))
@@ -429,6 +430,7 @@ class Room:
 
         initial_state_json = json.dumps(initial_state) + "\n"
         for client_addr in list(self.clients.keys()):
+            logger.debug(f"Sending initial state to {client_addr}")
             try:
                 # Skip AI clients - they don't need network messages
                 if (
@@ -485,14 +487,15 @@ class Room:
     def fill_with_bots(self):
         """Fill the room with bots and start the game"""
         server = self.game.server
+        logger.debug(f"Filling room {self.id} with bots")
         if self.game_mode == "local_evaluation":
-            current_players = len(self.local_agents_config)
+            bots_needed = len(self.local_agents_config)
         elif self.game_mode == "online":
             current_players = len(self.clients)
+            bots_needed = self.nb_clients_max - current_players
         else:
             logger.error(f"Unknown game mode: {self.game_mode}")
             return
-        bots_needed = self.nb_clients_max - current_players
 
         if bots_needed <= 0:
             return
@@ -503,5 +506,4 @@ class Room:
         for _ in range(bots_needed):
             server.create_ai_for_train(self)
 
-        # Start the game
-        self.start_game()
+        

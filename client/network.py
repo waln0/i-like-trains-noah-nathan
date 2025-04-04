@@ -151,7 +151,7 @@ class NetworkManager:
                     continue
 
                 # Add data to buffer
-                buffer += data.decode()
+                buffer += data.decode("utf-8")
 
                 # Process complete messages
                 while "\n" in buffer:
@@ -162,119 +162,129 @@ class NetworkManager:
                         continue
 
                     try:
-                        # Parse JSON message
-                        message_data = json.loads(message)
+                        # Check if the message contains multiple JSON objects
+                        message_str = message
+                        messages = message_str.split("\n")
+                        
+                        for msg in messages:
+                            if not msg.strip():
+                                continue  # Skip empty messages
+                                
+                            try:
+                                message_data = json.loads(msg)
+                                
+                                # Process the message based on its type
+                                if "type" in message_data:
+                                    message_type = message_data["type"]
+                                    logger.debug(f"Received message type: {message_type}")
 
-                        # Check message type
-                        if "type" in message_data:
-                            message_type = message_data["type"]
+                                    if message_type == "state":
+                                        self.client.handle_state_data(message_data["data"])
 
-                            # Handle different message types
-                            if message_type == "state":
-                                self.client.handle_state_data(message_data["data"])
+                                    elif message_type == "spawn_success":
+                                        self.client.agent.is_dead = False
+                                        self.client.agent.waiting_for_respawn = False
 
-                            elif message_type == "spawn_success":
-                                self.client.agent.is_dead = False
-                                self.client.agent.waiting_for_respawn = False
+                                    elif message_type == "game_started_success":
+                                        logger.info("Game has started")
+                                        self.client.in_waiting_room = False
 
-                            elif message_type == "game_started_success":
-                                logger.info("Game has started")
-                                self.client.in_waiting_room = False
+                                    elif message_type == "ping":
+                                        # Respond to ping with pong
+                                        self.send_message({"type": "pong"})
+                                        self.last_ping_time = time.time()
 
-                            elif message_type == "ping":
-                                # Respond to ping with a pong
-                                self.send_message({"type": "pong"})
-                                self.last_ping_time = time.time()
+                                    elif message_type == "pong":
+                                        # Mark that we received a response to our ping
+                                        self.client.ping_response_received = True
 
-                            # elif message_type == "pong":
-                            #     # Mark that we received a response to our ping
-                            #     self.client.ping_response_received = True
+                                    elif message_type == "game_status":
+                                        self.client.handle_game_status(message_data)
 
-                            elif message_type == "game_status":
-                                self.client.handle_game_status(message_data)
+                                    elif message_type == "join_success":
+                                        logger.debug("Received join success response")
 
-                            elif message_type == "join_success":
-                                logger.debug("Received join success response")
+                                    elif message_type == "drop_wagon_success":
+                                        self.client.handle_drop_wagon_success(message_data)
+                                    elif message_type == "drop_wagon_failed":
+                                        pass
 
-                            elif message_type == "drop_wagon_success":
-                                self.client.handle_drop_wagon_success(message_data)
-                            elif message_type == "drop_wagon_failed":
-                                pass
+                                    elif message_type == "leaderboard":
+                                        self.client.handle_leaderboard_data(
+                                            message_data["data"]
+                                        )
 
-                            elif message_type == "leaderboard":
-                                self.client.handle_leaderboard_data(
-                                    message_data["data"]
-                                )
+                                    elif message_type == "waiting_room":
+                                        self.client.handle_waiting_room_data(
+                                            message_data["data"]
+                                        )
 
-                            elif message_type == "waiting_room":
-                                self.client.handle_waiting_room_data(
-                                    message_data["data"]
-                                )
+                                    elif message_type == "name_check":
+                                        logger.debug(
+                                            f"Name available: {message_data['available']}"
+                                        )
+                                        self.client.name_check_result = message_data.get(
+                                            "available", False
+                                        )
+                                        self.client.name_check_received = True
 
-                            elif message_type == "name_check":
-                                logger.debug(
-                                    f"Name available: {message_data['available']}"
-                                )
-                                self.client.name_check_result = message_data.get(
-                                    "available", False
-                                )
-                                self.client.name_check_received = True
+                                    elif message_type == "sciper_check":
+                                        self.client.sciper_check_result = message_data.get(
+                                            "available", False
+                                        )
+                                        self.client.sciper_check_received = True
+                                        logger.debug(
+                                            f"Sciper available: {self.client.sciper_check_result}"
+                                        )
 
-                            elif message_type == "sciper_check":
-                                self.client.sciper_check_result = message_data.get(
-                                    "available", False
-                                )
-                                self.client.sciper_check_received = True
-                                logger.debug(
-                                    f"Sciper available: {self.client.sciper_check_result}"
-                                )
+                                    elif message_type == "best_score":
+                                        logger.info(
+                                            f"Your best score: {message_data['best_score']}"
+                                        )
 
-                            elif message_type == "best_score":
-                                logger.info(
-                                    f"Your best score: {message_data['best_score']}"
-                                )
+                                    elif message_type == "death":
+                                        self.client.handle_death(message_data)
 
-                            elif message_type == "death":
-                                self.client.handle_death(message_data)
+                                    elif message_type == "disconnect":
+                                        logger.warning(
+                                            f"Received disconnect request: {message_data['reason']}"
+                                        )
+                                        self.disconnect(stop_client=True)
+                                        return
 
-                            elif message_type == "disconnect":
-                                logger.warning(
-                                    f"Received disconnect request: {message_data['reason']}"
-                                )
-                                self.disconnect(stop_client=True)
-                                return
+                                    elif message_type == "game_over":
+                                        logger.info("Game is over. Received final scores.")
+                                        self.client.handle_game_over(message_data["data"])
 
-                            elif message_type == "game_over":
-                                logger.info("Game is over. Received final scores.")
-                                self.client.handle_game_over(message_data["data"])
+                                        # Disconnect from server after a short delay
+                                        def disconnect_after_delay():
+                                            time.sleep(
+                                                2
+                                            )  # Wait 2 seconds to ensure all final data is received
+                                            logger.info(
+                                                "Disconnecting from server after game over"
+                                            )
+                                            self.disconnect()
 
-                                # Disconnect from server after a short delay
-                                def disconnect_after_delay():
-                                    time.sleep(
-                                        2
-                                    )  # Wait 2 seconds to ensure all final data is received
-                                    logger.info(
-                                        "Disconnecting from server after game over"
-                                    )
-                                    self.disconnect()
+                                        disconnect_thread = threading.Thread(
+                                            target=disconnect_after_delay
+                                        )
+                                        disconnect_thread.daemon = True
+                                        disconnect_thread.start()
 
-                                disconnect_thread = threading.Thread(
-                                    target=disconnect_after_delay
-                                )
-                                disconnect_thread.daemon = True
-                                disconnect_thread.start()
+                                    elif message_type == "error":
+                                        logger.error(
+                                            f"Received error from server: {message_data.get('message', 'Unknown error')}"
+                                        )
 
-                            elif message_type == "error":
-                                logger.error(
-                                    f"Received error from server: {message_data.get('message', 'Unknown error')}"
-                                )
-
-                            elif message_type == "initial_state":
-                                self.client.handle_initial_state(message_data["data"])
-                            else:
-                                logger.warning(f"Unknown message type: {message_type}")
-                        else:
-                            logger.debug(f"Received game state data: {message_data}")
+                                    elif message_type == "initial_state":
+                                        self.client.handle_initial_state(message_data["data"])
+                                    else:
+                                        logger.warning(f"Unknown message type: {message_type}")
+                            except json.JSONDecodeError as e:
+                                logger.error(f"Failed to parse message as JSON: {msg} - {e}")
+                            except Exception as e:
+                                logger.error(f"Error handling message: {e}")
                     except json.JSONDecodeError:
                         logger.error(f"Failed to parse message as JSON: {message}")
                     except Exception as e:
@@ -319,7 +329,7 @@ class NetworkManager:
             test_name = f"test_{int(time.time())}"
 
             # Send a name check request (this is allowed for unregistered clients)
-            check_message = {"action": "check_name", "agent_name": test_name}
+            check_message = {"type": "ping", "agent_name": test_name}
             success = self.send_message(check_message)
 
             if not success:
@@ -332,12 +342,12 @@ class NetworkManager:
 
             # Wait for name check response
             while (
-                not self.client.name_check_received
+                not self.client.ping_response_received
                 and time.time() - start_time < timeout
             ):
                 time.sleep(0.1)
 
-            if not self.client.name_check_received:
+            if not self.client.ping_response_received:
                 logger.error(
                     f"Timeout waiting for name check response from server at {self.host}:{self.port}"
                 )

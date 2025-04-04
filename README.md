@@ -52,7 +52,6 @@ Example configuration in `config.json`:
 ```json
 {
     "game_mode": "online",  // or "local_evaluation"
-    "remote_ip": "<ip_address>",  // IP address for online mode. Replace <ip_address> with the actual IP address.
     
     "online_agent": {
         "name": "MyOnlineAgent", 

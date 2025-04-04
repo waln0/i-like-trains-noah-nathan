@@ -33,14 +33,13 @@ class Client:
 
         self.config = config.client
 
-        # Overwrite host and port if provided
-        self.game_mode = config.get("game_mode", "online")
-        if self.game_mode == "local_evaluation":
-            self.host = "localhost"
-        elif self.game_mode == "online":
-            self.host = config.get("remote_ip", "localhost")
+        # If we launch a local evaluation, we want the host to be local_host
+        if self.config.game_mode == "local_evaluation":
+            self.host = "local_host"
+        elif self.config.game_mode == "online":
+            self.host = self.config.host
         else:
-            raise ValueError(f"Invalid game mode: {self.game_mode}")
+            raise ValueError(f"Invalid game mode: {self.config.game_mode}")
 
         # Initialize state variables
         self.running = True
@@ -109,11 +108,11 @@ class Client:
 
         # Initialize agent based on game mode
         self.agent = None
-        if self.game_mode == "online":
-            agent_info = self.config.get("online_agent", {})
-            if agent_info and "path_to_agent" in agent_info:
+        if self.config.game_mode == "online":
+            agent_info = self.config.online_agent
+            if agent_info and "path" in agent_info:
                 try:
-                    module_path = agent_info["path_to_agent"]
+                    module_path = agent_info["path"]
                     # Add parent directory to Python path to allow importing agents package
                     parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
                     sys.path.append(parent_dir)
@@ -222,7 +221,7 @@ class Client:
         self.agent_sciper = player_sciper  # Store sciper for future use
 
         # Send agent name to server if in online mode
-        if self.game_mode == "online":
+        if self.config.game_mode == "online":
             if not self.network.send_agent_ids(self.agent_name, self.agent_sciper):
                 logger.error("Failed to send agent name to server")
                 return
