@@ -366,8 +366,6 @@ class Room:
                                 )
                                 self.fill_with_bots()
                                 self.start_game()
-                            else:
-                                logger.debug(f"game mode: {self.config.game_mode}, remaining time: {remaining_time}, is full: {self.is_full()}, game thread: {self.game_thread}")
 
                         waiting_room_data = {
                             "type": "waiting_room",
