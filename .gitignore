@@ -6,3 +6,4 @@ server/config.txt
 player_scores.json
 
 server/ai_agent.py
+agents/ai_agent.py

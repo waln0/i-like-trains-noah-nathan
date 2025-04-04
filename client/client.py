@@ -7,7 +7,7 @@ from network import NetworkManager
 from renderer import Renderer
 from event_handler import EventHandler
 from game_state import GameState
-from agent import Agent
+import importlib
 import json
 
 
@@ -25,12 +25,21 @@ with open("config.json", "r") as f:
 
 DEFAULT_HOST = "localhost"
 
+
 class Client:
     """Main client class"""
 
-    def __init__(self, host=DEFAULT_HOST, port=config["default_port"]):
+    def __init__(self, host=None, port=config["default_port"]):
         """Initialize the client"""
-        self.host = host
+        self.game_mode = config.get("game_mode", "online")
+        if self.game_mode == "local_evaluation":
+            self.host = "localhost"
+        elif self.game_mode == "online":
+            self.host = config.get("remote_ip", "localhost")
+        else:
+            raise ValueError(f"Invalid game mode: {self.game_mode}")
+        if host:  # Override host if provided
+            self.host = host
         self.port = port
 
         # Initialize state variables
@@ -53,7 +62,6 @@ class Client:
         self.sciper_check_result = False
 
         # Game data
-        self.agent_name = ""
         self.trains = {}
         self.passengers = []
         self.delivery_zone = {}
@@ -61,7 +69,9 @@ class Client:
         self.cell_size = config["cell_size"]
         self.game_width = 200  # Initial game area width
         self.game_height = 200  # Initial game area height
-        self.game_screen_padding = config["cell_size"]  # Space between game area and leaderboard
+        self.game_screen_padding = config[
+            "cell_size"
+        ]  # Space between game area and leaderboard
         self.leaderboard_width = config["leaderboard_width"]
         self.leaderboard_height = 2 * self.game_screen_padding + self.game_height
 
@@ -88,14 +98,27 @@ class Client:
         self.is_initialized = True
 
         # Initialize components
-        self.network = NetworkManager(self, host, port)
+        self.network = NetworkManager(self, self.host, port)
         self.renderer = Renderer(self)
         self.event_handler = EventHandler(self, config["control_mode"])
         self.game_state = GameState(self, config["control_mode"])
 
-        # Reference to the agent (will be initialized later)
+        # Initialize agent based on game mode
         self.agent = None
-        self.ping_response_received = False  # Added for connection verification
+        if self.game_mode == "online":
+            agent_info = config.get("online_agent", {})
+            if agent_info and "path_to_agent" in agent_info:
+                try:
+                    module_path = agent_info["path_to_agent"]
+                    module = importlib.import_module(module_path)
+                    self.agent_name = agent_info["name"]
+                    self.agent_sciper = agent_info["sciper"]
+                    self.agent = module.Agent(self.agent_name, self.network)
+                except ImportError as e:
+                    logger.error(f"Failed to import agent from {module_path}: {e}")
+                    sys.exit(1)
+
+        self.ping_response_received = False
         self.server_disconnected = False
 
     def update_game_window_size(self, width, height):
@@ -115,20 +138,11 @@ class Client:
                     self.screen = pygame.display.set_mode(
                         (width, height), pygame.RESIZABLE
                     )
-                    pygame.display.set_caption(
-                        f"I Like Trains - {self.agent_name}"
-                        if self.agent_name
-                        else "I Like Trains"
-                    )
+                    pygame.display.set_caption(f"I Like Trains")
                 except Exception as e:
                     logger.error(f"Error updating window: {e}")
 
                 self.window_needs_update = False
-
-    def set_agent(self, agent):
-        """Set the agent for the client"""
-        self.agent = agent
-        self.agent_name = agent.agent_name
 
     def run(self):
         """Main client loop"""
@@ -136,7 +150,7 @@ class Client:
         # Connect to server with timeout
         connection_timeout = 5  # 5 seconds timeout
         connection_start_time = time.time()
-        
+
         connection_successful = False
         while time.time() - connection_start_time < connection_timeout:
             try:
@@ -147,20 +161,34 @@ class Client:
                         connection_successful = True
                         break
                     else:
-                        logger.warning("Connection reported success but failed verification")
+                        logger.warning(
+                            "Connection reported success but failed verification"
+                        )
                 time.sleep(0.5)  # Small delay between connection attempts
             except Exception as e:
                 logger.error(f"Connection attempt failed: {e}")
                 time.sleep(0.5)
-        
+
         if not connection_successful:
-            logger.error(f"Failed to connect to server after {connection_timeout} seconds timeout")
+            logger.error(
+                f"Failed to connect to server after {connection_timeout} seconds timeout"
+            )
             # Show error message to user
             if self.screen:
                 font = pygame.font.Font(None, 26)
-                text = font.render("Connection to server failed. Check port and server status.", True, (255, 0, 0))
+                text = font.render(
+                    "Connection to server failed. Check port and server status.",
+                    True,
+                    (255, 0, 0),
+                )
                 self.screen.fill((0, 0, 0))
-                self.screen.blit(text, (config["screen_width"]//2 - text.get_width()//2, config["screen_height"]//2 - text.get_height()//2))
+                self.screen.blit(
+                    text,
+                    (
+                        config["screen_width"] // 2 - text.get_width() // 2,
+                        config["screen_height"] // 2 - text.get_height() // 2,
+                    ),
+                )
                 pygame.display.flip()
                 pygame.time.wait(3000)  # Show error for 3 seconds
             pygame.quit()
@@ -175,19 +203,11 @@ class Client:
             logger.error(f"Error creating login window: {e}")
             return
 
-        # Get player name and sciper from config
-        player_sciper = config["sciper"]
-        player_name = config["train_name"]
-
-        # Update agent name
-        self.agent.agent_name = player_name
-        self.agent_name = player_name
-        self.agent_sciper = player_sciper  # Store sciper for future use
-
-        # Send agent name to server
-        if not self.network.send_agent_ids(self.agent_name, self.agent_sciper):
-            logger.error("Failed to send agent name to server")
-            return
+        # Send agent name to server if in online mode
+        if self.game_mode == "online":
+            if not self.network.send_agent_ids(self.agent_name, self.agent_sciper):
+                logger.error("Failed to send agent name to server")
+                return
 
         # Main loop
         clock = pygame.time.Clock()
@@ -199,6 +219,10 @@ class Client:
             # Handle any pending window updates in the main thread
             self.handle_window_updates()
 
+            # If no agent is set, skip the rest of the loop
+            if not self.agent:
+                continue
+
             # Add automatic respawn logic
             if (
                 not config["manual_spawn"]
@@ -209,9 +233,6 @@ class Client:
                 elapsed = time.time() - self.agent.death_time
                 if elapsed >= self.agent.respawn_cooldown:
                     self.network.send_spawn_request()
-
-            if self.in_waiting_room:
-                self.network.send_start_game_request()
 
             self.renderer.draw_game()
 
@@ -277,17 +298,21 @@ class Client:
         logger.warning("Server disconnected, shutting down client...")
         self.server_disconnected = True
         self.running = False
-        
+
         # Afficher un message à l'utilisateur si pygame est initialisé
-        if hasattr(self, 'renderer') and self.renderer and pygame.display.get_init():
+        if hasattr(self, "renderer") and self.renderer and pygame.display.get_init():
             try:
                 font = pygame.font.SysFont("Arial", 24)
-                text = font.render("Server disconnected. Press any key to exit.", True, (255, 0, 0))
-                text_rect = text.get_rect(center=(config["screen_width"]//2, config["screen_height"]//2))
+                text = font.render(
+                    "Server disconnected. Press any key to exit.", True, (255, 0, 0)
+                )
+                text_rect = text.get_rect(
+                    center=(config["screen_width"] // 2, config["screen_height"] // 2)
+                )
                 self.renderer.screen.fill((0, 0, 0))
                 self.renderer.screen.blit(text, text_rect)
                 pygame.display.flip()
-                
+
                 # Attendre que l'utilisateur appuie sur une touche
                 waiting = True
                 while waiting:
@@ -297,22 +322,22 @@ class Client:
                     time.sleep(0.1)
             except Exception as e:
                 logger.error(f"Error displaying disconnection message: {e}")
-        
+
         # Fermer proprement
         self.cleanup()
-        
+
     def cleanup(self):
         """Clean up resources before exiting"""
         logger.info("Cleaning up resources...")
-        
+
         # Fermer la connexion réseau
-        if hasattr(self, 'network') and self.network:
+        if hasattr(self, "network") and self.network:
             self.network.disconnect()
-            
+
         # Quitter pygame
         if pygame.display.get_init():
             pygame.quit()
-            
+
         # Quitter le programme
         if self.server_disconnected:
             logger.info("Exiting due to server disconnection")
@@ -345,14 +370,9 @@ def main():
     # Create the client
     client = Client(host, port)
 
-    # Create the agent with a temporary name (will be replaced by user input)
-    agent = Agent("", client.network)
-
-    # Set the agent for the client
-    client.set_agent(agent)
-
     # Start the client
     client.run()
+
 
 if __name__ == "__main__":
     main()

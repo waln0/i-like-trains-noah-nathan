@@ -330,7 +330,11 @@ class Renderer:
                         (200, 0, 0),  # Red color for emphasis
                     )
                     self.client.screen.blit(time_text, (50, 110))
-                elif waiting_time is not None and waiting_time == 0 and players_count < nb_players:
+                elif (
+                    waiting_time is not None
+                    and waiting_time == 0
+                    and players_count < nb_players
+                ):
                     time_text = font.render(
                         "Adding bots and starting game...",
                         True,
@@ -340,7 +344,9 @@ class Renderer:
 
                 # Player list title
                 players_title = font.render("Players:", True, (0, 0, 100))
-                self.client.screen.blit(players_title, (50, 150))  # Moved down to make room for waiting time
+                self.client.screen.blit(
+                    players_title, (50, 150)
+                )  # Moved down to make room for waiting time
 
                 # Column configuration
                 column_width = 150

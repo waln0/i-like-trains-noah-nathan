@@ -30,10 +30,12 @@ class NetworkManager:
         self.socket = None
         self.running = True
         self.receive_thread = None
-        
+
         # Variables pour surveiller les pings du serveur
         self.last_ping_time = 0
-        self.server_timeout = 2.0  # Temps après lequel on considère le serveur comme déconnecté
+        self.server_timeout = (
+            2.0  # Temps après lequel on considère le serveur comme déconnecté
+        )
 
     def connect(self):
         """Establish connection with server"""
@@ -50,7 +52,7 @@ class NetworkManager:
 
             # Initialiser le temps du dernier ping
             self.last_ping_time = time.time()
-            
+
             # Start receive thread
             self.receive_thread = threading.Thread(target=self.receive_game_state)
             self.receive_thread.daemon = True
@@ -66,28 +68,28 @@ class NetworkManager:
         self.running = False
         if stop_client:
             self.client.running = False
-            
+
             # Afficher un message d'erreur si la déconnexion est due à un timeout du serveur
             # On laisse le client gérer l'affichage du message et la fermeture
             logger.warning("Server disconnection detected. Stopping client.")
-            
+
         if self.socket:
             try:
                 # Envoyer un message à nous-même pour débloquer le recvfrom
-                if hasattr(self, 'server_addr'):
+                if hasattr(self, "server_addr"):
                     try:
                         # Obtenir l'adresse locale du socket
                         local_addr = self.socket.getsockname()
                         # Envoyer un message vide à nous-même pour débloquer le recvfrom
                         dummy_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                        dummy_socket.sendto(b'', local_addr)
+                        dummy_socket.sendto(b"", local_addr)
                         dummy_socket.close()
                     except Exception as e:
                         if "10049" in str(e):
                             pass
                         else:
                             logger.debug(f"Error sending dummy packet: {e}")
-                
+
                 self.socket.close()
                 self.socket = None  # Set to None after closing
                 logger.info("UDP socket closed")
@@ -124,25 +126,27 @@ class NetworkManager:
     def receive_game_state(self):
         """Thread that receives game state updates"""
         buffer = ""
-        
+
         while self.running:
             try:
                 # Pour UDP, on utilise recvfrom qui retourne les données et l'adresse
                 if self.socket is None:
                     logger.debug("Socket closed, exiting receive thread")
                     break
-                    
+
                 # Définir un timeout pour permettre de vérifier self.running périodiquement
                 self.socket.settimeout(0.5)
-                
+
                 # Vérifier si on a reçu un ping récemment
                 current_time = time.time()
                 if current_time - self.last_ping_time > self.server_timeout:
-                    logger.warning(f"Server hasn't sent a ping for {self.server_timeout} seconds, disconnecting")
+                    logger.warning(
+                        f"Server hasn't sent a ping for {self.server_timeout} seconds, disconnecting"
+                    )
                     # Déconnecter le client
                     self.disconnect(stop_client=True)
                     break
-                
+
                 # Pour UDP, on utilise recvfrom qui retourne les données et l'adresse
                 data, addr = self.socket.recvfrom(4096)
 
@@ -183,12 +187,11 @@ class NetworkManager:
                             elif message_type == "ping":
                                 # Respond to ping with a pong
                                 self.send_message({"type": "pong"})
-                                # Mettre à jour le temps du dernier ping reçu
                                 self.last_ping_time = time.time()
 
-                            elif message_type == "pong":
-                                # Mark that we received a response to our ping
-                                self.client.ping_response_received = True
+                            # elif message_type == "pong":
+                            #     # Mark that we received a response to our ping
+                            #     self.client.ping_response_received = True
 
                             elif message_type == "game_status":
                                 self.client.handle_game_status(message_data)
@@ -310,37 +313,42 @@ class NetworkManager:
         if not self.socket:
             logger.error("Cannot verify connection: UDP socket not created")
             return False
-            
+
         try:
             # Reset name check variables
             self.client.name_check_received = False
-            
+
             # Generate a unique test name using timestamp
             test_name = f"test_{int(time.time())}"
-            
+
             # Send a name check request (this is allowed for unregistered clients)
             check_message = {"action": "check_name", "agent_name": test_name}
             success = self.send_message(check_message)
-            
+
             if not success:
                 logger.error("Failed to send name check message")
                 return False
-            
+
             # Wait for the name check response (which will be handled by receive_game_state thread)
             timeout = 2.0  # 2 second timeout
             start_time = time.time()
-            
+
             # Wait for name check response
-            while not self.client.name_check_received and time.time() - start_time < timeout:
+            while (
+                not self.client.name_check_received
+                and time.time() - start_time < timeout
+            ):
                 time.sleep(0.1)
-                
+
             if not self.client.name_check_received:
-                logger.error(f"Timeout waiting for name check response from server at {self.host}:{self.port}")
+                logger.error(
+                    f"Timeout waiting for name check response from server at {self.host}:{self.port}"
+                )
                 return False
-                
+
             # If we get here, we received a response
             return True
-            
+
         except Exception as e:
             logger.error(f"Error verifying connection: {e}")
             return False
@@ -436,11 +444,6 @@ class NetworkManager:
     def send_spawn_request(self):
         """Send spawn request to server"""
         message = {"action": "respawn"}
-        return self.send_message(message)
-
-    def send_start_game_request(self):
-        """Send request to start game"""
-        message = {"action": "start_game"}
         return self.send_message(message)
 
     def send_drop_wagon_request(self):

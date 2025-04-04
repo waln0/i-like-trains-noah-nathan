@@ -35,7 +35,9 @@ class AINetworkInterface:
             self.room.game.trains[self.train_name].change_direction(direction)
             return True
         else:
-            logger.warning(f"Failed to change direction for train {self.train_name}. Train in room's trains: {self.train_name in self.room.game.trains}, is train alive: {self.room.game.is_train_alive(self.train_name)}")
+            logger.warning(
+                f"Failed to change direction for train {self.train_name}. Train in room's trains: {self.train_name in self.room.game.trains}, is train alive: {self.room.game.is_train_alive(self.train_name)}"
+            )
         return False
 
     def send_drop_wagon_request(self):
@@ -65,10 +67,6 @@ class AINetworkInterface:
                 return self.room.game.add_train(self.train_name)
         return False
 
-    def send_start_game_request(self):
-        """Not needed for server-side AI client"""
-        return True
-
 
 class AIClient:
     """
@@ -91,6 +89,7 @@ class AIClient:
         try:
             logger.info(f"Trying to import AI agent for {name}")
             from ai_agent import AI_agent
+
             self.agent = AI_agent(
                 name, self.network, logger="server.ai_agent", is_dead=False
             )
@@ -102,7 +101,7 @@ class AIClient:
                 name, self.network, logger="server.ai_agent", is_dead=False
             )
             logger.info(f"AI agent {name} initialized using base_agent")
-        
+
         self.agent.delivery_zone = self.game.delivery_zone.to_dict()
 
         # Start the AI thread
