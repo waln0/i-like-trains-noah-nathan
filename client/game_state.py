@@ -1,14 +1,8 @@
-"""
-Module for managing the game state for the client "I Like Trains"
-"""
-
+import json
 import logging
 import time
-import json
-import threading
 
 
-# Configure the logger
 logger = logging.getLogger("client.game_state")
 
 
@@ -19,9 +13,6 @@ class GameState:
         """Initialize the game state manager with a reference to the client"""
         self.client = client
         self.control_mode = control_mode
-        self.lock = (
-            threading.Lock()
-        )  # Add a threading lock to prevent concurrency issues
 
     def handle_state_data(self, data):
         """Handle game state data received from the server"""
