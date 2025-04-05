@@ -25,3 +25,6 @@ class ServerConfig(BaseModel):
     # Controls the game speed (in frames per second). A lower speed could be
     # useful for debugging purpose.
     tick_rate: int = 60
+
+    # Duration of a game
+    game_duration_seconds: int = 300  # 300 seconds == 5 minutes

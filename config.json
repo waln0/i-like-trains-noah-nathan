@@ -15,6 +15,7 @@
         "host": "0.0.0.0",
         "port": 5555,
         "players_per_room": 2,
-        "tick_rate": 60
+        "tick_rate": 60,
+        "game_duration_seconds": 300
     }
 }

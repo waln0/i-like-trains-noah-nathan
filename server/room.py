@@ -9,9 +9,6 @@ import os
 # Configure logger
 logger = logging.getLogger("server.room")
 
-# Game duration in seconds
-GAME_LIFE_TIME = 60 * 5
-
 # Waiting time before adding bots (in seconds)
 WAITING_TIME_BEFORE_BOTS = 30  # 30 seconds
 
@@ -128,13 +125,14 @@ class Room:
             )
 
     def game_timer(self):
-        """Thread that monitors game time and ends the game after GAME_LIFE_TIME seconds"""
+        """
+        Thread that monitors game time and ends the game after game_duration_seconds.
+        """
         while self.running and not self.game_over:
             if self.game_start_time is not None:
                 elapsed_time = time.time() - self.game_start_time
 
-                # If the game has been running for GAME_LIFE_TIME seconds, end it
-                if elapsed_time >= GAME_LIFE_TIME:
+                if elapsed_time >= self.config.game_duration_seconds:
                     self.end_game()
                     break
 
@@ -145,7 +143,9 @@ class Room:
         if self.game_over:
             return  # Game already ended
 
-        logger.info(f"Game in room {self.id} has ended after {GAME_LIFE_TIME} seconds")
+        logger.info(
+            f"Game in room {self.id} has ended after {self.config.game_duration_seconds} seconds"
+        )
         self.game_over = True
 
         # Collect final scores
@@ -191,7 +191,7 @@ class Room:
             "data": {
                 "message": "Game is over. Time limit reached.",
                 "final_scores": final_scores,
-                "duration": GAME_LIFE_TIME,
+                "duration": self.config.game_duration_seconds,
                 "best_scores": scores_dict,
             },
         }
@@ -319,7 +319,7 @@ class Room:
         initial_state = {
             "type": "initial_state",
             "data": {
-                "game_life_time": GAME_LIFE_TIME,  # Send total game time to clients
+                "game_life_time": self.config.game_duration_seconds,
                 "start_time": time.time(),  # Send server start time for synchronization
             },
         }
