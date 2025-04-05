@@ -22,7 +22,11 @@ logger = logging.getLogger("client")
 
 # Constants, imported from config.json
 with open("config.json", "r") as f:
-    config = json.load(f)
+    try:
+        config = json.load(f)
+    except json.decoder.JSONDecodeError as e:
+        print("Failed to parse config.json, check your changes.", file=sys.stderr)
+        raise e
 
 LOCAL_HOST = "localhost"
 
