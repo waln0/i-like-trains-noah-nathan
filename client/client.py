@@ -27,6 +27,7 @@ with open("config.json", "r") as f:
 LOCAL_HOST = "localhost"
 
 
+
 class Client:
     """Main client class"""
 
