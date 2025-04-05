@@ -176,7 +176,7 @@ class Server:
     def create_room(self, nb_players, running):
         """Create a new room with specified number of players"""
         room_id = str(uuid.uuid4())[:8]
-        new_room = Room(room_id, nb_players, running, server=self)
+        new_room = Room(self.config, room_id, nb_players, running, server=self)
         logger.info(f"Created new room {room_id} with {nb_players} players")
         self.rooms[room_id] = new_room
         return new_room

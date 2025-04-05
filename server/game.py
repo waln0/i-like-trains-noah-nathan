@@ -6,6 +6,7 @@ import random
 import threading
 import time
 
+from common.server_config import ServerConfig
 from server.train import Train
 from server.passenger import Passenger
 import logging
@@ -42,8 +43,6 @@ TICK_RATE = 60
 SPAWN_SAFE_ZONE = 3
 SAFE_PADDING = 3
 
-RESPAWN_COOLDOWN = 5.0
-
 # Constant for wagon delivery cooldown time (in seconds)
 DELIVERY_COOLDOWN_TIME = 0.1  # Adjust this value to control delivery speed
 
@@ -61,7 +60,9 @@ def generate_random_non_blue_color():
 
 
 class Game:
-    def __init__(self, send_cooldown_notification, nb_players):
+    # TODO(alok): remove nb_players and use config.players_per_room
+    def __init__(self, config: ServerConfig, send_cooldown_notification, nb_players):
+        self.config = config
         self.send_cooldown_notification = send_cooldown_notification
         self.game_width = ORIGINAL_GAME_WIDTH
         self.game_height = ORIGINAL_GAME_HEIGHT
@@ -254,9 +255,9 @@ class Game:
         # Check the cooldown
         if agent_name in self.dead_trains:
             elapsed = time.time() - self.dead_trains[agent_name]
-            if elapsed < RESPAWN_COOLDOWN:
+            if elapsed < self.config.respawn_cooldown_seconds:
                 logger.debug(
-                    f"Train {agent_name} still in cooldown for {RESPAWN_COOLDOWN - elapsed:.1f}s"
+                    f"Train {agent_name} still in cooldown for {self.config.respawn_cooldown_seconds - elapsed:.1f}s"
                 )
                 return False
             else:
@@ -294,7 +295,9 @@ class Game:
                 del self.last_delivery_times[agent_name]
 
             # Notify the client of the cooldown
-            self.send_cooldown_notification(agent_name, RESPAWN_COOLDOWN)
+            self.send_cooldown_notification(
+                agent_name, self.config.respawn_cooldown_seconds
+            )
 
             # If the client is a bot
             if agent_name in self.ai_clients:
@@ -304,7 +307,7 @@ class Game:
                 client.agent.is_dead = True
                 client.agent.death_time = time.time()
                 client.agent.waiting_for_respawn = True
-                client.agent.respawn_cooldown = RESPAWN_COOLDOWN
+                client.agent.respawn_cooldown = self.config.respawn_cooldown_seconds
         else:
             logger.error(f"Train {agent_name} not found in game")
             return False
@@ -317,7 +320,7 @@ class Game:
         """Get remaining cooldown time for a train"""
         if agent_name in self.dead_trains:
             elapsed = time.time() - self.dead_trains[agent_name]
-            remaining = max(0, RESPAWN_COOLDOWN - elapsed)
+            remaining = max(0, self.config.respawn_cooldown_seconds - elapsed)
             return remaining
         return 0
 

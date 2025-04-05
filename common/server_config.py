@@ -14,3 +14,7 @@ class ServerConfig(BaseModel):
 
     # If True, allows multiple connections from the same IP address
     allow_multiple_connections: bool = True
+
+    # When a train hits another train or the game edge, it dies. This controls
+    # how much time the user must wait before they can respawn a new train.
+    respawn_cooldown_seconds: int = 5

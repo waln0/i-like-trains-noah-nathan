@@ -1,3 +1,4 @@
+from common.server_config import ServerConfig
 from server.game import Game
 import threading
 import time
@@ -59,10 +60,12 @@ def load_best_scores():
 
 
 class Room:
-    def __init__(self, room_id, nb_players, running, server):
+    # TODO(alok): remove nb_players and use config.players_per_room
+    def __init__(self, config: ServerConfig, room_id, nb_players, running, server):
+        self.config = config
         self.id = room_id
         self.nb_players = nb_players
-        self.game = Game(server.send_cooldown_notification, self.nb_players)
+        self.game = Game(config, server.send_cooldown_notification, self.nb_players)
         self.game.room_id = room_id  # Store the room ID in the Game object
         self.game.server = server  # Give a reference to the server
         self.clients = {}  # {addr: agent_name}
