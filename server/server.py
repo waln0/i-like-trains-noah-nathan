@@ -49,10 +49,6 @@ AI_NAMES = [
     "Bot Lester",
 ]
 
-# Client timeout in seconds (how long to wait before considering a client disconnected)
-# TODO(alok): move this inside ServerConfig
-CLIENT_TIMEOUT = 2.0
-
 
 def setup_server_logger():
     # Delete existing handlers
@@ -152,7 +148,8 @@ class Server:
         self.threads = []  # Initialize threads attribute
 
         # Client activity tracking for disconnection detection
-        self.client_timeout = CLIENT_TIMEOUT
+        # TODO(alok): delete and use self.config.client_timeout_seconds instead
+        self.client_timeout = self.config.client_timeout_seconds
 
         # Ping tracking for active connection checking
         self.ping_interval = self.client_timeout / 2

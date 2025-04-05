@@ -23,6 +23,9 @@ def main():
     # but that might be too chaotic
     config.server.players_per_room = 1
 
+    # Enables setting breakpoints and resuming the runtime without considering the client as disconnected
+    config.server.client_timeout_seconds = 86400  # 86400 seconds == 1 day
+
     Server(config)
 
     client = Client(config)
