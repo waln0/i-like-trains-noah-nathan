@@ -25,6 +25,7 @@ def main():
 
     # Enables setting breakpoints and resuming the runtime without considering the client as disconnected
     config.server.client_timeout_seconds = 86400  # 86400 seconds == 1 day
+    config.client.server_timeout_seconds = 86400  # 86400 seconds == 1 day
 
     Server(config)
 

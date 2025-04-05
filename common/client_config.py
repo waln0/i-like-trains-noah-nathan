@@ -43,3 +43,6 @@ class ClientConfig(BaseModel):
     # to drop wagons.
     # When control_mode is set to AGENT, the agent code is called.
     control_mode: ControlMode = ControlMode.MANUAL
+
+    # How long to wait before considering a server as disconnected.
+    server_timeout_seconds: float = 2.0
