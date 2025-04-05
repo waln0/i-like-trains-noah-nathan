@@ -5,7 +5,6 @@ Graphics rendering module for the I Like Trains client
 import pygame
 import logging
 import time
-import json
 
 # Configure logger
 logger = logging.getLogger("client.renderer")

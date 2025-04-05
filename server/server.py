@@ -2,11 +2,9 @@ import socket
 import json
 import threading
 import time
-import sys
 import logging
 import uuid
 import random
-import os
 import signal
 
 from common.config import Config
