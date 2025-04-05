@@ -38,8 +38,6 @@ GAME_SIZE_INCREMENT = int(
     ((ORIGINAL_GAME_WIDTH + ORIGINAL_GAME_HEIGHT) / 2) * GAME_SIZE_INCREMENT_RATIO
 )  # Increment per train
 
-TICK_RATE = 60
-
 SPAWN_SAFE_ZONE = 3
 SAFE_PADDING = 3
 
@@ -93,7 +91,7 @@ class Game:
             "passengers": True,
             "delivery_zone": True,
         }
-        logger.info(f"Game initialized with tick rate: {TICK_RATE}")
+        logger.info(f"Game initialized with tick rate: {self.config.tick_rate}")
 
     def get_state(self):
         """Return game state with only modified data"""
@@ -138,9 +136,7 @@ class Game:
         logger.info("Game loop started")
         while self.running:
             self.update()
-            import time
-
-            time.sleep(1 / TICK_RATE)
+            time.sleep(1 / self.config.tick_rate)
 
     def is_position_safe(self, x, y):
         """Check if a position is safe for spawning"""
@@ -278,7 +274,7 @@ class Game:
                 agent_name,
                 train_color,
                 self.handle_train_death,
-                TICK_RATE,
+                self.config.tick_rate,
             )
             self.update_passengers_count()
             return True
