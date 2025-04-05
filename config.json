@@ -10,5 +10,10 @@
         "leaderboard_width": 280,
         "manual_spawn": false,
         "control_mode": "manual"
+    },
+    "server": {
+        "host": "0.0.0.0",
+        "port": 5555,
+        "players_per_room": 2
     }
 }

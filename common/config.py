@@ -4,6 +4,7 @@ import pydantic_core
 from pydantic import BaseModel
 
 from common.client_config import ClientConfig
+from common.server_config import ServerConfig
 
 
 class Config(BaseModel):
@@ -16,6 +17,7 @@ class Config(BaseModel):
     """
 
     client: ClientConfig
+    server: ServerConfig
 
     def load(filename):
         """
