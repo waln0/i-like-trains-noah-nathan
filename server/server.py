@@ -10,7 +10,7 @@ import signal
 from common.config import Config
 from server.passenger import Passenger
 from server.ai_client import AIClient
-from server.room import Room, load_best_scores, WAITING_TIME_BEFORE_BOTS
+from server.room import Room, load_best_scores
 
 
 # Colors
@@ -586,7 +586,7 @@ class Server:
                 "waiting_time": int(
                     max(
                         0,
-                        WAITING_TIME_BEFORE_BOTS
+                        self.config.wait_time_before_bots_seconds
                         - (time.time() - selected_room.room_creation_time),
                     )
                 )

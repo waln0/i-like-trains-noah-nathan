@@ -9,9 +9,6 @@ import os
 # Configure logger
 logger = logging.getLogger("server.room")
 
-# Waiting time before adding bots (in seconds)
-WAITING_TIME_BEFORE_BOTS = 30  # 30 seconds
-
 # Scores file path
 SCORES_FILE_PATH = "player_scores.json"
 
@@ -258,7 +255,9 @@ class Room:
                                 )
                                 elapsed_time = current_time - start_time
                                 remaining_time = max(
-                                    0, WAITING_TIME_BEFORE_BOTS - elapsed_time
+                                    0,
+                                    self.config.wait_time_before_bots_seconds
+                                    - elapsed_time,
                                 )
 
                                 # If time is up and room is not full, add bots and start the game

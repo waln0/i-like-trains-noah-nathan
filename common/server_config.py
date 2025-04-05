@@ -28,3 +28,7 @@ class ServerConfig(BaseModel):
 
     # Duration of a game
     game_duration_seconds: int = 300  # 300 seconds == 5 minutes
+
+    # Amount of time clients will waiting for other clients to join before the
+    # game is started with bots replacing any missing clients.
+    wait_time_before_bots_seconds: int = 30
