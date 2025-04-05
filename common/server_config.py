@@ -32,3 +32,6 @@ class ServerConfig(BaseModel):
     # Amount of time clients will waiting for other clients to join before the
     # game is started with bots replacing any missing clients.
     wait_time_before_bots_seconds: int = 30
+
+    # Maximum number of passengers on a given square
+    max_passengers: int = 3
