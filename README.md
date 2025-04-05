@@ -168,7 +168,7 @@ On the evaluation day, you will have to send us only one agent.py file per team.
 1. For the agent:
    - Display the attributes (with `print` or using the logger) to understand their structure (self.all_trains, self.all_passengers, self.delivery_zones, etc.).
    - Start with changing the direction if the next position will hit a wall.
-   - Implement a simple strategy (e.g., go towards the closest passenger).
+   - Implement an initial strategy (e.g., go towards the closest passenger).
    - Gradually add obstacle avoidance (other trains and wagons).
    - Consider handling cases where the direct path is blocked.
 

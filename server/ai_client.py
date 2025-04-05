@@ -13,8 +13,8 @@ logger = logging.getLogger("server.ai_client")
 
 class AINetworkInterface:
     """
-    A simple interface that mimics the NetworkManager class from the client
-    but directly interacts with the game on the server side
+    Mimics the NetworkManager class from the client but directly interacts with
+    the game on the server side.
     """
 
     def __init__(self, room, train_name):
