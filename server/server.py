@@ -821,30 +821,29 @@ class Server:
                             room.create_ai_for_train(original_train_name)
                         # else: Train might not exist or is already AI, log if necessary for debug
 
-                    # Common cleanup for the disconnected client's address info
-                    if addr in self.addr_to_name:
-                        del self.addr_to_name[addr]
-                    if addr in self.addr_to_sciper:
-                        # agent_sciper was retrieved earlier using .get()
-                        # Only try to remove from sciper_to_addr if it's not the default value
-                        sciper_to_remove = self.addr_to_sciper[
-                            addr
-                        ]  # Get the sciper before deleting the addr key
-                        if (
-                            sciper_to_remove != "Unknown client"
-                            and sciper_to_remove in self.sciper_to_addr
-                        ):
-                            del self.sciper_to_addr[sciper_to_remove]
-                        # Now delete from addr_to_sciper
-                        del self.addr_to_sciper[addr]
-                    if addr in self.client_last_activity:
-                        del self.client_last_activity[addr]
-                    if addr in self.ping_responses:
-                        del self.ping_responses[addr]
                     break  # Exit the room loop as we found and processed the client
+
         else:
             # Log at debug level for unknown clients to reduce spam
             logger.debug(f"Unknown client disconnected due to {reason}: {addr}")
+
+        # Common cleanup for the disconnected client's address info - moved outside the room loop
+        # to ensure it happens even if client is not found in a room
+        if addr in self.addr_to_name:
+            del self.addr_to_name[addr]
+            
+        # Clean up sciper information
+        if addr in self.addr_to_sciper:
+            sciper = self.addr_to_sciper[addr]
+            if sciper in self.sciper_to_addr:
+                del self.sciper_to_addr[sciper]
+            del self.addr_to_sciper[addr]
+            
+        if addr in self.client_last_activity:
+            del self.client_last_activity[addr]
+            
+        if addr in self.ping_responses:
+            del self.ping_responses[addr]
 
     def remove_room(self, room_id):
         """Remove a room from the server"""
