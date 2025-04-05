@@ -338,15 +338,6 @@ class Client:
             sys.exit(0)
 
 
-# Configure logging
-logging.basicConfig(
-    level=logging.DEBUG,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    handlers=[logging.StreamHandler()],
-)
-logger = logging.getLogger("main")
-
-
 def main():
     """Main function"""
     # Check if an IP address was provided as an argument
