@@ -363,15 +363,6 @@ class Client:
             sys.exit(0)
 
 
-# Configure logging
-logging.basicConfig(
-    level=logging.DEBUG,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    handlers=[logging.StreamHandler()],
-)
-logger = logging.getLogger("main")
-
-
 def main():
     # Load the config file
     config_file = "config.json"
