@@ -3,12 +3,13 @@ import logging
 import time
 import threading
 import sys
-from network import NetworkManager
-from renderer import Renderer
-from event_handler import EventHandler
-from game_state import GameState
-from agent import Agent
+from client.network import NetworkManager
+from client.renderer import Renderer
+from client.event_handler import EventHandler
+from client.game_state import GameState
+import importlib
 import json
+import os
 
 
 # Configure logging
@@ -23,16 +24,20 @@ logger = logging.getLogger("client")
 with open("config.json", "r") as f:
     config = json.load(f)
 
-DEFAULT_HOST = "localhost"
+LOCAL_HOST = "localhost"
+
 
 
 class Client:
     """Main client class"""
 
-    def __init__(self, host=DEFAULT_HOST, port=config["default_port"]):
+    def __init__(self, host, port=config["default_port"]):
         """Initialize the client"""
-        self.host = host
-        self.port = port
+        self.game_mode = config.get("game_mode", "online")
+        if self.game_mode == "local_evaluation":
+            host = LOCAL_HOST
+        elif self.game_mode != "online":
+            raise ValueError(f"Invalid game mode: {self.game_mode}")
 
         # Initialize state variables
         self.running = True
@@ -54,17 +59,14 @@ class Client:
         self.sciper_check_result = False
 
         # Game data
-        self.agent_name = ""
         self.trains = {}
         self.passengers = []
         self.delivery_zone = {}
 
-        self.cell_size = config["cell_size"]
+        self.cell_size = 0
         self.game_width = 200  # Initial game area width
         self.game_height = 200  # Initial game area height
-        self.game_screen_padding = config[
-            "cell_size"
-        ]  # Space between game area and leaderboard
+        self.game_screen_padding = 20  # Space between game area and leaderboard
         self.leaderboard_width = config["leaderboard_width"]
         self.leaderboard_height = 2 * self.game_screen_padding + self.game_height
 
@@ -96,9 +98,25 @@ class Client:
         self.event_handler = EventHandler(self, config["control_mode"])
         self.game_state = GameState(self, config["control_mode"])
 
-        # Reference to the agent (will be initialized later)
+        # Initialize agent based on game mode
         self.agent = None
-        self.ping_response_received = False  # Added for connection verification
+        if self.game_mode == "online":
+            agent_info = config.get("online_agent", {})
+            if agent_info and "path_to_agent" in agent_info:
+                # try:
+                    module_path = agent_info["path_to_agent"]
+                    # Add parent directory to Python path to allow importing agents package
+                    parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                    sys.path.append(parent_dir)
+                    module = importlib.import_module(module_path)
+                    self.agent_name = agent_info["name"]
+                    self.agent_sciper = agent_info["sciper"]
+                    self.agent = module.Agent(self.agent_name, self.network)
+                # except ImportError as e:
+                #     logger.error(f"Failed to import agent from {module_path}: {e}")
+                #     sys.exit(1)
+
+        self.ping_response_received = False
         self.server_disconnected = False
 
     def update_game_window_size(self, width, height):
@@ -118,20 +136,11 @@ class Client:
                     self.screen = pygame.display.set_mode(
                         (width, height), pygame.RESIZABLE
                     )
-                    pygame.display.set_caption(
-                        f"I Like Trains - {self.agent_name}"
-                        if self.agent_name
-                        else "I Like Trains"
-                    )
+                    pygame.display.set_caption("I Like Trains")
                 except Exception as e:
                     logger.error(f"Error updating window: {e}")
 
                 self.window_needs_update = False
-
-    def set_agent(self, agent):
-        """Set the agent for the client"""
-        self.agent = agent
-        self.agent_name = agent.agent_name
 
     def run(self):
         """Main client loop"""
@@ -192,19 +201,11 @@ class Client:
             logger.error(f"Error creating login window: {e}")
             return
 
-        # Get player name and sciper from config
-        player_sciper = config["sciper"]
-        player_name = config["train_name"]
-
-        # Update agent name
-        self.agent.agent_name = player_name
-        self.agent_name = player_name
-        self.agent_sciper = player_sciper  # Store sciper for future use
-
-        # Send agent name to server
-        if not self.network.send_agent_ids(self.agent_name, self.agent_sciper):
-            logger.error("Failed to send agent name to server")
-            return
+        # Send agent name to server if in online mode
+        if self.game_mode == "online":
+            if not self.network.send_agent_ids(self.agent_name, self.agent_sciper):
+                logger.error("Failed to send agent name to server")
+                return
 
         # Main loop
         clock = pygame.time.Clock()
@@ -212,23 +213,20 @@ class Client:
         while self.running:
             # Handle events
             self.event_handler.handle_events()
-
             # Handle any pending window updates in the main thread
             self.handle_window_updates()
 
-            # Add automatic respawn logic
-            if (
-                not config["manual_spawn"]
-                and self.agent.is_dead
-                and self.agent.waiting_for_respawn
-                and not self.game_over
-            ):
-                elapsed = time.time() - self.agent.death_time
-                if elapsed >= self.agent.respawn_cooldown:
-                    self.network.send_spawn_request()
-
-            if self.in_waiting_room:
-                self.network.send_start_game_request()
+            if self.agent:
+                # Add automatic respawn logic
+                if (
+                    not config["manual_spawn"]
+                    and self.agent.is_dead
+                    and self.agent.waiting_for_respawn
+                    and not self.game_over
+                ):
+                    elapsed = time.time() - self.agent.death_time
+                    if elapsed >= self.agent.respawn_cooldown:
+                        self.network.send_spawn_request()
 
             self.renderer.draw_game()
 
@@ -352,7 +350,7 @@ logger = logging.getLogger("main")
 def main():
     """Main function"""
     # Check if an IP address was provided as an argument
-    host = DEFAULT_HOST
+    host = LOCAL_HOST
     if len(sys.argv) > 1:
         host = sys.argv[1]
 
@@ -365,12 +363,6 @@ def main():
 
     # Create the client
     client = Client(host, port)
-
-    # Create the agent with a temporary name (will be replaced by user input)
-    agent = Agent("", client.network)
-
-    # Set the agent for the client
-    client.set_agent(agent)
 
     # Start the client
     client.run()

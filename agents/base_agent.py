@@ -1,6 +1,12 @@
 import logging
 import time
-from network import NetworkManager
+import sys
+import os
+
+# Add parent directory to Python path to allow importing client package
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
+
+from client.network import NetworkManager
 
 # Configure logging
 logging.basicConfig(

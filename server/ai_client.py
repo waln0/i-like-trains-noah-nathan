@@ -8,14 +8,24 @@ import time
 import logging
 import sys
 import os
+import importlib
+import json
 
-# Add the client directory to the path so we can import the Agent class
-sys.path.append(os.path.join(os.path.dirname(os.path.dirname(__file__)), "client"))
-# Import Agent from client directory
-from agent import Agent
+
+# Add the project root to the path
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 logger = logging.getLogger("server.ai_client")
 
+CONFIG_PATH = "config.json"
+try:
+    with open(CONFIG_PATH, "r") as f:
+        config = json.load(f)
+except FileNotFoundError:
+    logger.error(f"Configuration file {CONFIG_PATH} not found.")
+    config = {}
+
+LOCAL_AGENTS_CONFIG = config.get("local_agents", [])
 
 class AINetworkInterface:
     """
@@ -67,44 +77,47 @@ class AINetworkInterface:
                 return self.room.game.add_train(self.train_name)
         return False
 
-    def send_start_game_request(self):
-        """Not needed for server-side AI client"""
-        return True
-
 
 class AIClient:
     """
     AI client that controls a train on the server side
     using the Agent class from the client
     """
-
-    def __init__(self, room, name):
+    def __init__(self, room, agent_name, path_to_agent=None):
+        """Initialize the AI client"""
         self.room = room
         self.game = room.game
-        self.agent_name = name  # The AI agent name
-        self.train_name = name  # Use the AI name as the train name
+        self.agent_name = agent_name  # The AI agent name
+        self.train_name = agent_name  # Use the AI name as the train name
 
         # Create network interface
         self.network = AINetworkInterface(
-            room, name
+            room, agent_name
         )  # Use AI name for network interface
 
-        # Create agent
-        try:
-            logger.info(f"Trying to import AI agent for {name}")
-            from ai_agent import AI_agent
-
-            self.agent = AI_agent(
-                name, self.network, logger="server.ai_agent", is_dead=False
-            )
-            logger.info(f"AI agent {name} initialized using AI_agent")
-        except ImportError as e:
-            logger.info(f"Failed to import AI agent for {name}, using base agent: {e}")
-            # Use the Agent class imported at the top of the file
-            self.agent = Agent(
-                name, self.network, logger="server.ai_agent", is_dead=False
-            )
-            logger.info(f"AI agent {name} initialized using base_agent")
+        # Initialize agent if path_to_agent is provided
+        if agent_name and path_to_agent:
+            try:
+                logger.info(f"Trying to import AI agent for {agent_name}")
+                module = importlib.import_module(path_to_agent)
+                self.agent = module.Agent(
+                    agent_name, self.network, logger="server.ai_agent", is_dead=False
+                )
+                logger.info(f"AI agent {agent_name} initialized using {path_to_agent}")
+            except ImportError as e:
+                logger.error(f"Failed to import AI agent for {agent_name}: {e}")
+                sys.exit(1)
+        else:
+            try:
+                logger.info(f"Trying to import AI agent for {agent_name}")
+                module = importlib.import_module("agents.ai_agent")
+                self.agent = module.AI_agent(
+                    agent_name, self.network, logger="server.ai_agent", is_dead=False
+                )
+                logger.info(f"AI agent {agent_name} initialized using AI_agent")
+            except ImportError as e:
+                logger.error(f"Failed to import AI agent for {agent_name}: {e}")
+                sys.exit(1)
 
         self.agent.delivery_zone = self.game.delivery_zone.to_dict()
 
@@ -113,7 +126,7 @@ class AIClient:
         self.thread = threading.Thread(target=self.run)
         self.thread.daemon = True
         self.thread.start()
-        logger.info(f"AI client {name} started")
+        logger.info(f"AI client {agent_name} started")
 
         self.update_state()
 

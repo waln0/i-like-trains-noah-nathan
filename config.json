@@ -1,14 +1,32 @@
-{
-    "sciper": "000000",
-    "train_name": "Player",
+{    "game_mode": "online",
 
     "default_port": 5555,
-    
+
+    "online_agent": {
+        "sciper": "000000",
+        "name":"Player", 
+        "path_to_agent":"agents.agent1"
+    },
+
+    "local_agents": [
+        {
+            "name":"Player1", 
+            "path_to_agent":"agents.agent1"
+        }, 
+        {
+            "name":"Player2", 
+            "path_to_agent":"agents.agent2"
+        }
+    ],
+
     "screen_width": 500,
     "screen_height": 360,
-    "cell_size": 20,
     "leaderboard_width": 280,
 
     "manual_spawn": false,
-    "control_mode": "manual"
+    "control_mode": "manual",
+
+    "default_nb_players_per_room": 2,
+    "allow_multiple_connections": true,
+    "waiting_time_before_bots": 2
 }

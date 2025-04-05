@@ -44,8 +44,6 @@ class EventHandler:
                         result = self.client.network.send_spawn_request()
                         if result:
                             self.client.agent.waiting_for_respawn = True
-                    if self.client.in_waiting_room:
-                        self.client.network.send_start_game_request()
 
                 if self.control_mode == "manual":
                     # Change the train's direction based on the pressed keys
