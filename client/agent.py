@@ -3,7 +3,7 @@ from client.base_agent import BaseAgent
 from common.move import Move
 
 # Student scipers, will be automatically used to evaluate your code
-SCIPERS = ["000001", "000002", "000003"]
+SCIPERS = ["112233", "445566"]
 
 
 class Agent(BaseAgent):
