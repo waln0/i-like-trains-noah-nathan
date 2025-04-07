@@ -113,8 +113,6 @@ class Client:
             if agent_info and "path" in agent_info:
                 module_path = agent_info["path"]
                 # Add parent directory to Python path to allow importing agents package
-                parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-                sys.path.append(parent_dir)
                 module = importlib.import_module(module_path)
                 self.agent_name = agent_info["name"]
                 self.agent_sciper = agent_info["sciper"]

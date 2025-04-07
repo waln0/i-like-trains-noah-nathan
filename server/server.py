@@ -543,7 +543,7 @@ class Server:
                     "waiting_time": int(
                         max(
                             0,
-                            self.config.wait_time_before_bots_seconds
+                            self.config.waiting_time_before_bots_seconds
                             - (time.time() - selected_room.room_creation_time),
                         )
                     )

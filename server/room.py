@@ -359,7 +359,7 @@ class Room:
                                 elapsed_time = current_time - start_time
                                 remaining_time = max(
                                     0,
-                                    self.config.wait_time_before_bots_seconds
+                                    self.config.waiting_time_before_bots_seconds
                                     - elapsed_time,
                                 )
 
@@ -417,7 +417,6 @@ class Room:
     def broadcast_game_state(self):
         """Thread that periodically sends the game state to clients"""
         self.running = True
-        logger.info(f"Starting broadcast thread for room {self.id}")
 
         # Send initial state to all clients
         initial_state = {

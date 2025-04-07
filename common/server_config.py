@@ -31,7 +31,7 @@ class ServerConfig(BaseModel):
 
     # Amount of time clients will waiting for other clients to join before the
     # game is started with bots replacing any missing clients.
-    wait_time_before_bots_seconds: int = 30
+    waiting_time_before_bots_seconds: int = 30
 
     # Path to the file where player scores are saved.
     score_file_path: str = "player_scores.json"

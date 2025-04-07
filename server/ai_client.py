@@ -14,7 +14,7 @@ import json
 
 
 # Add the project root to the path
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+# sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 logger = logging.getLogger("server.ai_client")
 
