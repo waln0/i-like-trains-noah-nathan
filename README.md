@@ -158,7 +158,7 @@ def get_move(self):
 - Your train exists in a 2D grid. You can tell your train to turn left, right, or continue going straight. Your code should live in [client/agent.py](/client/agent.py) and any additional files you might need. You can also instruct your train to drop
 wagons.
 
-- Your train can drop wagons. The train will then get a speed boost and enter a boost cooldown period, during which the trin
+- Your train can drop wagons. The train will then get a speed boost and enter a boost cooldown period, during which the train
 cannot drop wagons. Remember, passengers are automiatcally dropped off in the delivery zone.
 
 ## Evaluation
