@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-
+from common.client_config import GameMode
 
 class ServerConfig(BaseModel):
     # Host should either be 127.0.0.1 if you only want to accept local connections
@@ -50,4 +50,4 @@ class ServerConfig(BaseModel):
     agent_file_name: str = "agent.py"
 
     # Game mode, "competitive" or "local_evaluation"
-    game_mode: str = "competitive"
+    game_mode: GameMode = GameMode.COMPETITIVE

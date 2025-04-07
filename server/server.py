@@ -11,6 +11,7 @@ from common.config import Config
 from server.high_score import HighScore
 from server.passenger import Passenger
 from server.room import Room
+from common.client_config import GameMode
 
 
 def setup_server_logger():
@@ -67,10 +68,10 @@ class Server:
         self.high_score.load()
         self.high_score.dump()
 
-        if self.config.game_mode == "local_evaluation":
+        if self.config.game_mode == GameMode.LOCAL_EVALUATION:
             host = "local_host"
             self.nb_clients_per_room = 1
-        elif self.config.game_mode == "competitive":
+        elif self.config.game_mode == GameMode.COMPETITIVE:
             host = self.config.host
             self.nb_clients_per_room = self.config.nb_clients_per_room
         else:
@@ -123,7 +124,7 @@ class Server:
         room_id = str(uuid.uuid4())[:8]
 
         logger.info(f"Created new room {room_id} with {self.config.nb_clients_per_room} clients")
-        if self.config.game_mode == "local_evaluation":
+        if self.config.game_mode == GameMode.LOCAL_EVALUATION:
             # Room size is fixed: 1 observer + N AIs
             self.config.nb_clients_per_room = 1 + len(self.config.local_agents)
             logger.info(f"Creating local_evaluation room {room_id} with size {self.config.nb_clients_per_room}.")
@@ -219,7 +220,7 @@ class Server:
             self.disconnected_clients.remove(addr)
 
         # Check if we need to handle agent initialization
-        if self.config.game_mode == "competitive":
+        if self.config.game_mode == GameMode.COMPETITIVE:
             if (
                 "type" in message
                 and message["type"] == "agent_ids"
@@ -241,7 +242,7 @@ class Server:
                     logger.warning(f"Name or sciper not available or invalid for {addr}")
 
         # In local_evaluation mode, the only client connecting is the observer, handle it directly
-        elif self.config.game_mode == "local_evaluation":
+        elif self.config.game_mode == GameMode.LOCAL_EVALUATION:
             self.client_last_activity[addr] = time.time()
             # Assuming the first message in local_evaluation is implicitly a connection request
             # We might need a specific message type later if this assumption is wrong
@@ -451,7 +452,7 @@ class Server:
         agent_name = message.get("agent_name", "")
         agent_sciper = message.get("agent_sciper", "")
 
-        if self.config.game_mode == "local_evaluation":
+        if self.config.game_mode == GameMode.LOCAL_EVALUATION:
             logger.info(f"New client connected in local_evaluation mode: {addr}")
             self.client_last_activity[addr] = time.time()
 
@@ -459,7 +460,7 @@ class Server:
             agent_name = f"Observer_{random.randint(1000, 9999)}"
             agent_sciper = str(random.randint(100000, 999999))
 
-        elif self.config.game_mode == "competitive":
+        elif self.config.game_mode == GameMode.COMPETITIVE:
             if not agent_name:
                 logger.warning("No agent name provided")
                 return
@@ -531,7 +532,7 @@ class Server:
         }
         self.server_socket.sendto((json.dumps(response) + "\n").encode(), addr)
 
-        if self.config.game_mode == "competitive":
+        if self.config.game_mode == GameMode.COMPETITIVE:
             # Send initial game state immediately
             game_status = {
                 "type": "waiting_room",

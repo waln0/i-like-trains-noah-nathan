@@ -7,6 +7,11 @@ class ControlMode(Enum):
     AGENT = "agent"
 
 
+class GameMode(Enum):
+    COMPETITIVE = "competitive"
+    LOCAL_EVALUATION = "local_evaluation"
+
+
 class ClientConfig(BaseModel):
     # SCIPER used to identify the agent. Must be unique (the server only allows
     # one connection from a given SCIPER at a time).
@@ -45,8 +50,8 @@ class ClientConfig(BaseModel):
     # How long to wait before considering a server as disconnected.
     server_timeout_seconds: float = 2.0
 
-    # Game mode, "competitive" or "local_evaluation"
-    game_mode: str = "competitive"
+    # Game mode
+    game_mode: GameMode = GameMode.COMPETITIVE
 
     # Competitive agent configuration, change the sciper to yours, and the name to
     # your "train name". Simply modify the path to the agent file you want to use. 

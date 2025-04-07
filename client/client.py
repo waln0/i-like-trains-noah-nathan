@@ -11,6 +11,7 @@ from client.event_handler import EventHandler
 from client.game_state import GameState
 
 from common.config import Config
+from common.client_config import GameMode
 import os
 
 
@@ -32,9 +33,9 @@ class Client:
         self.config = config.client
 
         # If we launch a local evaluation, we want the host to be local_host
-        if self.config.game_mode == "local_evaluation":
+        if self.config.game_mode == GameMode.LOCAL_EVALUATION:
             self.host = "local_host"
-        elif self.config.game_mode == "competitive":
+        elif self.config.game_mode == GameMode.COMPETITIVE:
             self.host = self.config.host
         else:
             raise ValueError(f"Invalid game mode: {self.config.game_mode}")
@@ -107,7 +108,7 @@ class Client:
 
         # Initialize agent based on game mode
         self.agent = None
-        if self.config.game_mode == "competitive":
+        if self.config.game_mode == GameMode.COMPETITIVE:
             agent_info = self.config.competitive_agent
             if agent_info and "agent_file_name" in agent_info:
                 logger.info(f"Loading agent: {agent_info['agent_file_name']}")
@@ -215,7 +216,7 @@ class Client:
             return
 
         # Send agent name to server if in competitive mode
-        if self.config.game_mode == "competitive":
+        if self.config.game_mode == GameMode.COMPETITIVE:
             # Check if we can load name and sciper from config
             if not self.config.competitive_agent["nickname"] or not self.config.competitive_agent["sciper"]:
                 logger.error("Failed to send agent name to server: name or sciper not found in config")

@@ -1,5 +1,5 @@
-from common import server_config
 from common.server_config import ServerConfig
+from common.client_config import GameMode
 from server.game import Game
 import threading
 import time
@@ -367,8 +367,8 @@ class Room:
 
                         # If time is up and room is not full, add bots and start the game
                         if (
-                            ((self.config.game_mode == "competitive" and remaining_time == 0)
-                            or (self.config.game_mode == "local_evaluation" and self.is_full()))
+                            ((self.config.game_mode == GameMode.COMPETITIVE and remaining_time == 0)
+                            or (self.config.game_mode == GameMode.LOCAL_EVALUATION and self.is_full()))
                             and not self.game_thread
                         ):
                             logger.info(
@@ -488,9 +488,9 @@ class Room:
     def fill_with_bots(self):
         """Fill the room with bots and start the game"""
         logger.debug(f"Filling room {self.id} with bots")
-        if self.config.game_mode == "local_evaluation":
+        if self.config.game_mode == GameMode.LOCAL_EVALUATION:
             nb_bots_needed = len(self.config.local_agents)
-        elif self.config.game_mode == "competitive":
+        elif self.config.game_mode == GameMode.COMPETITIVE:
             current_players = len(self.clients)
             nb_bots_needed = self.nb_clients_max - current_players
         else:
@@ -506,7 +506,7 @@ class Room:
         for i in range(nb_bots_needed):
             ai_nickname = None
             ai_agent_file_name = None
-            if self.config.game_mode == "local_evaluation":
+            if self.config.game_mode == GameMode.LOCAL_EVALUATION:
                 ai_nickname = self.config.local_agents[i]["ai_nickname"]
                 ai_agent_file_name = self.config.local_agents[i]["agent_file_name"]
             else:
