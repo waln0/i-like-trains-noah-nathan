@@ -128,7 +128,8 @@ class Server:
             logger.info(f"Creating local_evaluation room {room_id} with size {nb_clients_per_room}.")
         else:
             # Use default for competitive mode
-            logger.info(f"Creating competitive room {room_id} with default size {self.config.nb_clients_per_room}.")
+            nb_clients_per_room = self.config.nb_clients_per_room
+            logger.info(f"Creating competitive room {room_id} with default size {nb_clients_per_room}.")
         
         new_room = Room(self.config, room_id, nb_clients_per_room, running, self.server_socket, self.send_cooldown_notification)
         
