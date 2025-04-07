@@ -8,13 +8,10 @@ import time
 import logging
 from server.passenger import Passenger
 import sys
-import os
 import importlib
 import json
 
 
-# Add the project root to the path
-# sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 logger = logging.getLogger("server.ai_client")
 

@@ -12,7 +12,6 @@ from client.game_state import GameState
 
 from common.config import Config
 from common.client_config import GameMode
-import os
 
 
 # Configure logging
