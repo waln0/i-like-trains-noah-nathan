@@ -81,4 +81,4 @@ class BaseAgent:
                 self.network.send_drop_wagon_request()
 
             if new_direction != self.all_trains[self.agent_name]["direction"]:
-                self.network.send_direction_change(new_direction)
+                self.network.send_direction_change(new_direction.value)
