@@ -77,6 +77,8 @@ Example configuration in `config.json`:
 }
 ```
 
+You may also want to modify the `ai_agent_file_name` in the `server` section to point to your own agent file. This will be used when a client disconnects in competitive mode.
+
 ### 4. Run the client
 
 If you are connecting to a remote server, you need to know the IP address and port of the server. If you are outside of EPFL network, you will need to use a VPN to connect to the network.
