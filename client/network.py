@@ -158,7 +158,6 @@ class NetworkManager:
                     # Extract complete message
                     message, buffer = buffer.split("\n", 1)
                     if not message:
-                        logger.debug("Empty message, skipping")
                         continue
 
                     try:

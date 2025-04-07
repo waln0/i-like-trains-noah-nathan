@@ -208,7 +208,12 @@ class Client:
 
         # Send agent name to server if in competitive mode
         if self.config.game_mode == "competitive":
-            if not self.network.send_agent_ids(self.config.competitive_agent.name, self.config.competitive_agent.sciper):
+            # Check if we can load name and sciper from config
+            if not self.config.competitive_agent["name"] or not self.config.competitive_agent["sciper"]:
+                logger.error("Failed to send agent name to server: name or sciper not found in config")
+                return
+
+            if not self.network.send_agent_ids(self.config.competitive_agent["name"], self.config.competitive_agent["sciper"]):
                 logger.error("Failed to send agent name to server")
                 return
 

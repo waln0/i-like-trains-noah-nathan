@@ -219,7 +219,7 @@ class Server:
             self.disconnected_clients.remove(addr)
 
         # Check if we need to handle agent initialization
-        if self.game_mode == "competitive":
+        if self.config.game_mode == "competitive":
             if (
                 "type" in message
                 and message["type"] == "agent_ids"
@@ -241,7 +241,7 @@ class Server:
                     logger.warning(f"Name or sciper not available or invalid for {addr}")
 
         # In local_evaluation mode, the only client connecting is the observer, handle it directly
-        elif self.game_mode == "local_evaluation":
+        elif self.config.game_mode == "local_evaluation":
             self.client_last_activity[addr] = time.time()
             # Assuming the first message in local_evaluation is implicitly a connection request
             # We might need a specific message type later if this assumption is wrong
@@ -451,7 +451,7 @@ class Server:
         agent_name = message.get("agent_name", "")
         agent_sciper = message.get("agent_sciper", "")
 
-        if self.game_mode == "local_evaluation":
+        if self.config.game_mode == "local_evaluation":
             logger.info(f"New client connected in local_evaluation mode: {addr}")
             self.client_last_activity[addr] = time.time()
 
@@ -459,7 +459,7 @@ class Server:
             agent_name = f"Observer_{random.randint(1000, 9999)}"
             agent_sciper = str(random.randint(100000, 999999))
 
-        elif self.game_mode == "competitive":
+        elif self.config.game_mode == "competitive":
             if not agent_name:
                 logger.warning("No agent name provided")
                 return
@@ -531,7 +531,7 @@ class Server:
         }
         self.server_socket.sendto((json.dumps(response) + "\n").encode(), addr)
 
-        if self.game_mode == "competitive":
+        if self.config.game_mode == "competitive":
             # Send initial game state immediately
             game_status = {
                 "type": "waiting_room",
