@@ -15,9 +15,12 @@ logging.basicConfig(
 
 logger = logging.getLogger("server.train")
 
-# Train settings
-# INITIAL_SPEED = 60  # Initial speed in pixels per second
-INITIAL_SPEED = 10  # Initial speed in pixels per second
+# INITIAL_SPEED controls when the train moves by default. The train moves every
+# tick_rate / self.speed. A larger initial speed means the train will move more
+# often. A smaller speed will mean it moves less often. Each time the train
+# moves, it moves by cell_size.
+INITIAL_SPEED = 10
+
 SPEED_DECREMENT_COEFFICIENT = 0.95  # Speed reduction coefficient for each wagon
 
 ACTIVATE_SPEED_BOOST = True  # Activate speed boost
@@ -299,7 +302,9 @@ class Train:
     def check_collisions(self, new_position, all_trains):
         for wagon_pos in self.wagons:
             if new_position == wagon_pos:
-                collision_msg = f"Train {self.nickname} collided with its own wagon at {wagon_pos}"
+                collision_msg = (
+                    f"Train {self.nickname} collided with its own wagon at {wagon_pos}"
+                )
                 logger.info(collision_msg)
                 self.client_logger.info(collision_msg)
                 self.kill()
