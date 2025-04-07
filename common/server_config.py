@@ -10,7 +10,7 @@ class ServerConfig(BaseModel):
     port: int = 5555
 
     # Numbers of trains in each room.
-    players_per_room: int = 2
+    clients_per_room: int = 2
 
     # If True, allows multiple connections from the same IP address.
     allow_multiple_connections: bool = True
@@ -33,6 +33,9 @@ class ServerConfig(BaseModel):
     # game is started with bots replacing any missing clients.
     wait_time_before_bots_seconds: int = 30
 
+    # Path to the file where player scores are saved.
+    score_file_path: str = "player_scores.json"
+
     # Maximum number of passengers on a given square.
     max_passengers: int = 3
 
@@ -40,3 +43,6 @@ class ServerConfig(BaseModel):
     # the size of the delivery zone, and the number of passengers, a train might
     # have to circle around to complete delivery of all their passengers.
     delivery_cooldown_seconds: float = 0.1
+
+    # Game mode, "online" or "local_evaluation"
+    game_mode: str = "online"

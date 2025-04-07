@@ -10,11 +10,13 @@ class ControlMode(Enum):
 class ClientConfig(BaseModel):
     # SCIPER used to identify the agent. Must be unique (the server only allows
     # one connection from a given SCIPER at a time).
-    sciper: str = "123456"
+    # TODO(adrien): move this to online_agent dict
+    # sciper: str = "123456"
 
     # Name used to identify the agent. Must be unique (the server only allows
     # one train_name at a time).
-    train_name: str = "r1x9"
+    # TODO(adrien): move this to online_agent dict
+    name: str = "r1x9"
 
     # Host we want to connect to. Use 127.0.0.1 if you want to connect to a local server.
     host: str = "127.0.0.1"
@@ -25,10 +27,6 @@ class ClientConfig(BaseModel):
     # Size of game window in pixels
     screen_width: int = 500
     screen_height: int = 360
-
-    # Size of cells in pixels
-    # TODO(alok): shouldn't this be infered from screen_width and screen_height?
-    cell_size: int = 20
 
     # Size of leaderboard in pixels
     # TODO(alok): shouldn't this simply be screen_width - screen_height?
@@ -46,3 +44,25 @@ class ClientConfig(BaseModel):
 
     # How long to wait before considering a server as disconnected.
     server_timeout_seconds: float = 2.0
+
+    # Game mode, "online" or "local_evaluation"
+    game_mode: str = "online"
+
+    # Online agent configuration
+    online_agent: dict = {
+        "sciper": "000000",
+        "name": "Player",
+        "path": "agents//agent.py"
+    }
+
+    # Local agents configuration, add or remove agents you want to evaluate as needed
+    local_agents: list = [
+        {
+            "name": "Agent1",
+            "path": "agents//agent1.py"
+        },
+        {
+            "name": "Agent2",
+            "path": "agents//agent2.py"
+        }
+    ]
