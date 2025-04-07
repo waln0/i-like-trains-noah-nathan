@@ -37,7 +37,7 @@ class Client:
         self.running = True
         self.is_initialized = False
         self.in_waiting_room = True
-        self.lock = threading.Lock()  # Add thread lock for synchronization
+        self.lock = threading.Lock()
 
         # Game over variables
         self.game_over = False
@@ -100,7 +100,8 @@ class Client:
 
         # Reference to the agent (will be initialized later)
         self.agent = None
-        self.ping_response_received = False  # Added for connection verification
+
+        self.ping_response_received = False
         self.server_disconnected = False
 
     def update_game_window_size(self, width, height):
@@ -220,7 +221,7 @@ class Client:
             # Handle any pending window updates in the main thread
             self.handle_window_updates()
 
-            # Add automatic respawn logic
+            # Automatic respawn logic
             if (
                 not self.config.manual_spawn
                 and self.agent.is_dead

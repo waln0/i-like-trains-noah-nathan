@@ -153,7 +153,7 @@ class AIClient:
 
                 self.agent.update_agent()
 
-                # Add automatic respawn logic
+                # Automatic respawn logic
                 if (
                     not self.game.trains[self.agent_name].alive
                     and self.agent.waiting_for_respawn
