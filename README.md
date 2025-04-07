@@ -25,51 +25,13 @@ modify any existing files, except for [client/agent.py](/client/agent.py).
 You can start a local server by running `python -m server` if you want to test the client locally. This will start a server on `0.0.0.0:5555`.
 Then, open another terminal, go to the project folder, and run `python -m client config.json` to connect to the local server. This is optional, but recommended for testing before connecting to the remote server.
 
-### 2. Enter your train_name and sciper in the config.json file
-
-The file `config.json` should contain your train_name and sciper.
-
-You cannot use the same sciper or train_name as another player already connected.
-
-```json
-{
-    "sciper": "000000",
-    "train_name": "Player"
-}
-```
-
-You cannot use the same sciper or train name as another player already connected.
-
-### 3. Game Modes
+### 3. Select a Game Mode
 
 The game supports two different modes that can be set in the `config.json` file:
 
 - **Competitive Mode** (`"game_mode": "competitive"`): In this mode, the client connects to a remote server to compete against other players' agents in a battle. The client uses the agent specified in the `competitive_agent` field of the configuration file.
 
 - **Local Evaluation Mode** (`"game_mode": "local_evaluation"`): This mode allows you to run a local evaluation by loading multiple agents from your machine. The agents specified in the `local_agents` list in `config.json` will compete against each other, allowing you to test and compare different versions of your agents. For better organization, it's recommended to store your agents in the "agents" folder.
-
-Example configuration in `config.json`:
-```json
-{
-    "game_mode": "competitive",  // or "local_evaluation"
-    
-    "competitive_agent": {
-        "name": "MyCompetitiveAgent", 
-        "path_to_agent": "agents.my_best_agent"
-    },
-    
-    "local_agents": [
-        {
-            "name": "Agent1", 
-            "path_to_agent": "agents.agent1"
-        },
-        {
-            "name": "Agent2", 
-            "path_to_agent": "agents.agent2"
-        }
-    ]
-}
-```
 
 How the modes affect the client and server:
 
@@ -82,6 +44,33 @@ How the modes affect the client and server:
   - The client connects to localhost and acts as an observer, only displaying the game.
   - The server creates a room with one slot for the observer client and fills the rest with AI clients based on the agents specified in `local_agents`.
   - This allows you to watch different versions of your agents compete against each other.
+
+Modify the game modes in `config.json`. Modify the one in "client" and the one in "server" according to the mode you want to use.
+
+### 4 Set up the agents for local evaluation and competitive modes
+
+In the `config.json` file, you can find the configuration for the competitive and local evaluation modes.
+Set up your sciper, a train name, and the name of the agent file for the competitive agent. This agent file will be used to compete against the other agents in the competitive mode.
+
+For the local evaluation mode, set up a list containing the names and agent file names for the agents you want to test locally. You can add as many agents as you want.
+
+Example configuration in `config.json`:
+```json
+"competitive_agent": {
+            "sciper": "000000",
+            "nickname": "Player",
+            "agent_file_name": "agent.py"
+        },
+"local_agents": [
+    {
+        "nickname": "AgentExample1",
+        "agent_file_name": "agent_example1.py"
+    },
+    {
+        "nickname": "AgentExample2",
+        "agent_file_name": "agent_example2.py"
+    }
+]
 
 ### 4. Run the client
 

@@ -812,7 +812,7 @@ class Server:
                             logger.info(
                                 f"Creating AI client for train {original_train_name}"
                             )
-                            room.create_ai_for_train(original_train_name)
+                            room.create_ai_for_train(train_nickname_to_replace=original_train_name) # TODO(adrien) replace all names by nicknames
                         # else: Train might not exist or is already AI, log if necessary for debug
 
                     break  # Exit the room loop as we found and processed the client

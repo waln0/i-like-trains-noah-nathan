@@ -82,7 +82,7 @@ class AIClient:
     AI client that controls a train on the server side
     using the Agent class from the client
     """
-    def __init__(self, room, agent_name, path_to_agent=None):
+    def __init__(self, room, agent_name, ai_agent_file_name=None):
         """Initialize the AI client"""
         self.room = room
         self.game = room.game
@@ -95,14 +95,21 @@ class AIClient:
         )  # Use AI name for network interface
 
         # Initialize agent if path_to_agent is provided
-        if agent_name and path_to_agent:
+        if agent_name and ai_agent_file_name:
             try:
                 logger.info(f"Trying to import AI agent for {agent_name}")
-                module = importlib.import_module(path_to_agent)
+                if ai_agent_file_name.endswith('.py'):
+                    ai_agent_file_name = ai_agent_file_name[:-3]
+
+                # Construct the module path correctly
+                module_path = f"agents.{ai_agent_file_name.replace('agents.', '')}"
+                logger.info(f"Importing module: {module_path}")
+
+                module = importlib.import_module(module_path)
                 self.agent = module.Agent(
                     agent_name, self.network, logger="server.ai_agent", is_dead=False
                 )
-                logger.info(f"AI agent {agent_name} initialized using {path_to_agent}")
+                logger.info(f"AI agent {agent_name} initialized using {ai_agent_file_name}")
             except ImportError as e:
                 logger.error(f"Failed to import AI agent for {agent_name}: {e}")
                 sys.exit(1)

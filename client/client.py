@@ -110,13 +110,25 @@ class Client:
         self.agent = None
         if self.config.game_mode == "competitive":
             agent_info = self.config.competitive_agent
-            if agent_info and "path" in agent_info:
-                module_path = agent_info["path"]
-                # Add parent directory to Python path to allow importing agents package
-                module = importlib.import_module(module_path)
-                self.agent_name = agent_info["name"]
-                self.agent_sciper = agent_info["sciper"]
-                self.agent = module.Agent(self.agent_name, self.network)
+            if agent_info and "agent_file_name" in agent_info:
+                logger.info(f"Loading agent: {agent_info['agent_file_name']}")
+                agent_file_name = agent_info["agent_file_name"]
+                # Remove .py extension if it exists
+                if agent_file_name.endswith('.py'):
+                    agent_file_name = agent_file_name[:-3]
+                
+                # Construct the module path correctly
+                module_path = f"agents.{agent_file_name.replace('agents.', '')}"
+                logger.info(f"Importing module: {module_path}")
+                
+                try:
+                    # Add parent directory to Python path to allow importing agents package
+                    module = importlib.import_module(module_path)
+                    self.agent_name = agent_info["nickname"]
+                    self.agent_sciper = agent_info["sciper"]
+                    self.agent = module.Agent(self.agent_name, self.network)
+                except Exception as e:
+                    logger.error(f"Error importing agent module: {e}")
 
         self.ping_response_received = False
         self.server_disconnected = False
@@ -206,11 +218,11 @@ class Client:
         # Send agent name to server if in competitive mode
         if self.config.game_mode == "competitive":
             # Check if we can load name and sciper from config
-            if not self.config.competitive_agent["name"] or not self.config.competitive_agent["sciper"]:
+            if not self.config.competitive_agent["nickname"] or not self.config.competitive_agent["sciper"]:
                 logger.error("Failed to send agent name to server: name or sciper not found in config")
                 return
 
-            if not self.network.send_agent_ids(self.config.competitive_agent["name"], self.config.competitive_agent["sciper"]):
+            if not self.network.send_agent_ids(self.config.competitive_agent["nickname"], self.config.competitive_agent["sciper"]):
                 logger.error("Failed to send agent name to server")
                 return
 

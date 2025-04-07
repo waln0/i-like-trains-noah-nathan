@@ -47,7 +47,7 @@ class ServerConfig(BaseModel):
     # Path to an agent file. Change this path to point to one of your agents
     # to use when creating bots (when game_mode is "competitive" and a client 
     # disconnects).
-    path_to_ai_agent: str = "agents.ai_client"
+    agent_file_name: str = "agent.py"
 
     # Game mode, "competitive" or "local_evaluation"
     game_mode: str = "competitive"
