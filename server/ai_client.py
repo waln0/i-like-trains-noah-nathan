@@ -170,7 +170,6 @@ class AIClient:
                 not self.game.trains[self.nickname].alive
                 and self.agent.waiting_for_respawn
             ):
-                # logger.debug(f"AI client {self.nickname} is dead, waiting for respawn")
                 elapsed = time.time() - self.agent.death_time
                 if elapsed >= self.agent.respawn_cooldown:
                     logger.debug(

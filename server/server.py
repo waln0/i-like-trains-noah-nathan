@@ -554,22 +554,6 @@ class Server:
             }
             self.server_socket.sendto((json.dumps(game_status) + "\n").encode(), addr)
 
-        # If room is now full, start the game automatically
-        # if selected_room.is_full():
-            # if not room.game_thread or not room.game_thread.is_alive():
-            #     if (
-            #         room.get_player_count() >= self.nb_clients
-            #     ):
-            #         logger.info(
-            #             f"Starting game as number of players: {room.get_player_count()} and number of players: {self.nb_clients}"
-            #         )
-            #         room.start_game()
-                    # logger.info(f"Game started by {nickname}")
-            #     else:
-            #         return
-            # selected_room.complete_with_bots()
-            # selected_room.start_game()
-
     def handle_client_message(self, addr, message, room):
         """Handles messages received from the client"""
         try:
