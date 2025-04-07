@@ -375,6 +375,7 @@ class Room:
                                 self.fill_with_bots()
                                 self.start_game()
 
+
                         waiting_room_data = {
                             "type": "waiting_room",
                             "data": {
@@ -405,7 +406,7 @@ class Room:
                                     f"Error sending waiting room data to client: {e}"
                                 )
 
-                    last_update = current_time
+                        last_update = current_time
 
                 # Sleep for half the period
                 time.sleep(1.0 / (self.config.tick_rate * 2))
