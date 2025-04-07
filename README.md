@@ -31,6 +31,15 @@ The game supports two different modes that can be set in the `config.json` file:
 
 - **Competitive Mode** (`"game_mode": "competitive"`): In this mode, the client connects to a remote server to compete against other players' agents in a battle. The client uses the agent specified in the `competitive_agent` field of the configuration file.
 
+  There are two ways to use the competitive mode:
+  
+  1. **Connect to a remote server**: Set the server IP in `config.json` to connect to an existing game server (e.g., the official competition server).
+  
+  2. **Host your own game**: You can host your own game server by running `python -m server` with the server configured to use `0.0.0.0:5555`. This allows:
+     - You to connect locally with your own client
+     - Other players to connect to your game if you share your IP address with them
+     - This is useful for organizing your own competitions or testing with friends
+
 - **Local Evaluation Mode** (`"game_mode": "local_evaluation"`): This mode allows you to run a local evaluation by loading multiple agents from your machine. The agents specified in the `local_agents` list in `config.json` will compete against each other, allowing you to test and compare different versions of your agents. For better organization, it's recommended to store your agents in the "agents" folder.
 
 How the modes affect the client and server:
