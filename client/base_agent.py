@@ -69,12 +69,13 @@ class BaseAgent:
     def update_agent(self):
         """
         Regularly called by the client to send the new direction to the server. Not supposed to be modified.
-        Example of how to access the elements of the game state:
+
+        Returning from this method without doing anything will cause the train to continue moving forward.
         """
         if not self.is_dead:
             new_direction = self.get_move()
             if new_direction not in move.Move:
-                # Not doing anything is akin to keep moving forward
+                logging.error("get_move() did not return a valid move!")
                 return
 
             if new_direction == move.Move.DROP:
