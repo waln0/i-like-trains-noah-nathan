@@ -94,8 +94,6 @@ class Client:
         pygame.display.set_caption("I Like Trains")
         self.is_initialized = True
 
-        logger.info(f"Connecting to server: {self.host}:{self.config.port}")
-
         # Initialize components
         self.network = NetworkManager(self, self.host, self.config.port)
         self.renderer = Renderer(self)

@@ -43,7 +43,10 @@ class NetworkManager:
             self.socket.bind(("0.0.0.0", 0))
             # Store server address for sending
             self.server_addr = (self.host, self.port)
-            logger.info(f"UDP socket created for server at {self.host}:{self.port}")
+            
+            # Log successful connection with local client port information
+            local_ip, local_port = self.socket.getsockname()
+            logger.info(f"Successfully connected to server at {self.host}:{self.port} from local {local_ip}:{local_port}")
 
             self.last_ping_time = time.time()
 
