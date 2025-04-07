@@ -8,7 +8,6 @@ if len(sys.argv) > 1:
     config_file = sys.argv[1]
 config = Config.load(config_file)
 
-# TODO(alok): move this logger.into inside network, the connection isn't established here
 # so this log doesn't belong here
 
 # Create the client, agent, and start the client
