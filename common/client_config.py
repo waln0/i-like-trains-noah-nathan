@@ -55,14 +55,14 @@ class ClientConfig(BaseModel):
 
     # Competitive agent configuration, change the sciper to yours, and the name to
     # your "train name". Modify the path to the agent file you want to use. 
-    competitive_agent: dict = {
+    competitive_agent: dict[str, str] = {
         "sciper": "000000",
         "name": "Player",
         "path": "agents//agent.py"
     }
 
     # Local agents configuration, add or remove agents you want to evaluate as needed
-    local_agents: list = [
+    local_agents: list[dict[str, str]] = [
         {
             "name": "Agent1",
             "path": "agents//agent1.py"
@@ -72,3 +72,4 @@ class ClientConfig(BaseModel):
             "path": "agents//agent2.py"
         }
     ]
+    

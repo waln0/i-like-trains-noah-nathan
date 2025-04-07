@@ -51,3 +51,4 @@ class ServerConfig(BaseModel):
 
     # Game mode, "competitive" or "local_evaluation"
     game_mode: GameMode = GameMode.COMPETITIVE
+    
