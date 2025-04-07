@@ -15,16 +15,6 @@ import json
 
 logger = logging.getLogger("server.ai_client")
 
-CONFIG_PATH = "config.json"
-try:
-    with open(CONFIG_PATH, "r") as f:
-        config = json.load(f)
-except FileNotFoundError:
-    logger.error(f"Configuration file {CONFIG_PATH} not found.")
-    config = {}
-
-LOCAL_AGENTS_CONFIG = config.get("local_agents", [])
-
 class AINetworkInterface:
     """
     Mimics the NetworkManager class from the client but directly interacts with
