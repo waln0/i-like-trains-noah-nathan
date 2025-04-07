@@ -1038,7 +1038,7 @@ class Server:
         if client_addresses:
             logger.info(f"Disconnecting {len(client_addresses)} clients...")
             for addr in client_addresses:
-                # Add try-except around send_disconnect in case socket is already bad
+                # try-except around send_disconnect in case socket is already bad
                 try:
                     self.send_disconnect(addr, "Server shutting down")
                     # Optional small delay to increase chance of message delivery
