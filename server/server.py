@@ -74,8 +74,6 @@ class Server:
         elif self.config.game_mode == GameMode.COMPETITIVE:
             host = self.config.host
             self.nb_clients_per_room = self.config.nb_clients_per_room
-        else:
-            raise ValueError(f"Invalid game mode: {self.config.game_mode}")
 
         # Create UDP socket with proper error handling
         try:

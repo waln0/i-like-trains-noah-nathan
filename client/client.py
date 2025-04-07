@@ -36,8 +36,6 @@ class Client:
             self.host = "localhost"
         elif self.config.game_mode == GameMode.COMPETITIVE:
             self.host = self.config.host
-        else:
-            raise ValueError(f"Invalid game mode: {self.config.game_mode}")
 
         # Initialize state variables
         self.running = True

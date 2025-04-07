@@ -495,9 +495,6 @@ class Room:
         elif self.config.game_mode == GameMode.COMPETITIVE:
             current_players = len(self.clients)
             nb_bots_needed = self.nb_clients_max - current_players
-        else:
-            logger.error(f"Unknown game mode: {self.config.game_mode}")
-            return
 
         if nb_bots_needed <= 0:
             return
