@@ -52,12 +52,12 @@ class ServerConfig(BaseModel):
     # Local agents configuration, add or remove agents you want to evaluate as needed
     local_agents: list[dict[str, str]] = [
         {
-            "name": "Agent1",
-            "path": "agents//agent1.py"
+            "nickname": "Agent1",
+            "agent_file_name": "agent1.py"
         },
         {
-            "name": "Agent2",
-            "path": "agents//agent2.py"
+            "nickname": "Agent2",
+            "agent_file_name": "agent2.py"
         }
     ]
 
