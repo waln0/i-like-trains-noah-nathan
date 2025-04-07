@@ -44,17 +44,17 @@ You cannot use the same sciper or train name as another player already connected
 
 The game supports two different modes that can be set in the `config.json` file:
 
-- **Online Mode** (`"game_mode": "online"`): In this mode, the client connects to a remote server to compete against other players' agents in a battle. The client uses the agent specified in the `online_agent` field of the configuration file.
+- **Competitive Mode** (`"game_mode": "competitive"`): In this mode, the client connects to a remote server to compete against other players' agents in a battle. The client uses the agent specified in the `competitive_agent` field of the configuration file.
 
 - **Local Evaluation Mode** (`"game_mode": "local_evaluation"`): This mode allows you to run a local evaluation by loading multiple agents from your machine. The agents specified in the `local_agents` list in `config.json` will compete against each other, allowing you to test and compare different versions of your agents. For better organization, it's recommended to store your agents in the "agents" folder.
 
 Example configuration in `config.json`:
 ```json
 {
-    "game_mode": "online",  // or "local_evaluation"
+    "game_mode": "competitive",  // or "local_evaluation"
     
-    "online_agent": {
-        "name": "MyOnlineAgent", 
+    "competitive_agent": {
+        "name": "MyCompetitiveAgent", 
         "path_to_agent": "agents.my_best_agent"
     },
     
@@ -73,10 +73,10 @@ Example configuration in `config.json`:
 
 How the modes affect the client and server:
 
-- In **Online Mode**:
-  - The client connects to the remote IP specified in the configuration.
-  - The client initializes with the agent specified in `online_agent`.
-  - The server hosts a game on `0.0.0.0` allowing multiple clients to connect and compete.
+- In **Competitive Mode**:
+  - The client connects to the remote IP specified in the configuration (it can also be your local ip if you want to test it locally).
+  - The client initializes with the agent specified in `competitive_agent`.
+  - The server hosts a game on `0.0.0.0` allowing multiple clients to connect (locally and remotely) and compete.
 
 - In **Local Evaluation Mode**:
   - The client connects to localhost and acts as an observer, only displaying the game.

@@ -10,12 +10,12 @@ class ControlMode(Enum):
 class ClientConfig(BaseModel):
     # SCIPER used to identify the agent. Must be unique (the server only allows
     # one connection from a given SCIPER at a time).
-    # TODO(adrien): move this to online_agent dict
+    # TODO(adrien): move this to competitive_agent dict
     # sciper: str = "123456"
 
     # Name used to identify the agent. Must be unique (the server only allows
     # one train_name at a time).
-    # TODO(adrien): move this to online_agent dict
+    # TODO(adrien): move this to competitive_agent dict
     name: str = "r1x9"
 
     # Host we want to connect to. Use 127.0.0.1 if you want to connect to a local server.
@@ -45,11 +45,11 @@ class ClientConfig(BaseModel):
     # How long to wait before considering a server as disconnected.
     server_timeout_seconds: float = 2.0
 
-    # Game mode, "online" or "local_evaluation"
-    game_mode: str = "online"
+    # Game mode, "competitive" or "local_evaluation"
+    game_mode: str = "competitive"
 
-    # Online agent configuration
-    online_agent: dict = {
+    # competitive agent configuration
+    competitive_agent: dict = {
         "sciper": "000000",
         "name": "Player",
         "path": "agents//agent.py"

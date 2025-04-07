@@ -9,7 +9,6 @@ from client.network import NetworkManager
 from client.renderer import Renderer
 from client.event_handler import EventHandler
 from client.game_state import GameState
-from client.agent import Agent
 
 from common.config import Config
 import os
@@ -35,7 +34,7 @@ class Client:
         # If we launch a local evaluation, we want the host to be local_host
         if self.config.game_mode == "local_evaluation":
             self.host = "local_host"
-        elif self.config.game_mode == "online":
+        elif self.config.game_mode == "competitive":
             self.host = self.config.host
         else:
             raise ValueError(f"Invalid game mode: {self.config.game_mode}")
@@ -107,8 +106,8 @@ class Client:
 
         # Initialize agent based on game mode
         self.agent = None
-        if self.config.game_mode == "online":
-            agent_info = self.config.online_agent
+        if self.config.game_mode == "competitive":
+            agent_info = self.config.competitive_agent
             if agent_info and "path" in agent_info:
                 try:
                     module_path = agent_info["path"]
@@ -208,9 +207,9 @@ class Client:
             logger.error(f"Error creating login window: {e}")
             return
 
-        # Send agent name to server if in online mode
-        if self.config.game_mode == "online":
-            if not self.network.send_agent_ids(self.config.online_agent.name, self.config.online_agent.sciper):
+        # Send agent name to server if in competitive mode
+        if self.config.game_mode == "competitive":
+            if not self.network.send_agent_ids(self.config.competitive_agent.name, self.config.competitive_agent.sciper):
                 logger.error("Failed to send agent name to server")
                 return
 
@@ -351,19 +350,19 @@ class Client:
             sys.exit(0)
 
 
-def main():
-    # Load the config file
-    config_file = "config.json"
-    if len(sys.argv) > 1:
-        config_file = sys.argv[1]
-    config = Config.load(config_file)
+# def main():
+#     # Load the config file
+#     config_file = "config.json"
+#     if len(sys.argv) > 1:
+#         config_file = sys.argv[1]
+#     config = Config.load(config_file)
 
-    # TODO(alok): move this logger.into inside network, the connection isn't established here
-    # so this log doesn't belong here
-    logger.info(f"Connecting to server: {config.client.host}:{config.client.port}")
+#     # TODO(alok): move this logger.into inside network, the connection isn't established here
+#     # so this log doesn't belong here
+#     logger.info(f"Connecting to server: {config.client.host}:{config.client.port}")
 
-    # Create the client, agent, and start the client
-    client = Client(config)
-    agent = Agent("", client.network)
-    client.set_agent(agent)
-    client.run()
+#     # Create the client, agent, and start the client
+#     client = Client(config)
+#     agent = Agent("", client.network)
+#     client.set_agent(agent)
+#     client.run()

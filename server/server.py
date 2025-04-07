@@ -70,7 +70,7 @@ class Server:
         if self.config.game_mode == "local_evaluation":
             host = "local_host"
             self.nb_clients_per_room = 1
-        elif self.config.game_mode == "online":
+        elif self.config.game_mode == "competitive":
             host = self.config.host
             self.nb_clients_per_room = self.config.players_per_room
         else:
@@ -128,8 +128,8 @@ class Server:
             nb_clients = 1 + len(self.config.local_agents)
             logger.info(f"Creating local_evaluation room {room_id} with size {nb_clients}.")
         else:
-            # Use default for online mode
-            logger.info(f"Creating online room {room_id} with default size {nb_clients}.")
+            # Use default for competitive mode
+            logger.info(f"Creating competitive room {room_id} with default size {nb_clients}.")
         
         new_room = Room(self.config, room_id, nb_clients, running, server=self)
         
@@ -219,7 +219,7 @@ class Server:
             self.disconnected_clients.remove(addr)
 
         # Check if we need to handle agent initialization
-        if self.game_mode == "online":
+        if self.game_mode == "competitive":
             if (
                 "type" in message
                 and message["type"] == "agent_ids"
@@ -459,7 +459,7 @@ class Server:
             agent_name = f"Observer_{random.randint(1000, 9999)}"
             agent_sciper = str(random.randint(100000, 999999))
 
-        elif self.game_mode == "online":
+        elif self.game_mode == "competitive":
             if not agent_name:
                 logger.warning("No agent name provided")
                 return
@@ -531,7 +531,7 @@ class Server:
         }
         self.server_socket.sendto((json.dumps(response) + "\n").encode(), addr)
 
-        if self.game_mode == "online":
+        if self.game_mode == "competitive":
             # Send initial game state immediately
             game_status = {
                 "type": "waiting_room",

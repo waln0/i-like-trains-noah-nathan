@@ -44,5 +44,5 @@ class ServerConfig(BaseModel):
     # have to circle around to complete delivery of all their passengers.
     delivery_cooldown_seconds: float = 0.1
 
-    # Game mode, "online" or "local_evaluation"
-    game_mode: str = "online"
+    # Game mode, "competitive" or "local_evaluation"
+    game_mode: str = "competitive"
