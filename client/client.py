@@ -33,9 +33,9 @@ class Client:
 
         # If we launch a local evaluation, we want the host to be local_host
         if self.config.game_mode == GameMode.LOCAL_EVALUATION:
-            self.host = "localhost"
+            host = "localhost"
         elif self.config.game_mode == GameMode.COMPETITIVE:
-            self.host = self.config.host
+            host = self.config.host
 
         # Initialize state variables
         self.running = True
@@ -95,7 +95,7 @@ class Client:
         self.is_initialized = True
 
         # Initialize components
-        self.network = NetworkManager(self, self.host, self.config.port)
+        self.network = NetworkManager(self, host, self.config.port)
         self.renderer = Renderer(self)
 
         self.event_handler = EventHandler(self, self.config.control_mode)
