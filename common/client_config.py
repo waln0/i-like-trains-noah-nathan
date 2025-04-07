@@ -54,7 +54,7 @@ class ClientConfig(BaseModel):
     game_mode: GameMode = GameMode.COMPETITIVE
 
     # Competitive agent configuration, change the sciper to yours, and the name to
-    # your "train name". Simply modify the path to the agent file you want to use. 
+    # your "train name". Modify the path to the agent file you want to use. 
     competitive_agent: dict = {
         "sciper": "000000",
         "name": "Player",
