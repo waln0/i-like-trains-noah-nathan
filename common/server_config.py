@@ -34,7 +34,7 @@ class ServerConfig(BaseModel):
     waiting_time_before_bots_seconds: int = 30
 
     # Path to the file where player scores are saved.
-    score_file_path: str = "player_scores.json"
+    high_score_filename : str = "player_scores.json"
 
     # Maximum number of passengers on a given square.
     max_passengers: int = 3
