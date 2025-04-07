@@ -64,15 +64,15 @@ class Game:
         self.trains = {}
         self.ai_clients = {}
         self.best_scores = {}
-        self.train_colors = {}  # {agent_name: (train_color, wagon_color)}
+        self.train_colors = {}  # {nickname: (train_color, wagon_color)}
         self.passengers = []
         self.desired_passengers = 0
-        self.dead_trains = {}  # {agent_name: death_time}
+        self.dead_trains = {}  # {nickname: death_time}
         self.lock = threading.Lock()
         self.last_update = time.time()
         self.game_started = False  # Track if game has started
         # Dictionary to track last delivery time for each train
-        self.last_delivery_times = {}  # {agent_name: last_delivery_time}
+        self.last_delivery_times = {}  # {nickname: last_delivery_time}
         # Dirty flags for the game
         self._dirty = {
             "trains": True,
@@ -232,32 +232,32 @@ class Game:
             self._dirty["cell_size"] = True
             self.game_started = True
 
-    def add_train(self, agent_name):
+    def add_train(self, nickname):
         """Add a new train to the game"""
         # Check the cooldown
-        if agent_name in self.dead_trains:
-            elapsed = time.time() - self.dead_trains[agent_name]
+        if nickname in self.dead_trains:
+            elapsed = time.time() - self.dead_trains[nickname]
             if elapsed < self.config.respawn_cooldown_seconds:
                 logger.debug(
-                    f"Train {agent_name} still in cooldown for {self.config.respawn_cooldown_seconds - elapsed:.1f}s"
+                    f"Train {nickname} still in cooldown for {self.config.respawn_cooldown_seconds - elapsed:.1f}s"
                 )
                 return False
             else:
-                del self.dead_trains[agent_name]
+                del self.dead_trains[nickname]
 
         # Create the new train
         spawn_pos = self.get_safe_spawn_position()
         if spawn_pos:
             # If the agent name is in the train_colors dictionary, use the color, otherwise generate a random color
-            if agent_name in self.train_colors:
-                train_color = self.train_colors[agent_name]
+            if nickname in self.train_colors:
+                train_color = self.train_colors[nickname]
             else:
                 train_color = generate_random_non_blue_color()
 
-            self.trains[agent_name] = Train(
+            self.trains[nickname] = Train(
                 spawn_pos[0],
                 spawn_pos[1],
-                agent_name,
+                nickname,
                 train_color,
                 self.handle_train_death,
                 self.config.tick_rate,
@@ -266,49 +266,49 @@ class Game:
             return True
         return False
 
-    def send_cooldown(self, agent_name):
+    def send_cooldown(self, nickname):
         """Remove a train and update game size"""
-        if agent_name in self.trains:
+        if nickname in self.trains:
             # Register the death time
-            self.dead_trains[agent_name] = time.time()
+            self.dead_trains[nickname] = time.time()
 
             # Clean up the last delivery time for this train
-            if agent_name in self.last_delivery_times:
-                del self.last_delivery_times[agent_name]
+            if nickname in self.last_delivery_times:
+                del self.last_delivery_times[nickname]
 
             # Notify the client of the cooldown
             self.send_cooldown_notification(
-                agent_name, self.config.respawn_cooldown_seconds
+                nickname, self.config.respawn_cooldown_seconds
             )
 
             # If the client is a bot
-            if agent_name in self.ai_clients:
+            if nickname in self.ai_clients:
                 # Get the client object
-                client = self.ai_clients[agent_name]
+                client = self.ai_clients[nickname]
                 # Change the train's state
                 client.agent.is_dead = True
                 client.agent.death_time = time.time()
                 client.agent.waiting_for_respawn = True
                 client.agent.respawn_cooldown = self.config.respawn_cooldown_seconds
         else:
-            logger.error(f"Train {agent_name} not found in game")
+            logger.error(f"Train {nickname} not found in game")
             return False
 
-    def handle_train_death(self, agent_name):
-        self.send_cooldown(agent_name)
+    def handle_train_death(self, nickname):
+        self.send_cooldown(nickname)
         self.update_passengers_count()
 
-    def get_train_cooldown(self, agent_name):
+    def get_train_cooldown(self, nickname):
         """Get remaining cooldown time for a train"""
-        if agent_name in self.dead_trains:
-            elapsed = time.time() - self.dead_trains[agent_name]
+        if nickname in self.dead_trains:
+            elapsed = time.time() - self.dead_trains[nickname]
             remaining = max(0, self.config.respawn_cooldown_seconds - elapsed)
             return remaining
         return 0
 
-    def is_train_alive(self, agent_name):
+    def is_train_alive(self, nickname):
         """Check if a train is alive"""
-        return agent_name in self.trains and self.trains[agent_name].alive
+        return nickname in self.trains and self.trains[nickname].alive
 
     def check_collisions(self):
         for _, train in self.trains.items():
@@ -339,8 +339,8 @@ class Game:
                 current_time = time.time()
                 # Check if enough time has passed since the last delivery for this train
                 if (
-                    train.agent_name not in self.last_delivery_times
-                    or current_time - self.last_delivery_times.get(train.agent_name, 0)
+                    train.nickname not in self.last_delivery_times
+                    or current_time - self.last_delivery_times.get(train.nickname, 0)
                     >= self.config.delivery_cooldown_seconds
                 ):
                     # Slowly popping wagons and increasing score
@@ -348,10 +348,10 @@ class Game:
                     if wagon:
                         train.update_score(train.score + 1)
                         # Update best score if needed
-                        if train.score > self.best_scores.get(train.agent_name, 0):
-                            self.best_scores[train.agent_name] = train.score
+                        if train.score > self.best_scores.get(train.nickname, 0):
+                            self.best_scores[train.nickname] = train.score
                         # Update the last delivery time for this train
-                        self.last_delivery_times[train.agent_name] = current_time
+                        self.last_delivery_times[train.nickname] = current_time
 
     def update(self):
         """Update game state"""

@@ -19,7 +19,7 @@ class ClientConfig(BaseModel):
     # sciper: str = "123456"
 
     # Name used to identify the agent. Must be unique (the server only allows
-    # one train_name at a time).
+    # one nickname at a time).
     # TODO(adrien): move this to competitive_agent dict
     name: str = "r1x9"
 

@@ -224,13 +224,13 @@ class Server:
             if (
                 "type" in message
                 and message["type"] == "agent_ids"
-                and "agent_name" in message
+                and "nickname" in message
                 and "agent_sciper" in message
             and addr not in self.addr_to_name
             ):
                 # use handle_name_check and handle_sciper_check to check if the name and sciper are available
                 logger.debug(
-                    f"Checking name and sciper availability for {message['agent_name']} ({message['agent_sciper']})"
+                    f"Checking name and sciper availability for {message['nickname']} ({message['agent_sciper']})"
                 )
                 if self.handle_name_check(message, None) and self.handle_sciper_check(
                     message, None
@@ -333,7 +333,7 @@ class Server:
     def handle_name_check(self, message, addr):
         """Handle name check requests"""
 
-        name_to_check = message.get("agent_name", "")
+        name_to_check = message.get("nickname", "")
         if addr:
             if not name_to_check or len(name_to_check) == 0:
                 # Empty name, considered as not available
@@ -353,8 +353,8 @@ class Server:
         
         for room_id, current_room in self.rooms.items():
             room = current_room  # Keep a reference to the last room
-            for client_addr, client_name in current_room.clients.items():
-                if client_name == name_to_check:
+            for client_addr, nickname in current_room.clients.items():
+                if nickname == name_to_check:
                     # Check if the client with this name is in disconnected_clients
                     if client_addr in self.disconnected_clients:
                         # Client is disconnected, name can be reused
@@ -449,7 +449,7 @@ class Server:
     def handle_new_client(self, message, addr):
         """Handle new client connection"""
 
-        agent_name = message.get("agent_name", "")
+        nickname = message.get("nickname", "")
         agent_sciper = message.get("agent_sciper", "")
 
         if self.config.game_mode == GameMode.LOCAL_EVALUATION:
@@ -457,11 +457,11 @@ class Server:
             self.client_last_activity[addr] = time.time()
 
             # generate a random name and sciper
-            agent_name = f"Observer_{random.randint(1000, 9999)}"
+            nickname = f"Observer_{random.randint(1000, 9999)}"
             agent_sciper = str(random.randint(100000, 999999))
 
         elif self.config.game_mode == GameMode.COMPETITIVE:
-            if not agent_name:
+            if not nickname:
                 logger.warning("No agent name provided")
                 return
 
@@ -469,14 +469,14 @@ class Server:
                 logger.warning("No agent sciper provided")
                 return
             
-            logger.info(f"\nNew client {agent_name} (sciper: {agent_sciper}) connecting from {addr}")
+            logger.info(f"\nNew client {nickname} (sciper: {agent_sciper}) connecting from {addr}")
 
             # Initialize client activity tracking
             self.client_last_activity[addr] = time.time()
 
             # Log new client connection
             logger.info(
-                f"New client {agent_name} (sciper: {agent_sciper}) connecting from {addr}"
+                f"New client {nickname} (sciper: {agent_sciper}) connecting from {addr}"
             )
 
         # Check if this sciper was previously connected and clean up any old references
@@ -498,7 +498,7 @@ class Server:
                     del self.ping_responses[old_addr]
 
         # Associate address with name and sciper
-        self.addr_to_name[addr] = agent_name
+        self.addr_to_name[addr] = nickname
         self.addr_to_sciper[addr] = agent_sciper
         self.sciper_to_addr[agent_sciper] = addr
 
@@ -508,7 +508,7 @@ class Server:
 
         # Assign to a room
         selected_room = self.get_available_room()
-        selected_room.clients[addr] = agent_name
+        selected_room.clients[addr] = nickname
 
         # Mark the room as having at least one human player
         selected_room.has_clients = True
@@ -518,7 +518,7 @@ class Server:
             selected_room.first_client_join_time = time.time()
 
         logger.info(
-            f"Agent {agent_name} (sciper: {agent_sciper}) joined room {selected_room.id}"
+            f"Agent {nickname} (sciper: {agent_sciper}) joined room {selected_room.id}"
         )
 
         # Send join success response immediately
@@ -564,7 +564,7 @@ class Server:
             #             f"Starting game as number of players: {room.get_player_count()} and number of players: {self.nb_clients}"
             #         )
             #         room.start_game()
-                    # logger.info(f"Game started by {agent_name}")
+                    # logger.info(f"Game started by {nickname}")
             #     else:
             #         return
             # selected_room.complete_with_bots()
@@ -575,7 +575,7 @@ class Server:
         try:
             # Update client activity timestamp
 
-            agent_name = room.clients.get(addr)
+            nickname = room.clients.get(addr)
             if message.get("action") == "check_name":
                 self.handle_name_check(message, addr)
                 return
@@ -590,7 +590,7 @@ class Server:
                 # Check if the game is over
                 if room.game_over:
                     logger.info(
-                        f"Ignoring respawn request from {agent_name} as the game is over"
+                        f"Ignoring respawn request from {nickname} as the game is over"
                     )
                     response = {"type": "respawn_failed", "message": "Game is over"}
                     self.server_socket.sendto(
@@ -598,7 +598,7 @@ class Server:
                     )
                     return
 
-                cooldown = room.game.get_train_cooldown(agent_name)
+                cooldown = room.game.get_train_cooldown(nickname)
 
                 if cooldown > 0:
                     # Inform the client of the remaining cooldown
@@ -609,13 +609,13 @@ class Server:
                     return
 
                 # Add the train to the game
-                if room.game.add_train(agent_name):
-                    response = {"type": "spawn_success", "agent_name": agent_name}
+                if room.game.add_train(nickname):
+                    response = {"type": "spawn_success", "nickname": nickname}
                     self.server_socket.sendto(
                         (json.dumps(response) + "\n").encode(), addr
                     )
                 else:
-                    logger.warning(f"Failed to spawn train {agent_name}")
+                    logger.warning(f"Failed to spawn train {nickname}")
                     # Inform the client of the failure
                     response = {
                         "type": "respawn_failed",
@@ -626,18 +626,18 @@ class Server:
                     )
 
             elif message.get("action") == "direction":
-                if agent_name in room.game.trains and room.game.is_train_alive(
-                    agent_name
+                if nickname in room.game.trains and room.game.is_train_alive(
+                    nickname
                 ):
-                    room.game.trains[agent_name].change_direction(message["direction"])
+                    room.game.trains[nickname].change_direction(message["direction"])
                 # else:
-                #     logger.warning(f"Failed to change direction for train {agent_name}")
+                #     logger.warning(f"Failed to change direction for train {nickname}")
 
             elif message.get("action") == "drop_wagon":
-                if agent_name in room.game.trains and room.game.is_train_alive(
-                    agent_name
+                if nickname in room.game.trains and room.game.is_train_alive(
+                    nickname
                 ):
-                    last_wagon_position = room.game.trains[agent_name].drop_wagon()
+                    last_wagon_position = room.game.trains[nickname].drop_wagon()
                     if last_wagon_position:
                         # Create a new passenger at the position of the dropped wagon
                         new_passenger = Passenger(room.game)
@@ -649,7 +649,7 @@ class Server:
                         # Send a confirmation to the client
                         response = {
                             "type": "drop_wagon_success",
-                            "agent_name": agent_name,
+                            "nickname": nickname,
                             "position": last_wagon_position,
                         }
                         self.server_socket.sendto(
@@ -672,11 +672,11 @@ class Server:
         except Exception as e:
             logger.error(f"Error handling client message: {e}")
 
-    def send_cooldown_notification(self, agent_name, cooldown):
+    def send_cooldown_notification(self, nickname, cooldown):
         """Send a cooldown notification to a specific client"""
         for room in self.rooms.values():
             for addr, name in room.clients.items():
-                if name == agent_name:
+                if name == nickname:
                     try:
                         # Skip AI clients - they don't need network messages
                         if (
@@ -693,7 +693,7 @@ class Server:
                         return
                     except Exception as e:
                         logger.error(
-                            f"Error sending cooldown notification to {agent_name}: {e}"
+                            f"Error sending cooldown notification to {nickname}: {e}"
                         )
                         return
 
@@ -773,18 +773,18 @@ class Server:
         # Mark client as disconnected
         self.disconnected_clients.add(addr)
 
-        agent_name = self.addr_to_name.get(addr, "Unknown client")
+        nickname = self.addr_to_name.get(addr, "Unknown client")
 
         # Only log at INFO level if this is a known client
-        if agent_name != "Unknown client":
-            logger.info(f"Client {agent_name} disconnected due to {reason}: {addr}")
+        if nickname != "Unknown client":
+            logger.info(f"Client {nickname} disconnected due to {reason}: {addr}")
 
             # Find the room this client is in and create an AI to control their train
             for room in self.rooms.values():
                 if addr in room.clients:
                     # Store the name before removing the client
-                    original_train_name = room.clients[addr]
-                    logger.info(f"Removing {original_train_name} from room {room.id}")
+                    original_nickname = room.clients[addr]
+                    logger.info(f"Removing {original_nickname} from room {room.id}")
 
                     # Remove the client from the room's client list first
                     del room.clients[addr]
@@ -803,17 +803,17 @@ class Server:
                     if human_clients_count == 0:
                         # Last human left, close the room. No need to create AI.
                         logger.info(
-                            f"Last human client {original_train_name} left room {room.id}, closing room"
+                            f"Last human client {original_nickname} left room {room.id}, closing room"
                         )
                         # remove_room handles setting flags, stopping threads, and cleanup
                         self.remove_room(room.id)
                     else:
                         # Other human players remain. Create an AI for the disconnecting player's train if it exists.
-                        if original_train_name in room.game.trains:
+                        if original_nickname in room.game.trains:
                             logger.info(
-                                f"Creating AI client for train {original_train_name}"
+                                f"Creating AI client for train {original_nickname}"
                             )
-                            room.create_ai_for_train(train_nickname_to_replace=original_train_name) # TODO(adrien) replace all names by nicknames
+                            room.create_ai_for_train(train_nickname_to_replace=original_nickname) # TODO(adrien) replace all names by nicknames
                         # else: Train might not exist or is already AI, log if necessary for debug
 
                     break  # Exit the room loop as we found and processed the client

@@ -160,7 +160,7 @@ The client is responsible for managing the game display and user interactions. I
 The Agent class inherits from the `BaseAgent` class. You can find the implementation of the `BaseAgent` class in `client/base_agent.py`. 
 The class is initialized with the following parameters:
 
-- `self.agent_name` : The name of the agent.
+- `self.nickname` : The name of the agent.
 - `self.network` : The network object to handle communication.
 - `self.logger` : The logger object.
 - `self.is_dead` : Whether the agent/train is currently dead or alive.

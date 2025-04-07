@@ -17,7 +17,7 @@ class BaseAgent:
 
     def __init__(
         self,
-        agent_name: str,
+        nickname: str,
         network: NetworkManager,
         logger: str = "client.agent",
         is_dead: bool = True,
@@ -26,7 +26,7 @@ class BaseAgent:
         Initialize the base agent. Not supposed to be modified.
 
         Args:
-            agent_name (str): The name of the agent
+            nickname (str): The name of the agent
             network (NetworkManager): The network object to handle communication
             logger (str): The logger name
             is_dead (bool): Whether the agent is dead
@@ -44,7 +44,7 @@ class BaseAgent:
             delivery_zone (list): List of delivery zones in the game
         """
         self.logger = logging.getLogger(logger)
-        self.agent_name = agent_name
+        self.nickname = nickname
         self.network = network
 
         self.death_time = time.time()
@@ -81,5 +81,5 @@ class BaseAgent:
             if new_direction == move.Move.DROP:
                 self.network.send_drop_wagon_request()
 
-            if new_direction != self.all_trains[self.agent_name]["direction"]:
+            if new_direction != self.all_trains[self.nickname]["direction"]:
                 self.network.send_direction_change(new_direction.value)

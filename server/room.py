@@ -50,7 +50,7 @@ class Room:
 
         self.game.room_id = room_id  # Store the room ID in the Game object
 
-        self.clients = {}  # {addr: agent_name}
+        self.clients = {}  # {addr: nickname}
         self.game_thread = None
 
         self.waiting_room_thread = None
@@ -185,7 +185,7 @@ class Room:
             train = self.game.trains[train_nickname_to_replace]
 
             # Update the train's name
-            train.agent_name = ai_nickname
+            train.nickname = ai_nickname
 
             # Move the train to the new key in the dictionary
             self.game.trains[ai_nickname] = train
@@ -257,13 +257,13 @@ class Room:
         final_scores = []
         scores_updated = False
 
-        for train_name, best_score in self.game.best_scores.items():
-            logger.debug(f"Train {train_name} has best score {best_score}")
+        for nickname, best_score in self.game.best_scores.items():
+            logger.debug(f"Train {nickname} has best score {best_score}")
 
             # Find the client address associated with this train name
             client_addr = None
             for addr, name in self.clients.items():
-                if name == train_name:
+                if name == nickname:
                     client_addr = addr
                     break
 
@@ -272,14 +272,14 @@ class Room:
             if client_addr and client_addr in self.addr_to_sciper:
                 player_sciper = self.addr_to_sciper[client_addr]
 
-            final_scores.append({"name": train_name, "best_score": best_score})
+            final_scores.append({"name": nickname, "best_score": best_score})
 
             # Update best score in the scores file if we have a valid sciper
             if player_sciper:
                 if self.game.server.high_score.update(player_sciper, best_score):
                     scores_updated = True
                     logger.info(
-                        f"Updated best score for {train_name} (sciper: {player_sciper}): {best_score}"
+                        f"Updated best score for {nickname} (sciper: {player_sciper}): {best_score}"
                     )
 
         # Save scores if any were updated

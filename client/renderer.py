@@ -207,7 +207,7 @@ class Renderer:
         """
         Draw trains and their wagons
         """
-        for train_name, train_data in self.client.trains.items():
+        for nickname, train_data in self.client.trains.items():
             # Only draw if train is alive
             if isinstance(train_data, dict) and not train_data.get("alive", True):
                 continue
@@ -227,7 +227,7 @@ class Renderer:
             # Draw main train
             color = train_color
             if self.client.agent:
-                if train_name == self.client.agent_name:
+                if nickname == self.client.nickname:
                     color = (0, 0, 255)  # Blue for player's train
             # Draw train with more elaborate shape
             pygame.draw.rect(
@@ -270,7 +270,7 @@ class Renderer:
                 wagon_y += self.client.game_screen_padding
                 wagon_color = train_wagon_color
                 if self.client.agent:
-                    if train_name == self.client.agent_name:
+                    if nickname == self.client.nickname:
                         wagon_color = (50, 50, 200)  # Darker blue for player's wagons
 
                 pygame.draw.rect(
@@ -525,22 +525,22 @@ class Renderer:
                 self.sorted_trains = []
 
             # Get train data for leaderboard
-            for train_name, train_data in self.client.trains.items():
+            for nickname, train_data in self.client.trains.items():
                 # Check if train is already in sorted_trains
                 train_found = False
                 current_score = train_data.get("score", 0)  # Get current score
                 for i, (existing_name, best_score, _) in enumerate(self.sorted_trains):
-                    if existing_name == train_name:
+                    if existing_name == nickname:
                         # Update best score if current score is higher
                         if current_score > best_score:
                             self.sorted_trains[i] = (
-                                train_name,
+                                nickname,
                                 current_score,
                                 current_score,
                             )
                         else:
                             self.sorted_trains[i] = (
-                                train_name,
+                                nickname,
                                 best_score,
                                 current_score,
                             )
@@ -550,7 +550,7 @@ class Renderer:
                 # If train not found, add it
                 if not train_found:
                     self.sorted_trains.append(
-                        (train_name, current_score, current_score)
+                        (nickname, current_score, current_score)
                     )
 
             # Sort by best score in descending order
@@ -560,7 +560,7 @@ class Renderer:
             player_font = pygame.font.Font(None, 22)
             y_offset = header_y + 30
 
-            for i, (train_name, best_score, current_score) in enumerate(
+            for i, (nickname, best_score, current_score) in enumerate(
                 self.sorted_trains
             ):
                 # Limit to 10 players in leaderboard
@@ -579,7 +579,7 @@ class Renderer:
 
                 # Highlight current player's row
                 if self.client.agent:
-                    if train_name == self.client.agent_name:
+                    if nickname == self.client.nickname:
                         pygame.draw.rect(
                             self.client.screen,
                             (220, 220, 255),  # Light blue background
@@ -595,12 +595,12 @@ class Renderer:
 
                 # Get train color
                 train_color = (0, 0, 0)  # Default color
-                if train_name in self.client.trains:
-                    train_data = self.client.trains[train_name]
+                if nickname in self.client.trains:
+                    train_data = self.client.trains[nickname]
                     if isinstance(train_data, dict) and "color" in train_data:
                         train_color = train_data["color"]
                     if self.client.agent:
-                        if train_name == self.client.agent_name:
+                        if nickname == self.client.nickname:
                             train_color = (0, 0, 255)  # Blue for player's train
 
                 # Display rank
@@ -616,7 +616,7 @@ class Renderer:
                 )
 
                 # Display player name with train color
-                name_text = player_font.render(train_name[:10], True, train_color)
+                name_text = player_font.render(nickname[:10], True, train_color)
                 self.client.screen.blit(
                     name_text,
                     (
@@ -788,7 +788,7 @@ class Renderer:
 
                 # Highlight current player
                 if self.client.agent:
-                    if player_name == self.client.agent_name:
+                    if player_name == self.client.nickname:
                         # Draw highlight rectangle
                         pygame.draw.rect(
                             self.client.screen,

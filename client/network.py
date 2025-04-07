@@ -327,7 +327,7 @@ class NetworkManager:
             test_name = f"test_{int(time.time())}"
 
             # Send a name check request (this is allowed for unregistered clients)
-            check_message = {"type": "ping", "agent_name": test_name}
+            check_message = {"type": "ping", "nickname": test_name}
             success = self.send_message(check_message)
 
             if not success:
@@ -358,11 +358,11 @@ class NetworkManager:
             logger.error(f"Error verifying connection: {e}")
             return False
 
-    def send_agent_ids(self, agent_name, agent_sciper):
+    def send_agent_ids(self, nickname, agent_sciper):
         """Send agent name and sciper to server"""
         message = {
             "type": "agent_ids",
-            "agent_name": agent_name,
+            "nickname": nickname,
             "agent_sciper": agent_sciper,
         }
         return self.send_message(message)
@@ -378,7 +378,7 @@ class NetworkManager:
         self.client.name_check_result = False
 
         # Send check request
-        message = {"action": "check_name", "agent_name": name}
+        message = {"action": "check_name", "nickname": name}
         success = self.send_message(message)
 
         if not success:

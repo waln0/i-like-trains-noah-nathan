@@ -123,9 +123,9 @@ class Client:
                 try:
                     # Add parent directory to Python path to allow importing agents package
                     module = importlib.import_module(module_path)
-                    self.agent_name = agent_info["nickname"]
+                    self.nickname = agent_info["nickname"]
                     self.agent_sciper = agent_info["sciper"]
-                    self.agent = module.Agent(self.agent_name, self.network)
+                    self.agent = module.Agent(self.nickname, self.network)
                 except Exception as e:
                     logger.error(f"Error importing agent module: {e}")
 
