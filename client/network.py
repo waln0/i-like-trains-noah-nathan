@@ -326,12 +326,12 @@ class NetworkManager:
             # Generate a unique test name using timestamp
             test_name = f"test_{int(time.time())}"
 
-            # Send a name check request (this is allowed for unregistered clients)
+            # Send a ping request (this is allowed for unregistered clients)
             check_message = {"type": "ping", "nickname": test_name}
             success = self.send_message(check_message)
 
             if not success:
-                logger.error("Failed to send name check message")
+                logger.error("Failed to send ping message")
                 return False
 
             # Wait for the name check response (which will be handled by receive_game_state thread)
