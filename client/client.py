@@ -9,7 +9,6 @@ from client.network import NetworkManager
 from client.renderer import Renderer
 from client.event_handler import EventHandler
 from client.game_state import GameState
-from agents.agent import Agent
 
 from common.config import Config
 import os

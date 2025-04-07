@@ -1,3 +1,4 @@
+from common import server_config
 from common.server_config import ServerConfig
 from server.game import Game
 import threading
@@ -36,11 +37,14 @@ AI_NAMES = [
 
 class Room:
     # TODO(alok): remove nb_clients_max and use config.clients_per_room
-    def __init__(self, config: ServerConfig, room_id, nb_clients_max, running, server):
+    def __init__(self, config: ServerConfig, room_id, nb_clients_max, running, server_socket, send_cooldown_notification):
         self.config = config
         self.id = room_id
         self.nb_clients_max = nb_clients_max
-        self.game = Game(config, server.send_cooldown_notification, self.nb_clients_max)
+        self.server_socket = server_socket
+        send_cooldown_notification
+
+        self.game = Game(config, send_cooldown_notification, self.nb_clients_max)
         # TODO(alok): why not put room_id and server in Game's __init__ method?
         self.running = running
 

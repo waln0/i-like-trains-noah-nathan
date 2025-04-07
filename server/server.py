@@ -131,7 +131,7 @@ class Server:
             # Use default for competitive mode
             logger.info(f"Creating competitive room {room_id} with default size {self.config.nb_clients_per_room}.")
         
-        new_room = Room(self.config, room_id, self.config.nb_clients_per_room, running, server=self)
+        new_room = Room(self.config, room_id, self.config.nb_clients_per_room, running, self.server_socket, self.send_cooldown_notification)
         
         logger.info(f"Created new room {room_id} with {self.config.nb_clients_per_room} clients")
         self.rooms[room_id] = new_room
@@ -142,7 +142,7 @@ class Server:
         # First try to find a non-full room
         for room in self.rooms.values():
             if (
-                room.nb_clients_per_room_max == self.config.nb_clients_per_room
+                room.nb_clients_max == self.config.nb_clients_per_room
                 and not room.is_full()
                 and not room.game_thread
             ):
@@ -274,10 +274,10 @@ class Server:
             client_room = self.find_client_room(agent_sciper)
             if client_room:
                 self.handle_client_message(addr, message, client_room)
-            else:
-                logger.warning(
-                    f"Received message from {addr} ({agent_sciper}) but client not in any room. Message: {message}"
-                )
+            # else:
+            #     logger.warning(
+            #         f"Received message from {addr} ({agent_sciper}) but client not in any room. Message: {message}"
+            #     )
         else:
                 # This is an unknown client sending a message that's not a common type
                 logger.debug(f"Received message from unknown client {addr}: {message}")
@@ -506,7 +506,7 @@ class Server:
             self.disconnected_clients.remove(addr)
 
         # Assign to a room
-        selected_room = self.get_available_room(self.nb_clients_per_room)
+        selected_room = self.get_available_room()
         selected_room.clients[addr] = agent_name
 
         # Mark the room as having at least one human player
