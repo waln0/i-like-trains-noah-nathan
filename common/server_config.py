@@ -44,5 +44,10 @@ class ServerConfig(BaseModel):
     # have to circle around to complete delivery of all their passengers.
     delivery_cooldown_seconds: float = 0.1
 
+    # Path to an agent file. Change this path to point to one of your agents
+    # to use when creating bots (when game_mode is "competitive" and a client 
+    # disconnects).
+    path_to_ai_agent: str = "agents.ai_client"
+
     # Game mode, "competitive" or "local_evaluation"
     game_mode: str = "competitive"

@@ -17,12 +17,12 @@
         },
         "local_agents": [
             {
-                "name": "Agent1",
-                "path": "agents//agent1.py"
+                "name": "AgentExample1",
+                "path": "agents//agent_example1.py"
             },
             {
-                "name": "Agent2",
-                "path": "agents//agent2.py"
+                "name": "AgentExample2",
+                "path": "agents//agent_example2.py"
             }
         ]
     },
@@ -38,6 +38,7 @@
         "waiting_time_before_bots_seconds": 60,
         "score_file_path": "player_scores.json",
         "delivery_cooldown_seconds": 0.1,
+        "path_to_ai_agent": "agents//ai_agent.py",
         "game_mode": "competitive"
     }
 }

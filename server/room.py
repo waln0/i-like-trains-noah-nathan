@@ -5,7 +5,6 @@ import time
 import json
 import logging
 import random
-from ai_client import AIClient
 
 # Configure logger
 logger = logging.getLogger("server.room")
@@ -130,8 +129,10 @@ class Room:
         self.used_ai_names.add(generic_name)
         return generic_name
 
-    def create_ai_for_train(self, train_name_to_replace=None, ai_name=None, path_to_ai_agent=None):
+    def create_ai_for_train(self, train_name_to_replace=None, ai_name=None):
         """Create an AI client to control a train"""
+        path_to_ai_agent = self.config.path_to_ai_agent
+
         if ai_name is None:
             ai_name = self.get_available_ai_name()
         # Choose an AI name that's not already in use
@@ -144,7 +145,9 @@ class Room:
                 # Add the AI client to the room
                 self.clients[("AI", ai_name)] = ai_name
 
-                # Create the AI client with the new name
+                # Import the AI agent from the config path
+                logger.info(f"Creating AI client {ai_name} using agent from {path_to_ai_agent}")
+                from server.ai_client import AIClient
                 self.ai_clients[ai_name] = AIClient(self, ai_name, path_to_ai_agent)
 
                 # Add the ai_client to the game
@@ -356,7 +359,7 @@ class Room:
 
                             # If time is up and room is not full, add bots and start the game
                             if (
-                                ((self.config.game_mode == "online" and remaining_time == 0)
+                                ((self.config.game_mode == "competitive" and remaining_time == 0)
                                 or (self.config.game_mode == "local_evaluation" and self.is_full()))
                                 and not self.game_thread
                             ):
@@ -479,7 +482,7 @@ class Room:
         logger.debug(f"Filling room {self.id} with bots")
         if self.config.game_mode == "local_evaluation":
             nb_bots_needed = len(self.local_agents_config)
-        elif self.config.game_mode == "online":
+        elif self.config.game_mode == "competitive":
             current_players = len(self.clients)
             nb_bots_needed = self.nb_clients_max - current_players
         else:
@@ -495,8 +498,6 @@ class Room:
         for i in range(nb_bots_needed):
             if self.config.game_mode == "local_evaluation":
                 ai_name = self.local_agents_config[i]["name"]
-                path_to_ai_agent = self.local_agents_config[i]["path_to_agent"]
             else:
                 ai_name = self.get_available_ai_name()
-                path_to_ai_agent = None
-            self.create_ai_for_train(ai_name=ai_name, path_to_ai_agent=path_to_ai_agent)
+            self.create_ai_for_train(ai_name=ai_name)
