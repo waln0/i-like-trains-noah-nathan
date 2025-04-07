@@ -19,3 +19,13 @@ class Agent(BaseAgent):
 
         moves = [Move.UP, Move.DOWN, Move.LEFT, Move.RIGHT]
         return random.choice(moves)
+
+# Student scipers, will be automatically used to evaluate your code
+SCIPERS = ["000001", "000002", "000003"]
+
+BASE_DIRECTIONS = [
+    (0, -1),  # Up
+    (1, 0),  # Right
+    (0, 1),  # Down
+    (-1, 0),  # Left
+]

@@ -301,7 +301,7 @@ class Room:
                 ):
                     continue
 
-                self.game.server.server_socket.sendto(state_json.encode(), client_addr)
+                self.server_socket.sendto(state_json.encode(), client_addr)
             except Exception as e:
                 logger.error(f"Error sending game over data to client: {e}")
 

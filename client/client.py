@@ -24,7 +24,6 @@ logging.basicConfig(
 logger = logging.getLogger("client")
 
 
-
 class Client:
     """Main client class"""
 
@@ -209,20 +208,9 @@ class Client:
             logger.error(f"Error creating login window: {e}")
             return
 
-        # Get player name and sciper from config
-        # TODO(alok): we should delete these.
-        player_sciper = self.config.sciper
-        player_name = self.config.train_name
-
-        # Update agent name
-        self.agent.agent_name = player_name
-        # TODO(alok): we should also be consistent on how we name things. Is it player name, agent name, or train name?
-        self.agent_name = player_name
-        self.agent_sciper = player_sciper  # Store sciper for future use
-
         # Send agent name to server if in online mode
         if self.config.game_mode == "online":
-            if not self.network.send_agent_ids(self.agent_name, self.agent_sciper):
+            if not self.network.send_agent_ids(self.config.online_agent.name, self.config.online_agent.sciper):
                 logger.error("Failed to send agent name to server")
                 return
 

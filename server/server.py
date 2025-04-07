@@ -4,7 +4,6 @@ import threading
 import time
 import logging
 import uuid
-import random
 import os
 import signal
 import random
@@ -75,8 +74,10 @@ class Server:
 
         if self.config.game_mode == "local_evaluation":
             host = "local_host"
+            self.nb_clients_per_room = 1
         elif self.config.game_mode == "online":
             host = self.config.host
+            self.nb_clients_per_room = self.config.players_per_room
         else:
             raise ValueError(f"Invalid game mode: {self.config.game_mode}")
 
@@ -93,9 +94,7 @@ class Server:
             raise
 
         self.running = True
-
-        # TODO(alok): delete self.nb_players and use self.config.players_per_room instead
-        self.nb_clients = self.config.players_per_room if self.config.game_mode == "online" else 1
+        
         self.addr_to_name = {}  # Maps client addresses to agent names
         self.addr_to_sciper = {}  # Maps client addresses to scipers
         self.sciper_to_addr = {}  # Maps scipers to client addresses
