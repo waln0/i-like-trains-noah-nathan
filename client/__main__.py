@@ -8,8 +8,6 @@ if len(sys.argv) > 1:
     config_file = sys.argv[1]
 config = Config.load(config_file)
 
-# so this log doesn't belong here
-
 # Create the client, agent, and start the client
 client = Client(config)
 client.run()
