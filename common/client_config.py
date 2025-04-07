@@ -60,16 +60,3 @@ class ClientConfig(BaseModel):
         "name": "Player",
         "path": "agents//agent.py"
     }
-
-    # Local agents configuration, add or remove agents you want to evaluate as needed
-    local_agents: list[dict[str, str]] = [
-        {
-            "name": "Agent1",
-            "path": "agents//agent1.py"
-        },
-        {
-            "name": "Agent2",
-            "path": "agents//agent2.py"
-        }
-    ]
-    

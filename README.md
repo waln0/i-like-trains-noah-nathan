@@ -56,21 +56,26 @@ For the local evaluation mode, set up a list containing the names and agent file
 
 Example configuration in `config.json`:
 ```json
-"competitive_agent": {
-            "sciper": "000000",
-            "nickname": "Player",
-            "agent_file_name": "agent.py"
-        },
-"local_agents": [
-    {
-        "nickname": "AgentExample1",
-        "agent_file_name": "agent_example1.py"
+"client": {
+    "competitive_agent": {
+        "sciper": "000000",
+        "nickname": "Player",
+        "agent_file_name": "agent.py"
     },
-    {
-        "nickname": "AgentExample2",
-        "agent_file_name": "agent_example2.py"
-    }
-]
+},
+"server": {
+    "local_agents": [
+        {
+            "nickname": "AgentExample1",
+            "agent_file_name": "agent_example1.py"
+        },
+        {
+            "nickname": "AgentExample2",
+            "agent_file_name": "agent_example2.py"
+        }
+    ]
+}
+```
 
 ### 4. Run the client
 

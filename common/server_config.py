@@ -47,8 +47,19 @@ class ServerConfig(BaseModel):
     # Path to an agent file. Change this path to point to one of your agents
     # to use when creating bots (when game_mode is "competitive" and a client 
     # disconnects).
-    agent_file_name: str = "agent.py"
+    ai_agent_file_name: str = "ai_agent.py"
+
+    # Local agents configuration, add or remove agents you want to evaluate as needed
+    local_agents: list[dict[str, str]] = [
+        {
+            "name": "Agent1",
+            "path": "agents//agent1.py"
+        },
+        {
+            "name": "Agent2",
+            "path": "agents//agent2.py"
+        }
+    ]
 
     # Game mode, "competitive" or "local_evaluation"
     game_mode: GameMode = GameMode.COMPETITIVE
-    

@@ -166,58 +166,58 @@ class AIClient:
     def run(self):
         """Main AI client loop"""
         while self.running and self.room.running:
-            try:
-                # Update the client state from the game
-                self.update_state()
+            # try:
+            # Update the client state from the game
+            self.update_state()
 
-                # Make sure the agent has access to the correct properties
-                self.agent.all_trains = self.all_trains
-                self.agent.passengers = self.passengers
-                self.agent.cell_size = self.cell_size
-                self.agent.game_width = self.game_width
-                self.agent.game_height = self.game_height
+            # Make sure the agent has access to the correct properties
+            self.agent.all_trains = self.all_trains
+            self.agent.passengers = self.passengers
+            self.agent.cell_size = self.cell_size
+            self.agent.game_width = self.game_width
+            self.agent.game_height = self.game_height
 
-                self.agent.update_agent()
+            self.agent.update_agent()
 
-                # Add automatic respawn logic
-                if (
-                    not self.game.trains[self.agent_name].alive
-                    and self.agent.waiting_for_respawn
-                ):
-                    # logger.debug(f"AI client {self.agent_name} is dead, waiting for respawn")
-                    elapsed = time.time() - self.agent.death_time
-                    if elapsed >= self.agent.respawn_cooldown:
+            # Add automatic respawn logic
+            if (
+                not self.game.trains[self.agent_name].alive
+                and self.agent.waiting_for_respawn
+            ):
+                # logger.debug(f"AI client {self.agent_name} is dead, waiting for respawn")
+                elapsed = time.time() - self.agent.death_time
+                if elapsed >= self.agent.respawn_cooldown:
+                    logger.debug(
+                        f"AI client {self.agent_name} respawn cooldown over, checking game state"
+                    )
+                    if self.in_waiting_room:
                         logger.debug(
-                            f"AI client {self.agent_name} respawn cooldown over, checking game state"
+                            f"AI client {self.agent_name} in waiting room, trying to start game"
                         )
-                        if self.in_waiting_room:
-                            logger.debug(
-                                f"AI client {self.agent_name} in waiting room, trying to start game"
-                            )
-                            # Start game if in waiting room
-                            if (
-                                not self.room.game_thread
-                                or not self.room.game_thread.is_alive()
-                            ):
-                                if self.room.get_player_count() >= self.room.nb_players:
-                                    self.room.start_game()
+                        # Start game if in waiting room
+                        if (
+                            not self.room.game_thread
+                            or not self.room.game_thread.is_alive()
+                        ):
+                            if self.room.get_player_count() >= self.room.nb_players:
+                                self.room.start_game()
 
-                        logger.debug(f"AI client {self.agent_name} trying to spawn")
-                        cooldown = self.room.game.get_train_cooldown(self.agent_name)
-                        if cooldown <= 0:
-                            self.room.game.add_train(self.agent_name)
-                            self.agent.waiting_for_respawn = False
-                            self.agent.is_dead = False
-                            logger.info(f"AI client {self.agent_name} respawned")
+                    logger.debug(f"AI client {self.agent_name} trying to spawn")
+                    cooldown = self.room.game.get_train_cooldown(self.agent_name)
+                    if cooldown <= 0:
+                        self.room.game.add_train(self.agent_name)
+                        self.agent.waiting_for_respawn = False
+                        self.agent.is_dead = False
+                        logger.info(f"AI client {self.agent_name} respawned")
 
-                # else:
-                #     logger.debug(f"AI client {self.agent_name} is alive, waiting for next update")
+            # else:
+            #     logger.debug(f"AI client {self.agent_name} is alive, waiting for next update")
 
-                # Sleep to avoid high CPU usage
-                time.sleep(0.1)
-            except Exception as e:
-                logger.error(f"Error in AI client {self.agent_name}: {e}")
-                time.sleep(0.5)
+            # Sleep to avoid high CPU usage
+            time.sleep(0.1)
+            # except Exception as e:
+            #     logger.error(f"Error in AI client {self.agent_name}: {e}")
+            #     time.sleep(0.5)
 
     def stop(self):
         """Stop the AI client"""

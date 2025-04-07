@@ -141,6 +141,7 @@ class Room:
             ai_nickname = self.get_available_ai_name()
 
         if ai_agent_file_name is None:
+            logger.debug(f"Using default agent file: {self.config.agent_file_name}")
             ai_agent_file_name = self.config.agent_file_name
 
         # Choose an AI name that's not already in use
@@ -507,9 +508,9 @@ class Room:
             ai_nickname = None
             ai_agent_file_name = None
             if self.config.game_mode == GameMode.LOCAL_EVALUATION:
-                ai_nickname = self.config.local_agents[i]["ai_nickname"]
+                ai_nickname = self.config.local_agents[i]["nickname"]
                 ai_agent_file_name = self.config.local_agents[i]["agent_file_name"]
             else:
                 ai_nickname = self.get_available_ai_name()
-                ai_agent_file_name = ai_agent_file_name
+                ai_agent_file_name = self.config.ai_agent_file_name
             self.create_ai_for_train(ai_nickname=ai_nickname, ai_agent_file_name=ai_agent_file_name)
