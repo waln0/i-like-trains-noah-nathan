@@ -33,7 +33,7 @@ class Client:
 
         # If we launch a local evaluation, we want the host to be local_host
         if self.config.game_mode == GameMode.LOCAL_EVALUATION:
-            self.host = "local_host"
+            self.host = "localhost"
         elif self.config.game_mode == GameMode.COMPETITIVE:
             self.host = self.config.host
         else:

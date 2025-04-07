@@ -69,7 +69,7 @@ class Server:
         self.high_score.dump()
 
         if self.config.game_mode == GameMode.LOCAL_EVALUATION:
-            host = "local_host"
+            host = "localhost"
             self.nb_clients_per_room = 1
         elif self.config.game_mode == GameMode.COMPETITIVE:
             host = self.config.host
