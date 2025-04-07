@@ -622,7 +622,7 @@ class Renderer:
                     (
                         self.client.game_width
                         + 2 * self.client.game_screen_padding
-                        + 90,
+                        + 60,
                         y_offset,
                     ),
                 )

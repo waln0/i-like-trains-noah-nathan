@@ -235,19 +235,17 @@ class Client:
             self.handle_window_updates()
 
             # If no agent is set, skip the rest of the loop
-            if not self.agent:
-                continue
-
-            # Add automatic respawn logic
-            if (
-                not self.config.manual_spawn
-                and self.agent.is_dead
-                and self.agent.waiting_for_respawn
-                and not self.game_over
-            ):
-                elapsed = time.time() - self.agent.death_time
-                if elapsed >= self.agent.respawn_cooldown:
-                    self.network.send_spawn_request()
+            if self.agent:
+                # Add automatic respawn logic
+                if (
+                    not self.config.manual_spawn
+                    and self.agent.is_dead
+                    and self.agent.waiting_for_respawn
+                    and not self.game_over
+                ):
+                    elapsed = time.time() - self.agent.death_time
+                    if elapsed >= self.agent.respawn_cooldown:
+                        self.network.send_spawn_request()
 
             self.renderer.draw_game()
 

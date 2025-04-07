@@ -76,6 +76,7 @@ class Room:
         logger.info(f"Room {room_id} created with number of clients {nb_clients_max}")
 
     def start_game(self):
+        logger.debug("Starting game...")
         # Start the state thread
         self.state_thread = threading.Thread(target=self.broadcast_game_state)
         self.state_thread.daemon = True
@@ -369,7 +370,7 @@ class Room:
                         # If time is up and room is not full, add bots and start the game
                         if (
                             ((self.config.game_mode == GameMode.COMPETITIVE and remaining_time == 0)
-                            or (self.config.game_mode == GameMode.LOCAL_EVALUATION and self.is_full()))
+                            or (self.config.game_mode == GameMode.LOCAL_EVALUATION))
                             and not self.game_thread
                         ):
                             logger.info(

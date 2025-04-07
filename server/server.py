@@ -126,15 +126,15 @@ class Server:
         logger.info(f"Created new room {room_id} with {self.config.nb_clients_per_room} clients")
         if self.config.game_mode == GameMode.LOCAL_EVALUATION:
             # Room size is fixed: 1 observer + N AIs
-            self.config.nb_clients_per_room = 1 + len(self.config.local_agents)
-            logger.info(f"Creating local_evaluation room {room_id} with size {self.config.nb_clients_per_room}.")
+            nb_clients_per_room = 1 + len(self.config.local_agents)
+            logger.info(f"Creating local_evaluation room {room_id} with size {nb_clients_per_room}.")
         else:
             # Use default for competitive mode
             logger.info(f"Creating competitive room {room_id} with default size {self.config.nb_clients_per_room}.")
         
-        new_room = Room(self.config, room_id, self.config.nb_clients_per_room, running, self.server_socket, self.send_cooldown_notification)
+        new_room = Room(self.config, room_id, nb_clients_per_room, running, self.server_socket, self.send_cooldown_notification)
         
-        logger.info(f"Created new room {room_id} with {self.config.nb_clients_per_room} clients")
+        logger.info(f"Created new room {room_id} with {nb_clients_per_room} clients")
         self.rooms[room_id] = new_room
         return new_room
 
