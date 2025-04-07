@@ -48,7 +48,7 @@ def generate_random_non_blue_color():
 
 
 class Game:
-    # TODO(alok): remove nb_players and use config.players_per_room
+    # TODO(alok): remove nb_players and use config.clients_per_room
     def __init__(self, config: ServerConfig, send_cooldown_notification, nb_players):
         self.config = config
         self.send_cooldown_notification = send_cooldown_notification

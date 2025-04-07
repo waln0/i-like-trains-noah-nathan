@@ -6,7 +6,6 @@ This module provides an AI client that can control trains on the server side
 import threading
 import time
 import logging
-from client.agent import Agent
 from server.passenger import Passenger
 import sys
 import os

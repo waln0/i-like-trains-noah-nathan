@@ -10,7 +10,7 @@ class ServerConfig(BaseModel):
     port: int = 5555
 
     # Numbers of trains in each room.
-    clients_per_room: int = 2
+    nb_clients_per_room: int = 2
 
     # If True, allows multiple connections from the same IP address.
     allow_multiple_connections: bool = True

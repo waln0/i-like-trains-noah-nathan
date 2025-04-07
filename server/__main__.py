@@ -10,4 +10,4 @@ config = Config.load(config_file)
 
 # Start and run the server
 server = Server(config)
-server.run_game()
+server.run()

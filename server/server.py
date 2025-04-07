@@ -72,7 +72,7 @@ class Server:
             self.nb_clients_per_room = 1
         elif self.config.game_mode == "competitive":
             host = self.config.host
-            self.nb_clients_per_room = self.config.players_per_room
+            self.nb_clients_per_room = self.config.nb_clients_per_room
         else:
             raise ValueError(f"Invalid game mode: {self.config.game_mode}")
 
@@ -116,38 +116,38 @@ class Server:
         accept_thread.start()
         logger.info(f"Server started on {self.config.host}:{self.config.port}")
 
-    def create_room(self, nb_clients, running):
+    def create_room(self, running):
         """
         Create a new room with specified number of clients
         """
         room_id = str(uuid.uuid4())[:8]
 
-        logger.info(f"Created new room {room_id} with {nb_clients} clients")
+        logger.info(f"Created new room {room_id} with {self.config.nb_clients_per_room} clients")
         if self.config.game_mode == "local_evaluation":
             # Room size is fixed: 1 observer + N AIs
-            nb_clients = 1 + len(self.config.local_agents)
-            logger.info(f"Creating local_evaluation room {room_id} with size {nb_clients}.")
+            self.config.nb_clients_per_room = 1 + len(self.config.local_agents)
+            logger.info(f"Creating local_evaluation room {room_id} with size {self.config.nb_clients_per_room}.")
         else:
             # Use default for competitive mode
-            logger.info(f"Creating competitive room {room_id} with default size {nb_clients}.")
+            logger.info(f"Creating competitive room {room_id} with default size {self.config.nb_clients_per_room}.")
         
-        new_room = Room(self.config, room_id, nb_clients, running, server=self)
+        new_room = Room(self.config, room_id, self.config.nb_clients_per_room, running, server=self)
         
-        logger.info(f"Created new room {room_id} with {nb_clients} clients")
+        logger.info(f"Created new room {room_id} with {self.config.nb_clients_per_room} clients")
         self.rooms[room_id] = new_room
         return new_room
 
-    def get_available_room(self, nb_clients):
+    def get_available_room(self):
         """Get an available room or create a new one if needed"""
         # First try to find a non-full room
         for room in self.rooms.values():
             if (
-                room.nb_clients_max == nb_clients
+                room.nb_clients_per_room_max == self.config.nb_clients_per_room
                 and not room.is_full()
                 and not room.game_thread
             ):
                 return room
-        logger.debug(f"No suitable room found for {nb_clients} clients")
+        logger.debug(f"No suitable room found for {self.config.nb_clients_per_room} clients")
         # If no suitable room found, create a new one
         return self.create_room(True)
 
@@ -890,7 +890,7 @@ class Server:
             logger.warning(f"Attempted to remove non-existent room {room_id}")
 
     def run(self):
-        """Main game loop"""
+        """Main server loop"""
 
         def signal_handler(sig, frame):
             # Only set the running flag to false. Cleanup happens after the main loop.

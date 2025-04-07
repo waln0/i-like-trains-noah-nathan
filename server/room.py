@@ -42,6 +42,7 @@ class Room:
         self.nb_clients_max = nb_clients_max
         self.game = Game(config, server.send_cooldown_notification, self.nb_clients_max)
         # TODO(alok): why not put room_id and server in Game's __init__ method?
+        self.running = running
 
         self.game.room_id = room_id  # Store the room ID in the Game object
 
@@ -53,6 +54,7 @@ class Room:
         self.room_creation_time = time.time()  # Track when the room was created
         self.first_client_join_time = None  # Track when the first client joins
         self.stop_waiting_room = False # Flag to stop the waiting room thread - Initialized BEFORE thread start
+
 
         # Start waiting room broadcast thread
         self.waiting_room_thread = threading.Thread(target=self.broadcast_waiting_room)

@@ -9,6 +9,7 @@ from client.network import NetworkManager
 from client.renderer import Renderer
 from client.event_handler import EventHandler
 from client.game_state import GameState
+from agents.agent import Agent
 
 from common.config import Config
 import os
@@ -96,6 +97,8 @@ class Client:
         pygame.display.set_caption("I Like Trains")
         self.is_initialized = True
 
+        logger.info(f"Connecting to server: {self.host}:{self.config.port}")
+
         # Initialize components
         self.network = NetworkManager(self, self.host, self.config.port)
         self.renderer = Renderer(self)
@@ -109,18 +112,14 @@ class Client:
         if self.config.game_mode == "competitive":
             agent_info = self.config.competitive_agent
             if agent_info and "path" in agent_info:
-                try:
-                    module_path = agent_info["path"]
-                    # Add parent directory to Python path to allow importing agents package
-                    parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-                    sys.path.append(parent_dir)
-                    module = importlib.import_module(module_path)
-                    self.agent_name = agent_info["name"]
-                    self.agent_sciper = agent_info["sciper"]
-                    self.agent = module.Agent(self.agent_name, self.network)
-                except ImportError as e:
-                    logger.error(f"Failed to import agent from {module_path}: {e}")
-                    sys.exit(1)
+                module_path = agent_info["path"]
+                # Add parent directory to Python path to allow importing agents package
+                parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                sys.path.append(parent_dir)
+                module = importlib.import_module(module_path)
+                self.agent_name = agent_info["name"]
+                self.agent_sciper = agent_info["sciper"]
+                self.agent = module.Agent(self.agent_name, self.network)
 
         self.ping_response_received = False
         self.server_disconnected = False
@@ -348,21 +347,3 @@ class Client:
         if self.server_disconnected:
             logger.info("Exiting due to server disconnection")
             sys.exit(0)
-
-
-# def main():
-#     # Load the config file
-#     config_file = "config.json"
-#     if len(sys.argv) > 1:
-#         config_file = sys.argv[1]
-#     config = Config.load(config_file)
-
-#     # TODO(alok): move this logger.into inside network, the connection isn't established here
-#     # so this log doesn't belong here
-#     logger.info(f"Connecting to server: {config.client.host}:{config.client.port}")
-
-#     # Create the client, agent, and start the client
-#     client = Client(config)
-#     agent = Agent("", client.network)
-#     client.set_agent(agent)
-#     client.run()
