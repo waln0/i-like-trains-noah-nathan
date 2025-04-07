@@ -4,18 +4,13 @@ import threading
 import time
 import logging
 import uuid
-import os
 import signal
 import random
 
 from common.config import Config
 from server.high_score import HighScore
 from server.passenger import Passenger
-from server.ai_client import AIClient
 from server.room import Room
-
-from passenger import Passenger
-from room import Room
 
 
 def setup_server_logger():
