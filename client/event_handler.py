@@ -5,6 +5,7 @@ Module for handling events for the I Like Trains client
 import pygame
 import logging
 
+from common.client_config import ControlMode
 from common.move import Move
 
 
@@ -49,7 +50,7 @@ class EventHandler:
                     if self.client.in_waiting_room:
                         self.client.network.send_start_game_request()
 
-                if self.control_mode == "manual":
+                if self.control_mode == ControlMode.MANUAL:
                     # Change the train's direction based on the pressed keys
                     if event.key == pygame.K_UP:
                         self.client.network.send_direction_change(Move.UP.value)

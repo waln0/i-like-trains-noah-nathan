@@ -2,6 +2,8 @@ import json
 import logging
 import time
 
+from common.client_config import ControlMode
+
 
 logger = logging.getLogger("client.game_state")
 
@@ -30,7 +32,7 @@ class GameState:
                     # Update the modified attributes
                     self.client.trains[train_name].update(train_data)
 
-                if self.control_mode == "agent":
+                if self.control_mode == ControlMode.AGENT:
                     self.client.agent.all_trains = self.client.trains
 
             # Handle renamed train
@@ -39,19 +41,19 @@ class GameState:
                 if old_name in self.client.trains:
                     logger.info(f"Renaming train {old_name} to {new_name}")
                     self.client.trains[new_name] = self.client.trains.pop(old_name)
-                    if self.control_mode == "agent":
+                    if self.control_mode == ControlMode.AGENT:
                         self.client.agent.all_trains = self.client.trains
 
             if "passengers" in data:
                 # Adjust passenger positions to be in pixel coordinates
                 self.client.passengers = data["passengers"]
-                if self.control_mode == "agent":
+                if self.control_mode == ControlMode.AGENT:
                     self.client.agent.passengers = self.client.passengers
 
             if "delivery_zone" in data:
                 # Update delivery zone
                 self.client.delivery_zone = data["delivery_zone"]
-                if self.control_mode == "agent":
+                if self.control_mode == ControlMode.AGENT:
                     self.client.agent.delivery_zone = self.client.delivery_zone
 
             if "size" in data:
@@ -81,7 +83,7 @@ class GameState:
 
                     # Mark as initialized to prevent default window creation
                     self.client.is_initialized = True
-                    if self.control_mode == "agent":
+                    if self.control_mode == ControlMode.AGENT:
                         self.client.agent.screen_width = self.client.screen_width
                         self.client.agent.screen_height = self.client.screen_height
 
@@ -91,11 +93,11 @@ class GameState:
             if "cell_size" in data:
                 self.client.cell_size = data["cell_size"]
                 logger.info(f"Cell size updated: {self.client.cell_size}")
-                if self.control_mode == "agent":
+                if self.control_mode == ControlMode.AGENT:
                     self.client.agent.cell_size = self.client.cell_size
 
             # Update the agent's state
-            if self.control_mode == "agent":
+            if self.control_mode == ControlMode.AGENT:
                 # Make sure any data not updated individually gets updated here
                 if self.client.agent.all_trains is None:
                     self.client.agent.all_trains = self.client.trains
