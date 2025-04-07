@@ -102,9 +102,8 @@ class Client:
         self.network = NetworkManager(self, self.host, self.config.port)
         self.renderer = Renderer(self)
 
-        # TODO(alok): drop the value for control_mode
-        self.event_handler = EventHandler(self, self.config.control_mode.value)
-        self.game_state = GameState(self, self.config.control_mode.value)
+        self.event_handler = EventHandler(self, self.config.control_mode)
+        self.game_state = GameState(self, self.config.control_mode)
 
         # Initialize agent based on game mode
         self.agent = None
