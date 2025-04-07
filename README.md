@@ -22,7 +22,7 @@ modify any existing files, except for [client/agent.py](/client/agent.py).
 ### 1. Install dependencies
 
 ```bash
-pip install < requirements.txt
+pip install -r requirements.txt
 ```
 
 ### 2. (Optional) Start a local server for testing
