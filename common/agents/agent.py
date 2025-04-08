@@ -18,4 +18,5 @@ class Agent(BaseAgent):
         """
 
         moves = [Move.UP, Move.DOWN, Move.LEFT, Move.RIGHT]
+        
         return random.choice(moves)
