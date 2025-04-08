@@ -30,9 +30,10 @@ class Client:
         """Initialize the client"""
 
         self.config = config.client
+        self.game_mode = self.config.game_mode
 
         # If we launch an observer, we want the host to be local_host, otherwise
-        if self.config.game_mode == GameMode.OBSERVER:
+        if self.game_mode == GameMode.OBSERVER:
             host = "localhost"
         else:
             host = self.config.host
@@ -98,12 +99,12 @@ class Client:
         self.network = NetworkManager(self, host, self.config.port)
         self.renderer = Renderer(self)
 
-        self.event_handler = EventHandler(self, self.config.game_mode)
-        self.game_state = GameState(self, self.config.game_mode)
+        self.event_handler = EventHandler(self, self.game_mode)
+        self.game_state = GameState(self, self.game_mode)
 
         # Initialize agent based on game mode
         self.agent = None
-        if self.config.game_mode != GameMode.OBSERVER:
+        if self.game_mode != GameMode.OBSERVER:
             agent_info = self.config.agent
             if agent_info and "agent_file_name" in agent_info:
                 logger.info(f"Loading agent: {agent_info['agent_file_name']}")
@@ -212,7 +213,7 @@ class Client:
             return
 
         # Send agent name to server if in competitive (manual or agent) mode
-        if self.config.game_mode != GameMode.OBSERVER:
+        if self.game_mode != GameMode.OBSERVER:
             # Check if we can load name and sciper from config
             if (
                 not self.config.agent["nickname"]

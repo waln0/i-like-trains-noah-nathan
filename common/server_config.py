@@ -1,5 +1,4 @@
 from pydantic import BaseModel
-from common.client_config import GameMode
 
 
 class ServerConfig(BaseModel):
@@ -51,10 +50,7 @@ class ServerConfig(BaseModel):
     ai_agent_file_name: str = "ai_agent.py"
 
     # Local agents configuration, add or remove agents you want to evaluate as needed
-    local_agents: list[dict[str, str]] = [
+    agents: list[dict[str, str]] = [
         {"nickname": "Agent1", "agent_file_name": "agent1.py"},
         {"nickname": "Agent2", "agent_file_name": "agent2.py"},
     ]
-
-    # Game mode, "manual", "agent", "observer"
-    game_mode: GameMode = GameMode.MANUAL

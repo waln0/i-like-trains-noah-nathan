@@ -41,14 +41,14 @@ class Room:
         self,
         config: ServerConfig,
         room_id,
-        nb_clients_max,
+        nb_players_max,
         running,
         server_socket,
         send_cooldown_notification,
     ):
         self.config = config
         self.id = room_id
-        self.nb_clients_max = nb_clients_max
+        self.nb_clients_max = nb_players_max
         self.server_socket = server_socket
         send_cooldown_notification
 
@@ -59,6 +59,7 @@ class Room:
         self.game.room_id = room_id  # Store the room ID in the Game object
 
         self.clients = {}  # {addr: nickname}
+        self.client_game_modes = {}  # {addr: game_mode}
         self.game_thread = None
 
         self.waiting_room_thread = None
@@ -80,7 +81,7 @@ class Room:
         self.ai_clients = {}  # Maps train names to AI clients
         self.AI_NAMES = AI_NAMES  # Store the AI names as an instance attribute
 
-        logger.info(f"Room {room_id} created with number of clients {nb_clients_max}")
+        logger.info(f"Room {room_id} created with number of clients {nb_players_max}")
 
     def start_game(self):
         logger.debug("Starting game...")
@@ -386,14 +387,7 @@ class Room:
                             )
 
                         # If time is up and room is not full, add bots and start the game
-                        if (
-                            (
-                                (self.config.game_mode == GameMode.AGENT
-                                or self.config.game_mode == GameMode.MANUAL)
-                                and remaining_time == 0
-                            )
-                            or (self.config.game_mode == GameMode.OBSERVER)
-                        ) and not self.game_thread:
+                        if (remaining_time == 0) and not self.game_thread:
                             logger.info(
                                 f"Waiting time expired for room {self.id}, adding bots and starting game"
                             )
@@ -508,11 +502,9 @@ class Room:
     def fill_with_bots(self):
         """Fill the room with bots and start the game"""
         logger.debug(f"Filling room {self.id} with bots")
-        if self.config.game_mode == GameMode.OBSERVER:
-            nb_bots_needed = len(self.config.local_agents)
-        else:
-            current_players = len(self.clients)
-            nb_bots_needed = self.nb_clients_max - current_players
+        nb_observers = len([mode for mode in self.client_game_modes.values() if mode == "observer"])
+        current_players = len(self.clients) - nb_observers
+        nb_bots_needed = self.nb_clients_max - current_players
 
         if nb_bots_needed <= 0:
             return
@@ -521,14 +513,21 @@ class Room:
 
         # Add bots to the room
         for i in range(nb_bots_needed):
-            ai_nickname = None
-            ai_agent_file_name = None
-            if self.config.game_mode == GameMode.OBSERVER:
-                ai_nickname = self.config.local_agents[i]["nickname"]
-                ai_agent_file_name = self.config.local_agents[i]["agent_file_name"]
-            else:
-                ai_nickname = self.get_available_ai_name()
-                ai_agent_file_name = self.config.ai_agent_file_name
+
+            # We randomly chose an agent to use from agents in the config
+            # We create a new AI client with the chosen agent and increment the counter
+            # If the nickname is already use, we increment a counter
+            chosen_agent_index = random.randint(0, len(self.config.agents) - 1)
+            ai_agent_file_name = self.config.agents[chosen_agent_index]["agent_file_name"]
+            
+            attempt_for_nickname = 0
+            nickname_already_in_use = True
+            while nickname_already_in_use:
+                ai_nickname = f"AI_{attempt_for_nickname}"
+                attempt_for_nickname += 1
+                if ai_nickname not in self.clients:
+                    nickname_already_in_use = False
+
             self.create_ai_for_train(
                 ai_nickname=ai_nickname, ai_agent_file_name=ai_agent_file_name
             )

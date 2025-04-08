@@ -1,12 +1,10 @@
 from enum import Enum
 from pydantic import BaseModel
 
-
 class GameMode(Enum):
     MANUAL = "manual"
     AGENT = "agent"
     OBSERVER = "observer"
-
 
 class ClientConfig(BaseModel):
     # Host we want to connect to. Use 127.0.0.1 if you want to connect to a local server.

@@ -8,6 +8,7 @@ import json
 import logging
 import threading
 import time
+from common.client_config import GameMode
 
 
 # Configure logging
@@ -367,6 +368,7 @@ class NetworkManager:
             "type": "agent_ids",
             "nickname": nickname,
             "agent_sciper": agent_sciper,
+            "game_mode": ("observer" if self.client.game_mode == GameMode.OBSERVER else "manual" if self.client.game_mode == GameMode.MANUAL else "agent"),
         }
         return self.send_message(message)
 
