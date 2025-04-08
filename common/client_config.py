@@ -44,9 +44,9 @@ class ClientConfig(BaseModel):
 
     # Competitive agent configuration, change the sciper to yours, and the nickname to
     # your "nickname". Modify the agent_file_name to the agent file name you want to use
-    # from the "agents" folder. 
+    # from the common/agents/ folder.
     competitive_agent: dict[str, str] = {
         "sciper": "000000",
         "nickname": "Player",
-        "agent_file_name": "agent.py"
+        "agent_file_name": "agent.py",
     }
