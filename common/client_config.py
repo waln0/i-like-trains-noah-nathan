@@ -3,6 +3,8 @@ from pydantic import BaseModel
 
 from common.agent_config import AgentConfig
 
+class ManualConfig(BaseModel):
+    nickname: str
 
 class GameMode(Enum):
     MANUAL = "manual"
@@ -44,3 +46,6 @@ class ClientConfig(BaseModel):
     # your "nickname". Modify the agent_file_name to the agent file name you want to use
     # from the "agents" folder.
     agent: AgentConfig
+
+    # Manual agent configuration
+    manual: ManualConfig

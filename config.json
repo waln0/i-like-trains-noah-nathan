@@ -6,11 +6,11 @@
         "game_mode": "manual",
         "sciper": "000000",
         "agent": {
-            "nickname": "Player",
+            "nickname": "Player1",
             "agent_file_name": "agent.py"
         },
         "manual": {
-            "nickname": "Keyboard"
+            "nickname": "Player2"
         }
     },
     "server": {

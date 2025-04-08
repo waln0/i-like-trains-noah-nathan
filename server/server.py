@@ -5,6 +5,7 @@ import time
 import logging
 import uuid
 import signal
+import random
 
 from common.config import Config
 from server.high_score import HighScore
@@ -210,37 +211,24 @@ class Server:
             # Remove the client from the disconnected clients list
             self.disconnected_clients.remove(addr)
 
-        # # Check if we need to handle agent initialization
-        # if self.config.game_mode != GameMode.OBSERVER:
-        #     if (
-        #         "type" in message
-        #         and message["type"] == "agent_ids"
-        #         and "nickname" in message
-        #         and "agent_sciper" in message
-        #         and "game_mode" in message
-        #         and addr not in self.addr_to_name
-        #     ):
-        #         # use handle_name_check and handle_sciper_check to check if the name and sciper are available
-        #         logger.debug(
-        #             f"Checking name and sciper availability for {message['nickname']} ({message['agent_sciper']})"
-        #         )
-        #         if self.handle_name_check(message, None) and self.handle_sciper_check(
-        #             message, None
-        #         ):
-        #             self.handle_new_client(message, addr)
-        #         else:
-        #             # ask the client to disconnect
-        #             self.send_disconnect(
-        #                 addr, "Name or sciper not available or invalid"
-        #             )
-        #             logger.warning(
-        #                 f"Name or sciper not available or invalid for {addr}"
-        #             )
+        # # Check if client's game-mode is observer
+        if (
+            "type" in message
+            and message["type"] == "agent_ids"
+            and "nickname" in message
+            and "agent_sciper" in message
+            and "game_mode" in message
+            and addr not in self.addr_to_name
+        ):
+            if message["game_mode"] == "observer":
+                # use handle_name_check and handle_sciper_check to check if the name and sciper are available
+                logger.debug(
+                    f"Checking name and sciper availability for {message['nickname']} ({message['agent_sciper']})"
+                )
+                if self.handle_name_check(message, None) and self.handle_sciper_check(message, None):
+                    self.handle_new_client(message, addr)
 
-        # In OBSERVER mode, the only client connecting is the observer, handle it directly
         self.client_last_activity[addr] = time.time()
-        # Assuming the first message in OBSERVER is implicitly a connection request
-        # We might need a specific message type later if this assumption is wrong
         if addr not in self.addr_to_sciper:  # Only handle if it's a new client address
             self.handle_new_client(message, addr)
 
@@ -454,13 +442,13 @@ class Server:
         agent_sciper = message.get("agent_sciper", "")
         game_mode = message.get("game_mode", "")
 
-        # if self.config.game_mode == GameMode.OBSERVER:
-        #     logger.info(f"New client connected in OBSERVER mode: {addr}")
-        #     self.client_last_activity[addr] = time.time()
+        if game_mode == "observer":
+            logger.info(f"New client connected in OBSERVER mode: {addr}")
+            self.client_last_activity[addr] = time.time()
 
-        #     # generate a random name and sciper
-        #     nickname = f"Observer_{random.randint(1000, 9999)}"
-        #     agent_sciper = str(random.randint(100000, 999999))
+            # generate a random name and sciper
+            nickname = f"Observer_{random.randint(1000, 9999)}"
+            agent_sciper = str(random.randint(100000, 999999))
 
         # else:
         if not nickname:

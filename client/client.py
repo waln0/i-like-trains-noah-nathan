@@ -212,22 +212,10 @@ class Client:
             logger.error(f"Error creating login window: {e}")
             return
 
-        # Check if we can load name and sciper from config
-        if (
-            not self.config.agent.nickname
-            or not self.config.sciper
-        ):
-            logger.error(
-                "Failed to send agent name to server: name or sciper not found in config"
-            )
-            return
-
-        logger.info(f"Sending agent ids to server: {self.config.agent.nickname}, {self.config.sciper}, {self.game_mode}")
-        
         if not self.network.send_agent_ids(
-            self.config.agent.nickname,
-            self.config.sciper,
-            ("observer" if self.game_mode == GameMode.OBSERVER else "manual" if self.game_mode == GameMode.MANUAL else "agent")
+            self.config.agent.nickname if self.game_mode == GameMode.AGENT else self.config.manual.nickname if self.game_mode == GameMode.MANUAL else "",
+            self.config.sciper if self.game_mode != GameMode.OBSERVER else "",
+            self.game_mode.value
         ):
             logger.error("Failed to send agent ids to server")
             return

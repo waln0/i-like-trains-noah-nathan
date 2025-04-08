@@ -357,11 +357,23 @@ class Room:
         nb_players = self.get_player_count()
         return nb_players >= self.nb_players_max
 
+    def get_players(self):
+        return [
+            self.clients[addr]
+            for addr in self.clients
+            if addr in self.client_game_modes
+            and self.client_game_modes[addr] != "observer"
+        ]
+
     def get_player_count(self):
-        return len([mode for mode in self.client_game_modes.values() if mode != "observer"])
+        return len(
+            [mode for mode in self.client_game_modes.values() if mode != "observer"]
+        )
 
     def get_observer_count(self):
-        return len([mode for mode in self.client_game_modes.values() if mode == "observer"])
+        return len(
+            [mode for mode in self.client_game_modes.values() if mode == "observer"]
+        )
 
     def broadcast_waiting_room(self):
         """Broadcast waiting room data to all clients"""
@@ -402,7 +414,7 @@ class Room:
                         "type": "waiting_room",
                         "data": {
                             "room_id": self.id,
-                            "players": list(self.clients.values()),
+                            "players": list(self.get_players()),
                             "nb_players": self.nb_players_max,
                             "game_started": self.game_thread is not None,
                             "waiting_time": int(remaining_time),
@@ -521,9 +533,7 @@ class Room:
             # We create a new AI client with the chosen agent and increment the counter
             # If the nickname is already use, we increment a counter
             chosen_agent_index = random.randint(0, len(self.config.agents) - 1)
-            ai_agent_file_name = self.config.agents[chosen_agent_index][
-                "agent_file_name"
-            ]
+            ai_agent_file_name = self.config.agents[chosen_agent_index].agent_file_name
 
             attempt_for_nickname = 0
             nickname_already_in_use = True
