@@ -1,10 +1,14 @@
 from enum import Enum
 from pydantic import BaseModel
 
+from common.agent_config import AgentConfig
+
+
 class GameMode(Enum):
     MANUAL = "manual"
     AGENT = "agent"
     OBSERVER = "observer"
+
 
 class ClientConfig(BaseModel):
     # Host we want to connect to. Use 127.0.0.1 if you want to connect to a local server.
@@ -39,7 +43,4 @@ class ClientConfig(BaseModel):
     # Competitive agent configuration, change the sciper to yours, and the nickname to
     # your "nickname". Modify the agent_file_name to the agent file name you want to use
     # from the "agents" folder.
-    agent: dict[str, str] = {
-        "nickname": "Player",
-        "agent_file_name": "agent.py",
-    }
+    agent: AgentConfig

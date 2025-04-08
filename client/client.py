@@ -215,17 +215,14 @@ class Client:
         # Send agent name to server if in competitive (manual or agent) mode
         if self.game_mode != GameMode.OBSERVER:
             # Check if we can load name and sciper from config
-            if (
-                not self.config.agent["nickname"]
-                or not self.config.sciper
-            ):
+            if not self.config.agent.nickname or not self.config.sciper:
                 logger.error(
                     "Failed to send agent name to server: name or sciper not found in config"
                 )
                 return
 
             if not self.network.send_agent_ids(
-                self.config.agent["nickname"],
+                self.config.agent.nickname,
                 self.config.sciper,
             ):
                 logger.error("Failed to send agent name to server")
