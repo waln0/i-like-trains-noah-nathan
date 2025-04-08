@@ -41,7 +41,7 @@ class Client:
         self.running = True
         self.is_initialized = False
         self.in_waiting_room = True
-        self.lock = threading.Lock()  # Add thread lock for synchronization
+        self.lock = threading.Lock()
 
         # Game over variables
         self.game_over = False

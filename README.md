@@ -18,9 +18,14 @@ modify any existing files, except for [client/agent.py](/client/agent.py).
 #### Prerequisites:
 
 - Python 3.12.9
-- Pygame 2.6.1
 
-### 1. (Optional) Start a local server for testing
+### 1. Install dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### 2. (Optional) Start a local server for testing
 
 You can start a local server by running `python -m server` if you want to test the client locally. This will start a server on `0.0.0.0:5555`.
 Then, open another terminal, go to the project folder, and run `python -m client config.json` to connect to the local server. This is optional, but recommended for testing before connecting to the remote server.
