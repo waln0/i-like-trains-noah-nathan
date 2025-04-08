@@ -1,6 +1,5 @@
 import sys
-from client.agent import Agent
-from client.client import Client, main as client_main
+from client.client import Client
 from common.config import Config
 from server.server import Server
 
@@ -21,17 +20,15 @@ def main():
 
     # Override clients_per_room. The alternative would be to launch clients_per_room clients
     # but that might be too chaotic
-    config.server.clients_per_room = 1
+    config.server.nb_clients_per_room = 1
 
     # Enables setting breakpoints and resuming the runtime without considering the client as disconnected
     config.server.client_timeout_seconds = 86400  # 86400 seconds == 1 day
     config.client.server_timeout_seconds = 86400  # 86400 seconds == 1 day
-
+    config.server.waiting_time_before_bots_seconds = 0
     Server(config)
 
     client = Client(config)
-    agent = Agent("", client.network)
-    client.set_agent(agent)
     client.run()
 
 

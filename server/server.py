@@ -15,10 +15,6 @@ from common.client_config import GameMode
 
 
 def setup_server_logger():
-    # Delete existing handlers
-    for handler in logging.root.handlers[:]:
-        logging.root.removeHandler(handler)
-
     # Create a handler for the console
     console_handler = logging.StreamHandler()
     console_handler.setLevel(logging.DEBUG)
@@ -80,15 +76,13 @@ class Server:
             self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             self.server_socket.bind((host, self.config.port))
-            logger.info(
-                f"UDP socket created and bound to {host}:{self.config.port}"
-            )
+            logger.info(f"UDP socket created and bound to {host}:{self.config.port}")
         except Exception as e:
             logger.error(f"Error creating UDP socket: {e}")
             raise
 
         self.running = True
-        
+
         self.addr_to_name = {}  # Maps client addresses to agent names
         self.addr_to_sciper = {}  # Maps client addresses to scipers
         self.sciper_to_addr = {}  # Maps scipers to client addresses
@@ -121,18 +115,31 @@ class Server:
         """
         room_id = str(uuid.uuid4())[:8]
 
-        logger.info(f"Created new room {room_id} with {self.config.nb_clients_per_room} clients")
+        logger.info(
+            f"Created new room {room_id} with {self.config.nb_clients_per_room} clients"
+        )
         if self.config.game_mode == GameMode.LOCAL_EVALUATION:
             # Room size is fixed: 1 observer + N AIs
             nb_clients_per_room = 1 + len(self.config.local_agents)
-            logger.info(f"Creating local_evaluation room {room_id} with size {nb_clients_per_room}.")
+            logger.info(
+                f"Creating local_evaluation room {room_id} with size {nb_clients_per_room}."
+            )
         else:
             # Use default for competitive mode
             nb_clients_per_room = self.config.nb_clients_per_room
-            logger.info(f"Creating competitive room {room_id} with default size {nb_clients_per_room}.")
-        
-        new_room = Room(self.config, room_id, nb_clients_per_room, running, self.server_socket, self.send_cooldown_notification)
-        
+            logger.info(
+                f"Creating competitive room {room_id} with default size {nb_clients_per_room}."
+            )
+
+        new_room = Room(
+            self.config,
+            room_id,
+            nb_clients_per_room,
+            running,
+            self.server_socket,
+            self.send_cooldown_notification,
+        )
+
         logger.info(f"Created new room {room_id} with {nb_clients_per_room} clients")
         self.rooms[room_id] = new_room
         return new_room
@@ -147,7 +154,9 @@ class Server:
                 and not room.game_thread
             ):
                 return room
-        logger.debug(f"No suitable room found for {self.config.nb_clients_per_room} clients")
+        logger.debug(
+            f"No suitable room found for {self.config.nb_clients_per_room} clients"
+        )
         # If no suitable room found, create a new one
         return self.create_room(True)
 
@@ -208,7 +217,10 @@ class Server:
     def find_client_room(self, agent_sciper):
         for room in self.rooms.values():
             for addr in room.clients:
-                if addr in self.addr_to_sciper and self.addr_to_sciper[addr] == agent_sciper:
+                if (
+                    addr in self.addr_to_sciper
+                    and self.addr_to_sciper[addr] == agent_sciper
+                ):
                     return room
         return None
 
@@ -225,7 +237,7 @@ class Server:
                 and message["type"] == "agent_ids"
                 and "nickname" in message
                 and "agent_sciper" in message
-            and addr not in self.addr_to_name
+                and addr not in self.addr_to_name
             ):
                 # use handle_name_check and handle_sciper_check to check if the name and sciper are available
                 logger.debug(
@@ -237,15 +249,21 @@ class Server:
                     self.handle_new_client(message, addr)
                 else:
                     # ask the client to disconnect
-                    self.send_disconnect(addr, "Name or sciper not available or invalid")
-                    logger.warning(f"Name or sciper not available or invalid for {addr}")
+                    self.send_disconnect(
+                        addr, "Name or sciper not available or invalid"
+                    )
+                    logger.warning(
+                        f"Name or sciper not available or invalid for {addr}"
+                    )
 
         # In local_evaluation mode, the only client connecting is the observer, handle it directly
         elif self.config.game_mode == GameMode.LOCAL_EVALUATION:
             self.client_last_activity[addr] = time.time()
             # Assuming the first message in local_evaluation is implicitly a connection request
             # We might need a specific message type later if this assumption is wrong
-            if addr not in self.addr_to_sciper:  # Only handle if it's a new client address
+            if (
+                addr not in self.addr_to_sciper
+            ):  # Only handle if it's a new client address
                 self.handle_new_client(message, addr)
 
         # Handle ping responses for everyone
@@ -261,7 +279,9 @@ class Server:
             # Send a pong response even to unknown clients for connection verification
             pong_message = {"type": "pong"}
             try:
-                self.server_socket.sendto((json.dumps(pong_message) + "\n\n").encode(), addr)
+                self.server_socket.sendto(
+                    (json.dumps(pong_message) + "\n\n").encode(), addr
+                )
                 return
             except Exception as e:
                 logger.error(f"Error sending pong to {addr}: {e}")
@@ -279,11 +299,11 @@ class Server:
             #         f"Received message from {addr} ({agent_sciper}) but client not in any room. Message: {message}"
             #     )
         else:
-                # This is an unknown client sending a message that's not a common type
-                logger.debug(f"Received message from unknown client {addr}: {message}")
-                # Send a disconnect request to the client
-                self.send_disconnect(addr, "Unknown client")
-                logger.info(f"Sent disconnect request to unknown client {addr}")
+            # This is an unknown client sending a message that's not a common type
+            logger.debug(f"Received message from unknown client {addr}: {message}")
+            # Send a disconnect request to the client
+            self.send_disconnect(addr, "Unknown client")
+            logger.info(f"Sent disconnect request to unknown client {addr}")
 
     def send_disconnect(self, addr, message="Unknown client or invalid message format"):
         """Disconnect a client from the server"""
@@ -349,7 +369,7 @@ class Server:
         # Check if the name exists in any room
         name_available = True
         room = None  # Initialize room to None to avoid reference error
-        
+
         for room_id, current_room in self.rooms.items():
             room = current_room  # Keep a reference to the last room
             for client_addr, nickname in current_room.clients.items():
@@ -357,7 +377,9 @@ class Server:
                     # Check if the client with this name is in disconnected_clients
                     if client_addr in self.disconnected_clients:
                         # Client is disconnected, name can be reused
-                        logger.debug(f"Name '{name_to_check}' found in room {room_id} but client is disconnected, considering it available")
+                        logger.debug(
+                            f"Name '{name_to_check}' found in room {room_id} but client is disconnected, considering it available"
+                        )
                         continue
                     # Client is connected, name is not available
                     name_available = False
@@ -415,14 +437,16 @@ class Server:
 
         # Check if the sciper exists in our mapping
         sciper_available = sciper_to_check not in self.sciper_to_addr
-        
+
         # If sciper is not available, check if the associated address is in disconnected_clients
         if not sciper_available and sciper_to_check in self.sciper_to_addr:
             old_addr = self.sciper_to_addr[sciper_to_check]
             if old_addr in self.disconnected_clients:
                 # If the address is in disconnected_clients, consider the sciper as available
                 sciper_available = True
-                logger.info(f"Sciper {sciper_to_check} found but associated address {old_addr} is disconnected, considering it available")
+                logger.info(
+                    f"Sciper {sciper_to_check} found but associated address {old_addr} is disconnected, considering it available"
+                )
 
         if addr:
             # Prepare the response with best score if available
@@ -467,8 +491,10 @@ class Server:
             if not agent_sciper:
                 logger.warning("No agent sciper provided")
                 return
-            
-            logger.info(f"\nNew client {nickname} (sciper: {agent_sciper}) connecting from {addr}")
+
+            logger.info(
+                f"\nNew client {nickname} (sciper: {agent_sciper}) connecting from {addr}"
+            )
 
             # Initialize client activity tracking
             self.client_last_activity[addr] = time.time()
@@ -482,7 +508,9 @@ class Server:
         if agent_sciper in self.sciper_to_addr:
             old_addr = self.sciper_to_addr[agent_sciper]
             if old_addr != addr:  # Only if it's a different address
-                logger.info(f"Cleaning up previous connection for sciper {agent_sciper} at {old_addr}")
+                logger.info(
+                    f"Cleaning up previous connection for sciper {agent_sciper} at {old_addr}"
+                )
                 # Remove from disconnected_clients if present
                 if old_addr in self.disconnected_clients:
                     self.disconnected_clients.remove(old_addr)
@@ -609,17 +637,13 @@ class Server:
                     )
 
             elif message.get("action") == "direction":
-                if nickname in room.game.trains and room.game.is_train_alive(
-                    nickname
-                ):
+                if nickname in room.game.trains and room.game.is_train_alive(nickname):
                     room.game.trains[nickname].change_direction(message["direction"])
                 # else:
                 #     logger.warning(f"Failed to change direction for train {nickname}")
 
             elif message.get("action") == "drop_wagon":
-                if nickname in room.game.trains and room.game.is_train_alive(
-                    nickname
-                ):
+                if nickname in room.game.trains and room.game.is_train_alive(nickname):
                     last_wagon_position = room.game.trains[nickname].drop_wagon()
                     if last_wagon_position:
                         # Create a new passenger at the position of the dropped wagon
@@ -646,7 +670,7 @@ class Server:
                         self.server_socket.sendto(
                             (json.dumps(response) + "\n").encode(), addr
                         )
-            
+
             # For high scores request
             if "type" in message and message["type"] == "high_scores":
                 self.handle_high_scores_request(addr)
@@ -693,7 +717,10 @@ class Server:
                         continue
 
                     # Check if client has timed out
-                    if current_time - last_activity > self.config.client_timeout_seconds:
+                    if (
+                        current_time - last_activity
+                        > self.config.client_timeout_seconds
+                    ):
                         # Client has timed out, handle disconnection
                         self.handle_client_disconnection(addr, "timeout")
 
@@ -796,7 +823,9 @@ class Server:
                             logger.info(
                                 f"Creating AI client for train {original_nickname}"
                             )
-                            room.create_ai_for_train(train_nickname_to_replace=original_nickname) # TODO(adrien) replace all names by nicknames
+                            room.create_ai_for_train(
+                                train_nickname_to_replace=original_nickname
+                            )  # TODO(adrien) replace all names by nicknames
                         # else: Train might not exist or is already AI, log if necessary for debug
 
                     break  # Exit the room loop as we found and processed the client
@@ -809,17 +838,17 @@ class Server:
         # to ensure it happens even if client is not found in a room
         if addr in self.addr_to_name:
             del self.addr_to_name[addr]
-            
+
         # Clean up sciper information
         if addr in self.addr_to_sciper:
             sciper = self.addr_to_sciper[addr]
             if sciper in self.sciper_to_addr:
                 del self.sciper_to_addr[sciper]
             del self.addr_to_sciper[addr]
-            
+
         if addr in self.client_last_activity:
             del self.client_last_activity[addr]
-            
+
         if addr in self.ping_responses:
             del self.ping_responses[addr]
 
