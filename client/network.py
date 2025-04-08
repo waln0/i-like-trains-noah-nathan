@@ -8,7 +8,6 @@ import json
 import logging
 import threading
 import time
-from common.client_config import GameMode
 
 
 # Configure logging

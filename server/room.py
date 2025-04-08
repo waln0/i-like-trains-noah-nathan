@@ -1,5 +1,4 @@
 from common.server_config import ServerConfig
-from common.client_config import GameMode
 from server.game import Game
 import threading
 import time
