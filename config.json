@@ -2,16 +2,10 @@
     "client": {
         "host": "127.0.0.1",
         "port": 5555,
-        "screen_width": 500,
-        "screen_height": 360,
-        "leaderboard_width": 280,
         "manual_spawn": false,
-        "control_mode": "manual",
-        "server_timeout_seconds": 2.0,
-        "game_mode": "competitive",
-
-        "competitive_agent": {
-            "sciper": "000000",
+        "game_mode": "manual",
+        "sciper": "000000",
+        "agent": {
             "nickname": "Player",
             "agent_file_name": "agent.py"
         }
@@ -20,21 +14,16 @@
         "host": "0.0.0.0",
         "port": 5555,
         "nb_clients_per_room": 2,
-        "allow_multiple_connections": true,
-        "respawn_cooldown_seconds": 5.0,
         "waiting_time_before_bots_seconds": 30,
-        "high_score_filename ": "player_scores.json",
-        "ai_agent_file_name": "ai_agent.py",
-        "local_agents": [
+        "agents": [
             {
-                "nickname": "AgentExample1",
+                "nickname": "Agent1",
                 "agent_file_name": "agent_example1.py"
             },
             {
-                "nickname": "AgentExample2",
+                "nickname": "Agent2",
                 "agent_file_name": "agent_example2.py"
             }
-        ],
-        "game_mode": "competitive"
+        ]
     }
 }
