@@ -30,55 +30,54 @@ pip install -r requirements.txt
 You can start a local server by running `python -m server` if you want to test the client locally. This will start a server on `0.0.0.0:5555`.
 Then, open another terminal, go to the project folder, and run `python -m client config.json` to connect to the local server. This is optional, but recommended for testing before connecting to the remote server.
 
+This allows:
+    - You to connect locally with your own client
+    - Other players to connect to your game if you share your IP address with them
+    - This is useful for organizing your own competitions or testing with friends
+
 ### 3. Select a Game Mode
 
-The game supports two different modes that can be set in the `config.json` file:
+The game supports three different modes that can be set in the `config.json` file:
 
-- **Competitive Mode** (`"game_mode": "competitive"`): In this mode, the client connects to a remote server to compete against other players' agents in a battle. The client uses the agent specified in the `competitive_agent` field of the configuration file.
 
-  There are two ways to use the competitive mode:
+- **Agent Mode** (`"game_mode": "agent"`): In this mode, the client connects to a remote server to compete against other players' agents in a battle. The client uses the agent specified in the `agent` field of the configuration file.
   
-  1. **Connect to a remote server**: Set the server IP in `config.json` to connect to an existing game server (e.g., the official competition server).
-  
-  2. **Host your own game**: You can host your own game server by running `python -m server` with the server configured to use `0.0.0.0:5555`. This allows:
-     - You to connect locally with your own client
-     - Other players to connect to your game if you share your IP address with them
-     - This is useful for organizing your own competitions or testing with friends
+- **Manual Mode** (`"game_mode": "manual"`): In this mode, the client connects to a remote server to compete against other players' agents in a battle. The client does not use an agent and instead controls the train manually with keyboard arrows.
 
-- **Local Evaluation Mode** (`"game_mode": "local_evaluation"`): This mode allows you to run a local evaluation by loading multiple agents from your machine. The agents specified in the `local_agents` list in `config.json` will compete against each other, allowing you to test and compare different versions of your agents. For better organization, it's recommended to store your agents in the "agents" folder.
+- **Observer Mode** (`"game_mode": "observer"`): This mode will make your client an observer. If no other client connects, the agents specified in the `local_agents` list in `config.json` will compete against each other, allowing you to test and compare different versions of your agents. For better organization, it's recommended to store your agents in the "agents" folder.
 
 How the modes affect the client and server:
 
-- In **Competitive Mode**:
+- In **Agent/Manual Mode**:
   - The client connects to the remote IP specified in the configuration (it can also be your local ip if you want to test it locally).
-  - The client initializes with the agent specified in `competitive_agent`.
+  - The client initializes with the agent specified in `client.agent` (in the `config.json` file). 
   - The server hosts a game on `0.0.0.0` allowing multiple clients to connect (locally and remotely) and compete.
 
-- In **Local Evaluation Mode**:
+- In **Observer Mode**:
   - The client connects to localhost and acts as an observer, only displaying the game.
-  - The server creates a room with one slot for the observer client and fills the rest with AI clients based on the agents specified in `local_agents`.
+  - The server creates a room with one slot for the observer client and fills the rest with AI clients based on the agents specified in `server.agents` (in the `config.json` file).
   - This allows you to watch different versions of your agents compete against each other.
 
-Modify the game modes in `config.json`. Modify the one in "client" and the one in "server" according to the mode you want to use.
+Modify the game modes in `config.json`. Modify the one in "client" according to the mode you want to use.
 
-### 4 Set up the agents for local evaluation and competitive modes
+### 4 Set up the agents for agent/manual and observer modes
 
-In the `config.json` file, you can find the configuration for the competitive and local evaluation modes.
-Set up your sciper, a train name, and the name of the agent file for the competitive agent. This agent file will be used to compete against the other agents in the competitive mode.
+In the `config.json` file, you can find the configuration for the agent/manual and observer modes.
+Set up your sciper, a train name, and the name of the agent file. This agent file will be used to compete against the other agents in the agent/manual modes.
 
-For the local evaluation mode, set up a list containing the names and agent file names for the agents you want to test locally. You can add as many agents as you want.
+For the observer mode, set up a list containing the names and agent file names for the agents you want to test locally. You can add as many agents as you want.
 
 Example configuration in `config.json`:
 ```json
 "client": {
-    "competitive_agent": {
+    "agent": {
         "sciper": "000000",
         "nickname": "Player",
         "agent_file_name": "agent.py"
     },
 },
 "server": {
-    "local_agents": [
+    "agents": [
         {
             "nickname": "AgentExample1",
             "agent_file_name": "agent_example1.py"
@@ -90,8 +89,6 @@ Example configuration in `config.json`:
     ]
 }
 ```
-
-You may also want to modify the `ai_agent_file_name` in the `server` section to point to your own agent file. This will be used when a client disconnects in competitive mode.
 
 ### 4. Run the client
 
@@ -122,27 +119,19 @@ There are several ways to play and test your agent:
    - **Pros**: Allows testing without depending on remote server availability, and an easier debugging process
    - **Cons**: Requires managing multiple terminals
 
-3. **Local evaluation mode**:
-   - Configure `config.json` to use `"game_mode": "local_evaluation"`
-   - Run `python -m client config.json`
+3. **Run a local server + an observer client**:
+   - Configure `config.json` to use `"game_mode": "observer"`
+   - Run `python -m client`
    - **Pros**: Easiest way to test multiple agent implementations against each other and choose the best one
    - **Cons**: Doesn't test network robustness of your implementation
 
 ### Evaluation Setup
 
 During the final evaluation:
-- Your agent will be tested in a competitive environment similar to option 3
+- Your agent will be tested in an environment similar to option 3
 - Your agent file will be evaluated against our bots of different levels. The more bots you beat, the better your agent will be ranked.
 
-## How to Play
-
-### 1. Launch the client
-
-1. Launch your client: `python -m client config.json`.
-2. Wait in the waiting room until all players are connected.
-3. Your agent will automatically control your train.
-
-### 2. Play the game
+## Game rules
 
 - The goal is to collect as many passengers (they will appear at random positions on the map), incrementing your number of wagons, and then deliver them to the delivery zone. The number above each passenger spot indicates how many passengers are at that location. You can find the list of passengers with `self.passengers` (in `client/agent.py`).
 
@@ -278,10 +267,6 @@ Some constants are available in the config.json file to customize your graphical
 - `screen_height`: height of the game window.
 - `cell_size`: size of each cell in the grid.
 - `leaderboard_width`: width of the leaderboard.
-
-Some constants are available for debugging:
-- `manual_spawn`: Automatic respawn when available. False by default, otherwise the player has to press the space bar.
-- `control_mode`: `manual` (by default) enables manual control of your train with keyboard arrows. `agent` enables agent automatic control.
 
 ### Logging System
 

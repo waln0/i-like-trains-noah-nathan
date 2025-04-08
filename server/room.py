@@ -37,7 +37,15 @@ AI_NAMES = [
 
 class Room:
     # TODO(alok): remove nb_clients_max and use config.clients_per_room
-    def __init__(self, config: ServerConfig, room_id, nb_clients_max, running, server_socket, send_cooldown_notification):
+    def __init__(
+        self,
+        config: ServerConfig,
+        room_id,
+        nb_clients_max,
+        running,
+        server_socket,
+        send_cooldown_notification,
+    ):
         self.config = config
         self.id = room_id
         self.nb_clients_max = nb_clients_max
@@ -57,8 +65,7 @@ class Room:
         self.game_over = False  # Track if the game is over
         self.room_creation_time = time.time()  # Track when the room was created
         self.first_client_join_time = None  # Track when the first client joins
-        self.stop_waiting_room = False # Flag to stop the waiting room thread - Initialized BEFORE thread start
-
+        self.stop_waiting_room = False  # Flag to stop the waiting room thread - Initialized BEFORE thread start
 
         # Start waiting room broadcast thread
         self.waiting_room_thread = threading.Thread(target=self.broadcast_waiting_room)
@@ -136,7 +143,9 @@ class Room:
         self.used_ai_names.add(generic_name)
         return generic_name
 
-    def create_ai_for_train(self, train_nickname_to_replace=None, ai_nickname=None, ai_agent_file_name=None):
+    def create_ai_for_train(
+        self, train_nickname_to_replace=None, ai_nickname=None, ai_agent_file_name=None
+    ):
         """Create an AI client to control a train"""
         if ai_nickname is None:
             ai_nickname = self.get_available_ai_name()
@@ -156,9 +165,14 @@ class Room:
                 self.clients[("AI", ai_nickname)] = ai_nickname
 
                 # Import the AI agent from the config path
-                logger.info(f"Creating AI client {ai_nickname} using agent from {ai_agent_file_name}")
+                logger.info(
+                    f"Creating AI client {ai_nickname} using agent from {ai_agent_file_name}"
+                )
                 from server.ai_client import AIClient
-                self.ai_clients[ai_nickname] = AIClient(self, ai_nickname, ai_agent_file_name)
+
+                self.ai_clients[ai_nickname] = AIClient(
+                    self, ai_nickname, ai_agent_file_name
+                )
 
                 # Add the ai_client to the game
                 self.game.ai_clients[ai_nickname] = self.ai_clients[ai_nickname]
@@ -191,7 +205,9 @@ class Room:
             # Move the train to the new key in the dictionary
             self.game.trains[ai_nickname] = train
             del self.game.trains[train_nickname_to_replace]
-            logger.debug(f"Moved train {train_nickname_to_replace} to {ai_nickname} in game")
+            logger.debug(
+                f"Moved train {train_nickname_to_replace} to {ai_nickname} in game"
+            )
 
             # # Mark trains as dirty to update clients
             # room.game._dirty["trains"] = True
@@ -223,7 +239,9 @@ class Room:
                 #    logger.debug(f"Skipping rename notification for AI client: {client_addr}")
 
             # Create the AI client with the new name
-            self.ai_clients[ai_nickname] = AIClient(self, ai_nickname, ai_agent_file_name)
+            self.ai_clients[ai_nickname] = AIClient(
+                self, ai_nickname, ai_agent_file_name
+            )
 
         else:
             logger.warning(
@@ -369,16 +387,18 @@ class Room:
 
                         # If time is up and room is not full, add bots and start the game
                         if (
-                            ((self.config.game_mode == GameMode.COMPETITIVE and remaining_time == 0)
-                            or (self.config.game_mode == GameMode.LOCAL_EVALUATION))
-                            and not self.game_thread
-                        ):
+                            (
+                                (self.config.game_mode == GameMode.AGENT
+                                or self.config.game_mode == GameMode.MANUAL)
+                                and remaining_time == 0
+                            )
+                            or (self.config.game_mode == GameMode.OBSERVER)
+                        ) and not self.game_thread:
                             logger.info(
                                 f"Waiting time expired for room {self.id}, adding bots and starting game"
                             )
                             self.fill_with_bots()
                             self.start_game()
-
 
                     waiting_room_data = {
                         "type": "waiting_room",
@@ -402,9 +422,7 @@ class Room:
                             ):
                                 continue
 
-                            self.server_socket.sendto(
-                                state_json.encode(), client_addr
-                            )
+                            self.server_socket.sendto(state_json.encode(), client_addr)
                         except Exception as e:
                             logger.error(
                                 f"Error sending waiting room data to client: {e}"
@@ -490,9 +508,9 @@ class Room:
     def fill_with_bots(self):
         """Fill the room with bots and start the game"""
         logger.debug(f"Filling room {self.id} with bots")
-        if self.config.game_mode == GameMode.LOCAL_EVALUATION:
+        if self.config.game_mode == GameMode.OBSERVER:
             nb_bots_needed = len(self.config.local_agents)
-        elif self.config.game_mode == GameMode.COMPETITIVE:
+        else:
             current_players = len(self.clients)
             nb_bots_needed = self.nb_clients_max - current_players
 
@@ -505,10 +523,12 @@ class Room:
         for i in range(nb_bots_needed):
             ai_nickname = None
             ai_agent_file_name = None
-            if self.config.game_mode == GameMode.LOCAL_EVALUATION:
+            if self.config.game_mode == GameMode.OBSERVER:
                 ai_nickname = self.config.local_agents[i]["nickname"]
                 ai_agent_file_name = self.config.local_agents[i]["agent_file_name"]
             else:
                 ai_nickname = self.get_available_ai_name()
                 ai_agent_file_name = self.config.ai_agent_file_name
-            self.create_ai_for_train(ai_nickname=ai_nickname, ai_agent_file_name=ai_agent_file_name)
+            self.create_ai_for_train(
+                ai_nickname=ai_nickname, ai_agent_file_name=ai_agent_file_name
+            )
