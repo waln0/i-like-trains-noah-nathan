@@ -30,11 +30,12 @@ class Client:
         """Initialize the client"""
 
         self.config = config.client
+        self.game_mode = self.config.game_mode
 
-        # If we launch a local evaluation, we want the host to be local_host
-        if self.config.game_mode == GameMode.LOCAL_EVALUATION:
+        # If we launch an observer, we want the host to be local_host, otherwise
+        if self.game_mode == GameMode.OBSERVER:
             host = "localhost"
-        elif self.config.game_mode == GameMode.COMPETITIVE:
+        else:
             host = self.config.host
 
         # Initialize state variables
@@ -98,13 +99,13 @@ class Client:
         self.network = NetworkManager(self, host, self.config.port)
         self.renderer = Renderer(self)
 
-        self.event_handler = EventHandler(self, self.config.control_mode)
-        self.game_state = GameState(self, self.config.control_mode)
+        self.event_handler = EventHandler(self, self.game_mode)
+        self.game_state = GameState(self, self.game_mode)
 
         # Initialize agent based on game mode
         self.agent = None
-        if self.config.game_mode == GameMode.COMPETITIVE:
-            agent_info = self.config.competitive_agent
+        if self.game_mode != GameMode.OBSERVER:
+            agent_info = self.config.agent
             if agent_info and "agent_file_name" in agent_info:
                 logger.info(f"Loading agent: {agent_info['agent_file_name']}")
                 agent_file_name = agent_info["agent_file_name"]
@@ -120,7 +121,7 @@ class Client:
                     # Add parent directory to Python path to allow importing agents package
                     module = importlib.import_module(module_path)
                     self.nickname = agent_info["nickname"]
-                    self.agent_sciper = agent_info["sciper"]
+                    # self.agent_sciper = agent_info["sciper"]
                     self.agent = module.Agent(self.nickname, self.network)
                 except Exception as e:
                     logger.error(f"Error importing agent module: {e}")
@@ -211,24 +212,13 @@ class Client:
             logger.error(f"Error creating login window: {e}")
             return
 
-        # Send agent name to server if in competitive mode
-        if self.config.game_mode == GameMode.COMPETITIVE:
-            # Check if we can load name and sciper from config
-            if (
-                not self.config.competitive_agent["nickname"]
-                or not self.config.competitive_agent["sciper"]
-            ):
-                logger.error(
-                    "Failed to send agent name to server: name or sciper not found in config"
-                )
-                return
-
-            if not self.network.send_agent_ids(
-                self.config.competitive_agent["nickname"],
-                self.config.competitive_agent["sciper"],
-            ):
-                logger.error("Failed to send agent name to server")
-                return
+        if not self.network.send_agent_ids(
+            self.config.agent.nickname if self.game_mode == GameMode.AGENT else self.config.manual.nickname if self.game_mode == GameMode.MANUAL else "",
+            self.config.sciper if self.game_mode != GameMode.OBSERVER else "",
+            self.game_mode.value
+        ):
+            logger.error("Failed to send agent ids to server")
+            return
 
         # Main loop
         clock = pygame.time.Clock()

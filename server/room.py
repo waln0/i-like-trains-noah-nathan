@@ -37,28 +37,36 @@ AI_NAMES = [
 
 class Room:
     # TODO(alok): remove nb_clients_max and use config.clients_per_room
-    def __init__(self, config: ServerConfig, room_id, nb_clients_max, running, server_socket, send_cooldown_notification):
+    def __init__(
+        self,
+        config: ServerConfig,
+        room_id,
+        nb_players_max,
+        running,
+        server_socket,
+        send_cooldown_notification,
+    ):
         self.config = config
         self.id = room_id
-        self.nb_clients_max = nb_clients_max
+        self.nb_players_max = nb_players_max
         self.server_socket = server_socket
         send_cooldown_notification
 
-        self.game = Game(config, send_cooldown_notification, self.nb_clients_max)
+        self.game = Game(config, send_cooldown_notification, self.nb_players_max)
         # TODO(alok): why not put room_id and server in Game's __init__ method?
         self.running = running
 
         self.game.room_id = room_id  # Store the room ID in the Game object
 
         self.clients = {}  # {addr: nickname}
+        self.client_game_modes = {}  # {addr: game_mode}
         self.game_thread = None
 
         self.waiting_room_thread = None
         self.game_over = False  # Track if the game is over
         self.room_creation_time = time.time()  # Track when the room was created
         self.first_client_join_time = None  # Track when the first client joins
-        self.stop_waiting_room = False # Flag to stop the waiting room thread - Initialized BEFORE thread start
-
+        self.stop_waiting_room = False  # Flag to stop the waiting room thread - Initialized BEFORE thread start
 
         # Start waiting room broadcast thread
         self.waiting_room_thread = threading.Thread(target=self.broadcast_waiting_room)
@@ -73,7 +81,7 @@ class Room:
         self.ai_clients = {}  # Maps train names to AI clients
         self.AI_NAMES = AI_NAMES  # Store the AI names as an instance attribute
 
-        logger.info(f"Room {room_id} created with number of clients {nb_clients_max}")
+        logger.info(f"Room {room_id} created with number of clients {nb_players_max}")
 
     def start_game(self):
         logger.debug("Starting game...")
@@ -136,7 +144,9 @@ class Room:
         self.used_ai_names.add(generic_name)
         return generic_name
 
-    def create_ai_for_train(self, train_nickname_to_replace=None, ai_nickname=None, ai_agent_file_name=None):
+    def create_ai_for_train(
+        self, train_nickname_to_replace=None, ai_nickname=None, ai_agent_file_name=None
+    ):
         """Create an AI client to control a train"""
         if ai_nickname is None:
             ai_nickname = self.get_available_ai_name()
@@ -156,9 +166,14 @@ class Room:
                 self.clients[("AI", ai_nickname)] = ai_nickname
 
                 # Import the AI agent from the config path
-                logger.info(f"Creating AI client {ai_nickname} using agent from {ai_agent_file_name}")
+                logger.info(
+                    f"Creating AI client {ai_nickname} using agent from {ai_agent_file_name}"
+                )
                 from server.ai_client import AIClient
-                self.ai_clients[ai_nickname] = AIClient(self, ai_nickname, ai_agent_file_name)
+
+                self.ai_clients[ai_nickname] = AIClient(
+                    self, ai_nickname, ai_agent_file_name
+                )
 
                 # Add the ai_client to the game
                 self.game.ai_clients[ai_nickname] = self.ai_clients[ai_nickname]
@@ -191,7 +206,9 @@ class Room:
             # Move the train to the new key in the dictionary
             self.game.trains[ai_nickname] = train
             del self.game.trains[train_nickname_to_replace]
-            logger.debug(f"Moved train {train_nickname_to_replace} to {ai_nickname} in game")
+            logger.debug(
+                f"Moved train {train_nickname_to_replace} to {ai_nickname} in game"
+            )
 
             # # Mark trains as dirty to update clients
             # room.game._dirty["trains"] = True
@@ -223,7 +240,9 @@ class Room:
                 #    logger.debug(f"Skipping rename notification for AI client: {client_addr}")
 
             # Create the AI client with the new name
-            self.ai_clients[ai_nickname] = AIClient(self, ai_nickname, ai_agent_file_name)
+            self.ai_clients[ai_nickname] = AIClient(
+                self, ai_nickname, ai_agent_file_name
+            )
 
         else:
             logger.warning(
@@ -335,10 +354,26 @@ class Room:
         close_thread.start()
 
     def is_full(self):
-        return len(self.clients) >= self.nb_clients_max
+        nb_players = self.get_player_count()
+        return nb_players >= self.nb_players_max
+
+    def get_players(self):
+        return [
+            self.clients[addr]
+            for addr in self.clients
+            if addr in self.client_game_modes
+            and self.client_game_modes[addr] != "observer"
+        ]
 
     def get_player_count(self):
-        return len(self.clients)
+        return len(
+            [mode for mode in self.client_game_modes.values() if mode != "observer"]
+        )
+
+    def get_observer_count(self):
+        return len(
+            [mode for mode in self.client_game_modes.values() if mode == "observer"]
+        )
 
     def broadcast_waiting_room(self):
         """Broadcast waiting room data to all clients"""
@@ -368,24 +403,19 @@ class Room:
                             )
 
                         # If time is up and room is not full, add bots and start the game
-                        if (
-                            ((self.config.game_mode == GameMode.COMPETITIVE and remaining_time == 0)
-                            or (self.config.game_mode == GameMode.LOCAL_EVALUATION))
-                            and not self.game_thread
-                        ):
+                        if (remaining_time == 0) and not self.game_thread:
                             logger.info(
                                 f"Waiting time expired for room {self.id}, adding bots and starting game"
                             )
                             self.fill_with_bots()
                             self.start_game()
 
-
                     waiting_room_data = {
                         "type": "waiting_room",
                         "data": {
                             "room_id": self.id,
-                            "players": list(self.clients.values()),
-                            "nb_players": self.nb_clients_max,
+                            "players": list(self.get_players()),
+                            "nb_players": self.nb_players_max,
                             "game_started": self.game_thread is not None,
                             "waiting_time": int(remaining_time),
                         },
@@ -402,9 +432,7 @@ class Room:
                             ):
                                 continue
 
-                            self.server_socket.sendto(
-                                state_json.encode(), client_addr
-                            )
+                            self.server_socket.sendto(state_json.encode(), client_addr)
                         except Exception as e:
                             logger.error(
                                 f"Error sending waiting room data to client: {e}"
@@ -490,11 +518,8 @@ class Room:
     def fill_with_bots(self):
         """Fill the room with bots and start the game"""
         logger.debug(f"Filling room {self.id} with bots")
-        if self.config.game_mode == GameMode.LOCAL_EVALUATION:
-            nb_bots_needed = len(self.config.local_agents)
-        elif self.config.game_mode == GameMode.COMPETITIVE:
-            current_players = len(self.clients)
-            nb_bots_needed = self.nb_clients_max - current_players
+        current_players = self.get_player_count()
+        nb_bots_needed = self.nb_players_max - current_players
 
         if nb_bots_needed <= 0:
             return
@@ -502,13 +527,24 @@ class Room:
         logger.info(f"Adding {nb_bots_needed} bots to room {self.id}")
 
         # Add bots to the room
-        for i in range(nb_bots_needed):
-            ai_nickname = None
-            ai_agent_file_name = None
-            if self.config.game_mode == GameMode.LOCAL_EVALUATION:
-                ai_nickname = self.config.local_agents[i]["nickname"]
-                ai_agent_file_name = self.config.local_agents[i]["agent_file_name"]
-            else:
-                ai_nickname = self.get_available_ai_name()
-                ai_agent_file_name = self.config.ai_agent_file_name
-            self.create_ai_for_train(ai_nickname=ai_nickname, ai_agent_file_name=ai_agent_file_name)
+        used_nicknames = set(self.clients.keys())
+        for _ in range(nb_bots_needed):
+            # We randomly chose an agent to use from agents in the config
+            # We create a new AI client with the chosen agent and increment the counter
+            # If the nickname is already use, we increment a counter
+            chosen_agent_index = random.randint(0, len(self.config.agents) - 1)
+            ai_agent_file_name = self.config.agents[chosen_agent_index].agent_file_name
+
+            attempt_for_nickname = 0
+            nickname_already_in_use = True
+            while nickname_already_in_use:
+                ai_nickname = f"AI_{attempt_for_nickname}"
+                attempt_for_nickname += 1
+                if ai_nickname not in used_nicknames:
+                    nickname_already_in_use = False
+
+            used_nicknames.add(ai_nickname)
+
+            self.create_ai_for_train(
+                ai_nickname=ai_nickname, ai_agent_file_name=ai_agent_file_name
+            )

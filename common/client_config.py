@@ -1,15 +1,15 @@
 from enum import Enum
 from pydantic import BaseModel
 
+from common.agent_config import AgentConfig
 
-class ControlMode(Enum):
-    MANUAL = "manual"
-    AGENT = "agent"
-
+class ManualConfig(BaseModel):
+    nickname: str
 
 class GameMode(Enum):
-    COMPETITIVE = "competitive"
-    LOCAL_EVALUATION = "local_evaluation"
+    MANUAL = "manual"
+    AGENT = "agent"
+    OBSERVER = "observer"
 
 
 class ClientConfig(BaseModel):
@@ -31,22 +31,21 @@ class ClientConfig(BaseModel):
     # is set to True, in which case you have to hit "SPACE" to respawn.
     manual_spawn: bool = False
 
-    # When control_mode is set to MANUAL, you control the train using the arrow keys + 'd'
-    # to drop wagons.
-    # When control_mode is set to AGENT, the agent code is called.
-    control_mode: ControlMode = ControlMode.MANUAL
+    # When game_mode is set to MANUAL, you control the train using the arrow keys + 'd'
+    # to drop wagons. When game_mode is set to AGENT, the agent code is called.
+    # When game_mode is set to OBSERVER, the agents are.
+    game_mode: GameMode = GameMode.MANUAL
 
     # How long to wait before considering a server as disconnected.
     server_timeout_seconds: float = 2.0
 
-    # Game mode
-    game_mode: GameMode = GameMode.COMPETITIVE
+    # Sciper
+    sciper: str = "000000"
 
     # Competitive agent configuration, change the sciper to yours, and the nickname to
     # your "nickname". Modify the agent_file_name to the agent file name you want to use
-    # from the common/agents/ folder.
-    competitive_agent: dict[str, str] = {
-        "sciper": "000000",
-        "nickname": "Player",
-        "agent_file_name": "agent.py",
-    }
+    # from the "agents" folder.
+    agent: AgentConfig
+
+    # Manual agent configuration
+    manual: ManualConfig

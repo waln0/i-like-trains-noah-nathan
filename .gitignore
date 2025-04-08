@@ -6,3 +6,4 @@ server/config.txt
 player_scores.json
 
 common/agents/staff_*.py
+common/agents/ai_agent.py

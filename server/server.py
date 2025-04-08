@@ -11,7 +11,6 @@ from common.config import Config
 from server.high_score import HighScore
 from server.passenger import Passenger
 from server.room import Room
-from common.client_config import GameMode
 
 
 def setup_server_logger():
@@ -56,7 +55,6 @@ logger = setup_server_logger()
 class Server:
     def __init__(self, config: Config):
         self.config = config.server
-        logger.debug(f"Initializing server in {self.config.game_mode} mode.")
         self.rooms = {}  # {room_id: Room}
         self.lock = threading.Lock()
 
@@ -64,12 +62,7 @@ class Server:
         self.high_score.load()
         self.high_score.dump()
 
-        if self.config.game_mode == GameMode.LOCAL_EVALUATION:
-            host = "localhost"
-            self.nb_clients_per_room = 1
-        elif self.config.game_mode == GameMode.COMPETITIVE:
-            host = self.config.host
-            self.nb_clients_per_room = self.config.nb_clients_per_room
+        host = self.config.host
 
         # Create UDP socket with proper error handling
         try:
@@ -85,6 +78,7 @@ class Server:
 
         self.addr_to_name = {}  # Maps client addresses to agent names
         self.addr_to_sciper = {}  # Maps client addresses to scipers
+        self.addr_to_game_mode = {}  # Maps client addresses to game modes
         self.sciper_to_addr = {}  # Maps scipers to client addresses
         self.client_last_activity = {}  # Maps client addresses to last activity timestamp
         self.disconnected_clients = (
@@ -115,32 +109,19 @@ class Server:
         """
         room_id = str(uuid.uuid4())[:8]
 
-        logger.info(
-            f"Created new room {room_id} with {self.config.nb_clients_per_room} clients"
-        )
-        if self.config.game_mode == GameMode.LOCAL_EVALUATION:
-            # Room size is fixed: 1 observer + N AIs
-            nb_clients_per_room = 1 + len(self.config.local_agents)
-            logger.info(
-                f"Creating local_evaluation room {room_id} with size {nb_clients_per_room}."
-            )
-        else:
-            # Use default for competitive mode
-            nb_clients_per_room = self.config.nb_clients_per_room
-            logger.info(
-                f"Creating competitive room {room_id} with default size {nb_clients_per_room}."
-            )
+        nb_players_per_room = self.config.nb_clients_per_room
+        logger.info(f"Creating room {room_id} with size {nb_players_per_room}.")
 
         new_room = Room(
             self.config,
             room_id,
-            nb_clients_per_room,
+            nb_players_per_room,
             running,
             self.server_socket,
             self.send_cooldown_notification,
         )
 
-        logger.info(f"Created new room {room_id} with {nb_clients_per_room} clients")
+        logger.info(f"Created new room {room_id} with {nb_players_per_room} clients")
         self.rooms[room_id] = new_room
         return new_room
 
@@ -149,7 +130,7 @@ class Server:
         # First try to find a non-full room
         for room in self.rooms.values():
             if (
-                room.nb_clients_max == self.config.nb_clients_per_room
+                room.nb_players_max == self.config.nb_clients_per_room
                 and not room.is_full()
                 and not room.game_thread
             ):
@@ -230,41 +211,26 @@ class Server:
             # Remove the client from the disconnected clients list
             self.disconnected_clients.remove(addr)
 
-        # Check if we need to handle agent initialization
-        if self.config.game_mode == GameMode.COMPETITIVE:
-            if (
-                "type" in message
-                and message["type"] == "agent_ids"
-                and "nickname" in message
-                and "agent_sciper" in message
-                and addr not in self.addr_to_name
-            ):
+        # # Check if client's game-mode is observer
+        if (
+            "type" in message
+            and message["type"] == "agent_ids"
+            and "nickname" in message
+            and "agent_sciper" in message
+            and "game_mode" in message
+            and addr not in self.addr_to_name
+        ):
+            if message["game_mode"] == "observer":
                 # use handle_name_check and handle_sciper_check to check if the name and sciper are available
                 logger.debug(
                     f"Checking name and sciper availability for {message['nickname']} ({message['agent_sciper']})"
                 )
-                if self.handle_name_check(message, None) and self.handle_sciper_check(
-                    message, None
-                ):
+                if self.handle_name_check(message, None) and self.handle_sciper_check(message, None):
                     self.handle_new_client(message, addr)
-                else:
-                    # ask the client to disconnect
-                    self.send_disconnect(
-                        addr, "Name or sciper not available or invalid"
-                    )
-                    logger.warning(
-                        f"Name or sciper not available or invalid for {addr}"
-                    )
 
-        # In local_evaluation mode, the only client connecting is the observer, handle it directly
-        elif self.config.game_mode == GameMode.LOCAL_EVALUATION:
-            self.client_last_activity[addr] = time.time()
-            # Assuming the first message in local_evaluation is implicitly a connection request
-            # We might need a specific message type later if this assumption is wrong
-            if (
-                addr not in self.addr_to_sciper
-            ):  # Only handle if it's a new client address
-                self.handle_new_client(message, addr)
+        self.client_last_activity[addr] = time.time()
+        if addr not in self.addr_to_sciper:  # Only handle if it's a new client address
+            self.handle_new_client(message, addr)
 
         # Handle ping responses for everyone
         if "type" in message and message["type"] == "pong":
@@ -474,35 +440,36 @@ class Server:
 
         nickname = message.get("nickname", "")
         agent_sciper = message.get("agent_sciper", "")
+        game_mode = message.get("game_mode", "")
 
-        if self.config.game_mode == GameMode.LOCAL_EVALUATION:
-            logger.info(f"New client connected in local_evaluation mode: {addr}")
+        if game_mode == "observer":
+            logger.info(f"New client connected in OBSERVER mode: {addr}")
             self.client_last_activity[addr] = time.time()
 
             # generate a random name and sciper
             nickname = f"Observer_{random.randint(1000, 9999)}"
             agent_sciper = str(random.randint(100000, 999999))
 
-        elif self.config.game_mode == GameMode.COMPETITIVE:
-            if not nickname:
-                logger.warning("No agent name provided")
-                return
+        # else:
+        if not nickname:
+            logger.warning("No agent name provided")
+            return
 
-            if not agent_sciper:
-                logger.warning("No agent sciper provided")
-                return
+        if not agent_sciper:
+            logger.warning("No agent sciper provided")
+            return
 
-            logger.info(
-                f"\nNew client {nickname} (sciper: {agent_sciper}) connecting from {addr}"
-            )
+        logger.info(
+            f"\nNew client {nickname} (sciper: {agent_sciper}) connecting from {addr}"
+        )
 
-            # Initialize client activity tracking
-            self.client_last_activity[addr] = time.time()
+        # Initialize client activity tracking
+        self.client_last_activity[addr] = time.time()
 
-            # Log new client connection
-            logger.info(
-                f"New client {nickname} (sciper: {agent_sciper}) connecting from {addr}"
-            )
+        # Log new client connection
+        logger.info(
+            f"New client {nickname} (sciper: {agent_sciper}) connecting from {addr}"
+        )
 
         # Check if this sciper was previously connected and clean up any old references
         if agent_sciper in self.sciper_to_addr:
@@ -519,6 +486,8 @@ class Server:
                     del self.addr_to_name[old_addr]
                 if old_addr in self.addr_to_sciper:
                     del self.addr_to_sciper[old_addr]
+                if old_addr in self.addr_to_game_mode:
+                    del self.addr_to_game_mode[old_addr]
                 if old_addr in self.client_last_activity:
                     del self.client_last_activity[old_addr]
                 if old_addr in self.ping_responses:
@@ -527,6 +496,7 @@ class Server:
         # Associate address with name and sciper
         self.addr_to_name[addr] = nickname
         self.addr_to_sciper[addr] = agent_sciper
+        self.addr_to_game_mode[addr] = game_mode
         self.sciper_to_addr[agent_sciper] = addr
 
         # Remove from disconnected_clients if present (just in case)
@@ -536,6 +506,7 @@ class Server:
         # Assign to a room
         selected_room = self.get_available_room()
         selected_room.clients[addr] = nickname
+        selected_room.client_game_modes[addr] = game_mode
 
         # Mark the room as having at least one human player
         selected_room.has_clients = True
@@ -554,32 +525,32 @@ class Server:
             "data": {
                 "room_id": selected_room.id,
                 "current_players": len(selected_room.clients),
-                "max_players": selected_room.nb_clients_max,
+                "max_players": selected_room.nb_players_max,
             },
         }
         self.server_socket.sendto((json.dumps(response) + "\n").encode(), addr)
 
-        if self.config.game_mode == GameMode.COMPETITIVE:
-            # Send initial game state immediately
-            game_status = {
-                "type": "waiting_room",
-                "data": {
-                    "room_id": selected_room.id,
-                    "players": list(selected_room.clients.values()),
-                    "nb_players": selected_room.nb_clients_max,
-                    "game_started": selected_room.game_thread is not None,
-                    "waiting_time": int(
-                        max(
-                            0,
-                            self.config.waiting_time_before_bots_seconds
-                            - (time.time() - selected_room.room_creation_time),
-                        )
+        # if self.config.game_mode != GameMode.OBSERVER:
+        # Send initial game state immediately
+        game_status = {
+            "type": "waiting_room",
+            "data": {
+                "room_id": selected_room.id,
+                "players": list(selected_room.clients.values()),
+                "nb_players": selected_room.nb_players_max,
+                "game_started": selected_room.game_thread is not None,
+                "waiting_time": int(
+                    max(
+                        0,
+                        self.config.waiting_time_before_bots_seconds
+                        - (time.time() - selected_room.room_creation_time),
                     )
-                    if selected_room.has_clients
-                    else 0,
-                },
-            }
-            self.server_socket.sendto((json.dumps(game_status) + "\n").encode(), addr)
+                )
+                if selected_room.has_clients
+                else 0,
+            },
+        }
+        self.server_socket.sendto((json.dumps(game_status) + "\n").encode(), addr)
 
     def handle_client_message(self, addr, message, room):
         """Handles messages received from the client"""
@@ -845,6 +816,10 @@ class Server:
             if sciper in self.sciper_to_addr:
                 del self.sciper_to_addr[sciper]
             del self.addr_to_sciper[addr]
+
+        # Clean up game mode information
+        if addr in self.addr_to_game_mode:
+            del self.addr_to_game_mode[addr]
 
         if addr in self.client_last_activity:
             del self.client_last_activity[addr]

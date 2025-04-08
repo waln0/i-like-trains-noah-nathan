@@ -1,5 +1,7 @@
 from pydantic import BaseModel
-from common.client_config import GameMode
+
+from common.agent_config import AgentConfig
+
 
 class ServerConfig(BaseModel):
     # Host should either be 127.0.0.1 if you only want to accept local connections
@@ -34,7 +36,7 @@ class ServerConfig(BaseModel):
     waiting_time_before_bots_seconds: int = 30
 
     # Path to the file where player scores are saved.
-    high_score_filename : str = "player_scores.json"
+    high_score_filename: str = "player_scores.json"
 
     # Maximum number of passengers on a given square.
     max_passengers: int = 3
@@ -45,21 +47,9 @@ class ServerConfig(BaseModel):
     delivery_cooldown_seconds: float = 0.1
 
     # Path to an agent file. Change this path to point to one of your agents
-    # to use when creating bots (when game_mode is "competitive" and a client 
+    # to use when creating bots (when game_mode is "manual" or "agent" and a client
     # disconnects).
     ai_agent_file_name: str = "ai_agent.py"
 
     # Local agents configuration, add or remove agents you want to evaluate as needed
-    local_agents: list[dict[str, str]] = [
-        {
-            "nickname": "Agent1",
-            "agent_file_name": "agent1.py"
-        },
-        {
-            "nickname": "Agent2",
-            "agent_file_name": "agent2.py"
-        }
-    ]
-
-    # Game mode, "competitive" or "local_evaluation"
-    game_mode: GameMode = GameMode.COMPETITIVE
+    agents: list[AgentConfig] = []
