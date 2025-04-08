@@ -1,5 +1,5 @@
 import random
-from client.base_agent import BaseAgent
+from .base_agent import BaseAgent
 from common.move import Move
 
 # Student scipers, will be automatically used to evaluate your code

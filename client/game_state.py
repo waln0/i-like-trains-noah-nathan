@@ -26,11 +26,11 @@ class GameState:
             # Update game data only if present in the packet
             if "trains" in data:
                 # Update only the modified trains
-                for train_name, train_data in data["trains"].items():
-                    if train_name not in self.client.trains:
-                        self.client.trains[train_name] = {}
+                for nickname, train_data in data["trains"].items():
+                    if nickname not in self.client.trains:
+                        self.client.trains[nickname] = {}
                     # Update the modified attributes
-                    self.client.trains[train_name].update(train_data)
+                    self.client.trains[nickname].update(train_data)
 
                 if self.control_mode == ControlMode.AGENT:
                     self.client.agent.all_trains = self.client.trains
@@ -218,10 +218,10 @@ class GameState:
     def handle_drop_wagon_success(self, message):
         """Handle successful passenger drop response from server"""
         try:
-            agent_name = message.get("agent_name", "")
+            nickname = message.get("nickname", "")
             position = message.get("position", None)
 
-            if agent_name == self.client.agent.agent_name:
+            if nickname == self.client.agent.nickname:
                 logger.info(f"Successfully dropped a passenger at position {position}")
                 # The train state will be updated in the next state update
         except Exception as e:

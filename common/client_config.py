@@ -7,15 +7,12 @@ class ControlMode(Enum):
     AGENT = "agent"
 
 
+class GameMode(Enum):
+    COMPETITIVE = "competitive"
+    LOCAL_EVALUATION = "local_evaluation"
+
+
 class ClientConfig(BaseModel):
-    # SCIPER used to identify the agent. Must be unique (the server only allows
-    # one connection from a given SCIPER at a time).
-    sciper: str = "123456"
-
-    # Name used to identify the agent. Must be unique (the server only allows
-    # one train_name at a time).
-    train_name: str = "r1x9"
-
     # Host we want to connect to. Use 127.0.0.1 if you want to connect to a local server.
     host: str = "127.0.0.1"
 
@@ -26,12 +23,7 @@ class ClientConfig(BaseModel):
     screen_width: int = 500
     screen_height: int = 360
 
-    # Size of cells in pixels
-    # TODO(alok): shouldn't this be infered from screen_width and screen_height?
-    cell_size: int = 20
-
     # Size of leaderboard in pixels
-    # TODO(alok): shouldn't this simply be screen_width - screen_height?
     leaderboard_width: int = 280
 
     # When your train hits another train or the edge of the game, it dies.
@@ -46,3 +38,15 @@ class ClientConfig(BaseModel):
 
     # How long to wait before considering a server as disconnected.
     server_timeout_seconds: float = 2.0
+
+    # Game mode
+    game_mode: GameMode = GameMode.COMPETITIVE
+
+    # Competitive agent configuration, change the sciper to yours, and the nickname to
+    # your "nickname". Modify the agent_file_name to the agent file name you want to use
+    # from the "agents" folder. 
+    competitive_agent: dict[str, str] = {
+        "sciper": "000000",
+        "nickname": "Player",
+        "agent_file_name": "agent.py"
+    }

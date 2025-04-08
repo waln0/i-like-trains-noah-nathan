@@ -3,13 +3,15 @@ import logging
 import time
 import threading
 import sys
+import importlib
+
 from client.network import NetworkManager
 from client.renderer import Renderer
 from client.event_handler import EventHandler
 from client.game_state import GameState
-from client.agent import Agent
 
 from common.config import Config
+from common.client_config import GameMode
 
 
 # Configure logging
@@ -29,9 +31,11 @@ class Client:
 
         self.config = config.client
 
-        # TODO(alok): delete self.host and self.port, we can use self.config when needed
-        self.host = self.config.host
-        self.port = self.config.port
+        # If we launch a local evaluation, we want the host to be local_host
+        if self.config.game_mode == GameMode.LOCAL_EVALUATION:
+            host = "localhost"
+        elif self.config.game_mode == GameMode.COMPETITIVE:
+            host = self.config.host
 
         # Initialize state variables
         self.running = True
@@ -53,17 +57,17 @@ class Client:
         self.sciper_check_result = False
 
         # Game data
-        self.agent_name = ""
         self.trains = {}
         self.passengers = []
         self.delivery_zone = {}
 
         # TODO(alok): delete self.cell_size, use self.config.cell_size everywhere
-        self.cell_size = self.config.cell_size
+        self.cell_size = 0
         self.game_width = 200  # Initial game area width
         self.game_height = 200  # Initial game area height
+        
         # Space between game area and leaderboard
-        self.game_screen_padding = self.config.cell_size
+        self.game_screen_padding = 20
         self.leaderboard_width = self.config.leaderboard_width
         self.leaderboard_height = 2 * self.game_screen_padding + self.game_height
 
@@ -91,14 +95,35 @@ class Client:
         self.is_initialized = True
 
         # Initialize components
-        self.network = NetworkManager(self, self.host, self.port)
+        self.network = NetworkManager(self, host, self.config.port)
         self.renderer = Renderer(self)
 
         self.event_handler = EventHandler(self, self.config.control_mode)
         self.game_state = GameState(self, self.config.control_mode)
 
-        # Reference to the agent (will be initialized later)
+        # Initialize agent based on game mode
         self.agent = None
+        if self.config.game_mode == GameMode.COMPETITIVE:
+            agent_info = self.config.competitive_agent
+            if agent_info and "agent_file_name" in agent_info:
+                logger.info(f"Loading agent: {agent_info['agent_file_name']}")
+                agent_file_name = agent_info["agent_file_name"]
+                # Remove .py extension if it exists
+                if agent_file_name.endswith('.py'):
+                    agent_file_name = agent_file_name[:-3]
+                
+                # Construct the module path correctly
+                module_path = f"agents.{agent_file_name.replace('agents.', '')}"
+                logger.info(f"Importing module: {module_path}")
+                
+                try:
+                    # Add parent directory to Python path to allow importing agents package
+                    module = importlib.import_module(module_path)
+                    self.nickname = agent_info["nickname"]
+                    self.agent_sciper = agent_info["sciper"]
+                    self.agent = module.Agent(self.nickname, self.network)
+                except Exception as e:
+                    logger.error(f"Error importing agent module: {e}")
 
         self.ping_response_received = False
         self.server_disconnected = False
@@ -120,20 +145,11 @@ class Client:
                     self.screen = pygame.display.set_mode(
                         (width, height), pygame.RESIZABLE
                     )
-                    pygame.display.set_caption(
-                        f"I Like Trains - {self.agent_name}"
-                        if self.agent_name
-                        else "I Like Trains"
-                    )
+                    pygame.display.set_caption("I Like Trains")
                 except Exception as e:
                     logger.error(f"Error updating window: {e}")
 
                 self.window_needs_update = False
-
-    def set_agent(self, agent):
-        """Set the agent for the client"""
-        self.agent = agent
-        self.agent_name = agent.agent_name
 
     def run(self):
         """Main client loop"""
@@ -194,21 +210,16 @@ class Client:
             logger.error(f"Error creating login window: {e}")
             return
 
-        # Get player name and sciper from config
-        # TODO(alok): we should delete these.
-        player_sciper = self.config.sciper
-        player_name = self.config.train_name
+        # Send agent name to server if in competitive mode
+        if self.config.game_mode == GameMode.COMPETITIVE:
+            # Check if we can load name and sciper from config
+            if not self.config.competitive_agent["nickname"] or not self.config.competitive_agent["sciper"]:
+                logger.error("Failed to send agent name to server: name or sciper not found in config")
+                return
 
-        # Update agent name
-        self.agent.agent_name = player_name
-        # TODO(alok): we should also be consistent on how we name things. Is it player name, agent name, or train name?
-        self.agent_name = player_name
-        self.agent_sciper = player_sciper  # Store sciper for future use
-
-        # Send agent name to server
-        if not self.network.send_agent_ids(self.agent_name, self.agent_sciper):
-            logger.error("Failed to send agent name to server")
-            return
+            if not self.network.send_agent_ids(self.config.competitive_agent["nickname"], self.config.competitive_agent["sciper"]):
+                logger.error("Failed to send agent name to server")
+                return
 
         # Main loop
         clock = pygame.time.Clock()
@@ -216,23 +227,21 @@ class Client:
         while self.running:
             # Handle events
             self.event_handler.handle_events()
-
             # Handle any pending window updates in the main thread
             self.handle_window_updates()
 
-            # Automatic respawn logic
-            if (
-                not self.config.manual_spawn
-                and self.agent.is_dead
-                and self.agent.waiting_for_respawn
-                and not self.game_over
-            ):
-                elapsed = time.time() - self.agent.death_time
-                if elapsed >= self.agent.respawn_cooldown:
-                    self.network.send_spawn_request()
-
-            if self.in_waiting_room:
-                self.network.send_start_game_request()
+            # If no agent is set, skip the rest of the loop
+            if self.agent:
+                # Add automatic respawn logic
+                if (
+                    not self.config.manual_spawn
+                    and self.agent.is_dead
+                    and self.agent.waiting_for_respawn
+                    and not self.game_over
+                ):
+                    elapsed = time.time() - self.agent.death_time
+                    if elapsed >= self.agent.respawn_cooldown:
+                        self.network.send_spawn_request()
 
             self.renderer.draw_game()
 
@@ -345,30 +354,3 @@ class Client:
         if self.server_disconnected:
             logger.info("Exiting due to server disconnection")
             sys.exit(0)
-
-
-# Configure logging
-logging.basicConfig(
-    level=logging.DEBUG,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    handlers=[logging.StreamHandler()],
-)
-logger = logging.getLogger("main")
-
-
-def main():
-    # Load the config file
-    config_file = "config.json"
-    if len(sys.argv) > 1:
-        config_file = sys.argv[1]
-    config = Config.load(config_file)
-
-    # TODO(alok): move this logger.into inside network, the connection isn't established here
-    # so this log doesn't belong here
-    logger.info(f"Connecting to server: {config.client.host}:{config.client.port}")
-
-    # Create the client, agent, and start the client
-    client = Client(config)
-    agent = Agent("", client.network)
-    client.set_agent(agent)
-    client.run()

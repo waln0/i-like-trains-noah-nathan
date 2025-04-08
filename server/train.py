@@ -17,7 +17,7 @@ logger = logging.getLogger("server.train")
 
 # Train settings
 # INITIAL_SPEED = 60  # Initial speed in pixels per second
-INITIAL_SPEED = 10  # Initial speed in pixels per second: 5
+INITIAL_SPEED = 10  # Initial speed in pixels per second
 SPEED_DECREMENT_COEFFICIENT = 0.95  # Speed reduction coefficient for each wagon
 
 ACTIVATE_SPEED_BOOST = True  # Activate speed boost
@@ -27,13 +27,13 @@ BOOST_INTENSITY = 1.5  # Intensity of speed boost
 
 
 class Train:
-    def __init__(self, x, y, agent_name, color, handle_train_death, tick_rate):
+    def __init__(self, x, y, nickname, color, handle_train_death, tick_rate):
         self.position = (x, y)
         self.wagons = []
         self.new_direction = Move.RIGHT.value
         self.direction = Move.RIGHT.value
         self.previous_direction = Move.RIGHT.value
-        self.agent_name = agent_name
+        self.nickname = nickname
         self.alive = True
         self.score = 0
         self.best_score = 0
@@ -150,7 +150,7 @@ class Train:
             and not self.speed_boost_active
             and len(self.wagons) > 1
         ):
-            logger.debug(f"Applying speed boost to train {self.agent_name}")
+            logger.debug(f"Applying speed boost to train {self.nickname}")
             # Get the last wagon position
             last_wagon_pos = self.wagons[-1]
 
@@ -183,7 +183,7 @@ class Train:
             self.last_position = self.position
         else:
             logger.warning(
-                f"Invalid position for train {self.agent_name} before move: {self.position}"
+                f"Invalid position for train {self.nickname} before move: {self.position}"
             )
             self.last_position = (0, 0)
 
@@ -210,7 +210,7 @@ class Train:
 
     def kill(self):
         self.set_alive(False)
-        self.handle_death(self.agent_name)
+        self.handle_death(self.nickname)
         self.reset()
 
     def serialize(self):
@@ -247,7 +247,7 @@ class Train:
                     valid_wagons.append(wagon)
                 else:
                     logger.warning(
-                        f"Invalid wagon found in to_dict for train {self.agent_name}: {wagon}, skipping"
+                        f"Invalid wagon found in to_dict for train {self.nickname}: {wagon}, skipping"
                     )
             data["wagons"] = valid_wagons
             self._dirty["wagons"] = False
@@ -299,7 +299,7 @@ class Train:
     def check_collisions(self, new_position, all_trains):
         for wagon_pos in self.wagons:
             if new_position == wagon_pos:
-                collision_msg = f"Train {self.agent_name} collided with its own wagon at {wagon_pos}"
+                collision_msg = f"Train {self.nickname} collided with its own wagon at {wagon_pos}"
                 logger.info(collision_msg)
                 self.client_logger.info(collision_msg)
                 self.kill()
@@ -307,12 +307,12 @@ class Train:
 
         for train in all_trains.values():
             # If the train we are checking is dead or the train is ours, skip
-            if train.agent_name == self.agent_name or not train.alive:
+            if train.nickname == self.nickname or not train.alive:
                 continue
 
             if new_position == train.position:
                 collision_msg = (
-                    f"Train {self.agent_name} collided with train {train.agent_name}"
+                    f"Train {self.nickname} collided with train {train.nickname}"
                 )
                 logger.info(collision_msg)
                 self.client_logger.info(collision_msg)
@@ -323,7 +323,7 @@ class Train:
             # Check collision with wagons
             for wagon_pos in train.wagons:
                 if self.position == wagon_pos:
-                    collision_msg = f"Train {self.agent_name} collided with wagon of train {train.agent_name}"
+                    collision_msg = f"Train {self.nickname} collided with wagon of train {train.nickname}"
                     logger.info(collision_msg)
                     self.client_logger.info(collision_msg)
                     self.kill()
@@ -337,7 +337,7 @@ class Train:
         if x < 0 or x >= screen_width or y < 0 or y >= screen_height:
             self.kill()
             logger.debug(
-                f"Train {self.agent_name} is dead: out of the screen. Coordinates: {new_position}"
+                f"Train {self.nickname} is dead: out of the screen. Coordinates: {new_position}"
             )
             return True
         return False

@@ -10,7 +10,7 @@ def main():
     # - the server sets up signal handlers
     # - the client uses pygame
     #
-    # For now, we keep both on the main thread and don't call server.run_game()
+    # For now, we keep both on the main thread and don't call server.run()
     # which we can fix later if it becomes an issue.
 
     # Load the config file
@@ -19,9 +19,9 @@ def main():
         config_file = sys.argv[1]
     config = Config.load(config_file)
 
-    # Override players_per_room. The alternative would be to launch players_per_room clients
+    # Override clients_per_room. The alternative would be to launch clients_per_room clients
     # but that might be too chaotic
-    config.server.players_per_room = 1
+    config.server.clients_per_room = 1
 
     # Enables setting breakpoints and resuming the runtime without considering the client as disconnected
     config.server.client_timeout_seconds = 86400  # 86400 seconds == 1 day

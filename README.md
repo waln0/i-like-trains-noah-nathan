@@ -30,11 +30,68 @@ pip install -r requirements.txt
 You can start a local server by running `python -m server` if you want to test the client locally. This will start a server on `0.0.0.0:5555`.
 Then, open another terminal, go to the project folder, and run `python -m client config.json` to connect to the local server. This is optional, but recommended for testing before connecting to the remote server.
 
-### 3. Enter your train_name and sciper in the config.json file
+### 3. Select a Game Mode
 
-The file `config.json` should contain your train_name and sciper.
+The game supports two different modes that can be set in the `config.json` file:
 
-You cannot use the same sciper or train_name as another player already connected.
+- **Competitive Mode** (`"game_mode": "competitive"`): In this mode, the client connects to a remote server to compete against other players' agents in a battle. The client uses the agent specified in the `competitive_agent` field of the configuration file.
+
+  There are two ways to use the competitive mode:
+  
+  1. **Connect to a remote server**: Set the server IP in `config.json` to connect to an existing game server (e.g., the official competition server).
+  
+  2. **Host your own game**: You can host your own game server by running `python -m server` with the server configured to use `0.0.0.0:5555`. This allows:
+     - You to connect locally with your own client
+     - Other players to connect to your game if you share your IP address with them
+     - This is useful for organizing your own competitions or testing with friends
+
+- **Local Evaluation Mode** (`"game_mode": "local_evaluation"`): This mode allows you to run a local evaluation by loading multiple agents from your machine. The agents specified in the `local_agents` list in `config.json` will compete against each other, allowing you to test and compare different versions of your agents. For better organization, it's recommended to store your agents in the "agents" folder.
+
+How the modes affect the client and server:
+
+- In **Competitive Mode**:
+  - The client connects to the remote IP specified in the configuration (it can also be your local ip if you want to test it locally).
+  - The client initializes with the agent specified in `competitive_agent`.
+  - The server hosts a game on `0.0.0.0` allowing multiple clients to connect (locally and remotely) and compete.
+
+- In **Local Evaluation Mode**:
+  - The client connects to localhost and acts as an observer, only displaying the game.
+  - The server creates a room with one slot for the observer client and fills the rest with AI clients based on the agents specified in `local_agents`.
+  - This allows you to watch different versions of your agents compete against each other.
+
+Modify the game modes in `config.json`. Modify the one in "client" and the one in "server" according to the mode you want to use.
+
+### 4 Set up the agents for local evaluation and competitive modes
+
+In the `config.json` file, you can find the configuration for the competitive and local evaluation modes.
+Set up your sciper, a train name, and the name of the agent file for the competitive agent. This agent file will be used to compete against the other agents in the competitive mode.
+
+For the local evaluation mode, set up a list containing the names and agent file names for the agents you want to test locally. You can add as many agents as you want.
+
+Example configuration in `config.json`:
+```json
+"client": {
+    "competitive_agent": {
+        "sciper": "000000",
+        "nickname": "Player",
+        "agent_file_name": "agent.py"
+    },
+},
+"server": {
+    "local_agents": [
+        {
+            "nickname": "AgentExample1",
+            "agent_file_name": "agent_example1.py"
+        },
+        {
+            "nickname": "AgentExample2",
+            "agent_file_name": "agent_example2.py"
+        }
+    ]
+}
+```
+
+You may also want to modify the `ai_agent_file_name` in the `server` section to point to your own agent file. This will be used when a client disconnects in competitive mode.
 
 ### 4. Run the client
 
@@ -48,6 +105,34 @@ python -m client config.json
 
 Keep in mind that events are not being processed when the pygame title bar is dragged due to a pygame limitation. Doing so
 will unfortunately freeze your game and disconnect you from the server.
+
+## Playing Options
+
+There are several ways to play and test your agent:
+
+1. **Connect to the remote server with two clients**:
+   - Start two clients in two different terminals using `python -m client`
+   - Both clients will join the same room
+   - **Pros**: Tests your agent in a real network environment similar to the final evaluation
+   - **Cons**: Requires the remote server to be available and not busy
+
+2. **Run a local server + two clients**:
+   - Start a local server in one terminal: `python -m server`
+   - Start two clients in two different terminals: `python -m client config.json`
+   - **Pros**: Allows testing without depending on remote server availability, and an easier debugging process
+   - **Cons**: Requires managing multiple terminals
+
+3. **Local evaluation mode**:
+   - Configure `config.json` to use `"game_mode": "local_evaluation"`
+   - Run `python -m client config.json`
+   - **Pros**: Easiest way to test multiple agent implementations against each other and choose the best one
+   - **Cons**: Doesn't test network robustness of your implementation
+
+### Evaluation Setup
+
+During the final evaluation:
+- Your agent will be tested in a competitive environment similar to option 3
+- Your agent file will be evaluated against our bots of different levels. The more bots you beat, the better your agent will be ranked.
 
 ## How to Play
 
@@ -117,7 +202,7 @@ The client is responsible for managing the game display and user interactions. I
 The Agent class inherits from the `BaseAgent` class. You can find the implementation of the `BaseAgent` class in `client/base_agent.py`. 
 The class is initialized with the following parameters:
 
-- `self.agent_name` : The name of the agent.
+- `self.nickname` : The name of the agent.
 - `self.network` : The network object to handle communication.
 - `self.logger` : The logger object.
 - `self.is_dead` : Whether the agent/train is currently dead or alive.
@@ -163,7 +248,19 @@ cannot drop wagons. Remember, passengers are automiatcally dropped off in the de
 
 ## Evaluation
 
-On the evaluation day, you will have to send us only one agent.py file per team. You should enter all the scipers of the team members in the SCIPERS constant of the file so we can identify your team. DO NOT forget to fill it, otherwise the file will not be graded.
+On the evaluation day, you will need to submit:
+1. Your `agent.py` file with your implementation
+2. Any additional files you created to organize your code
+3. An updated `requirements.txt` if you installed additional packages
+
+Make sure to enter all the scipers of your team members in the SCIPERS constant at the top of the `agent.py` file so we can identify your team. DO NOT forget to fill it, otherwise your submission will not be graded.
+
+We encourage you to use additional files to properly structure your code if needed. Just ensure that your main logic is implemented in the `agent.py` file and that any additional files are properly imported.
+
+If you installed additional packages, you can generate an updated requirements.txt file by running:
+```
+pip freeze > requirements.txt
+```
 
 ## Implementation Tips
 
