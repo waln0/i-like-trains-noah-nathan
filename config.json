@@ -8,6 +8,9 @@
         "agent": {
             "nickname": "Player",
             "agent_file_name": "agent.py"
+        },
+        "manual": {
+            "nickname": "Keyboard"
         }
     },
     "server": {

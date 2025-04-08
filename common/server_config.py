@@ -1,5 +1,7 @@
 from pydantic import BaseModel
 
+from common.agent_config import AgentConfig
+
 
 class ServerConfig(BaseModel):
     # Host should either be 127.0.0.1 if you only want to accept local connections
@@ -50,7 +52,4 @@ class ServerConfig(BaseModel):
     ai_agent_file_name: str = "ai_agent.py"
 
     # Local agents configuration, add or remove agents you want to evaluate as needed
-    agents: list[dict[str, str]] = [
-        {"nickname": "Agent1", "agent_file_name": "agent1.py"},
-        {"nickname": "Agent2", "agent_file_name": "agent2.py"},
-    ]
+    agents: list[AgentConfig] = []

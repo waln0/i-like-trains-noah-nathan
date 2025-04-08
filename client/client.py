@@ -214,7 +214,7 @@ class Client:
 
         # Check if we can load name and sciper from config
         if (
-            not self.config.agent["nickname"]
+            not self.config.agent.nickname
             or not self.config.sciper
         ):
             logger.error(
@@ -222,10 +222,10 @@ class Client:
             )
             return
 
-        logger.info(f"Sending agent ids to server: {self.config.agent['nickname']}, {self.config.sciper}, {self.game_mode}")
+        logger.info(f"Sending agent ids to server: {self.config.agent.nickname}, {self.config.sciper}, {self.game_mode}")
         
         if not self.network.send_agent_ids(
-            self.config.agent["nickname"],
+            self.config.agent.nickname,
             self.config.sciper,
             ("observer" if self.game_mode == GameMode.OBSERVER else "manual" if self.game_mode == GameMode.MANUAL else "agent")
         ):
