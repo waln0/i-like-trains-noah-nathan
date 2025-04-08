@@ -5,13 +5,11 @@ import time
 import logging
 import uuid
 import signal
-import random
 
 from common.config import Config
 from server.high_score import HighScore
 from server.passenger import Passenger
 from server.room import Room
-from common.client_config import GameMode
 
 
 def setup_server_logger():
@@ -111,9 +109,7 @@ class Server:
         room_id = str(uuid.uuid4())[:8]
 
         nb_players_per_room = self.config.nb_clients_per_room
-        logger.info(
-            f"Creating room {room_id} with size {nb_players_per_room}."
-        )
+        logger.info(f"Creating room {room_id} with size {nb_players_per_room}.")
 
         new_room = Room(
             self.config,
@@ -133,7 +129,7 @@ class Server:
         # First try to find a non-full room
         for room in self.rooms.values():
             if (
-                room.nb_clients_max == self.config.nb_clients_per_room
+                room.nb_players_max == self.config.nb_clients_per_room
                 and not room.is_full()
                 and not room.game_thread
             ):
@@ -245,9 +241,7 @@ class Server:
         self.client_last_activity[addr] = time.time()
         # Assuming the first message in OBSERVER is implicitly a connection request
         # We might need a specific message type later if this assumption is wrong
-        if (
-            addr not in self.addr_to_sciper
-        ):  # Only handle if it's a new client address
+        if addr not in self.addr_to_sciper:  # Only handle if it's a new client address
             self.handle_new_client(message, addr)
 
         # Handle ping responses for everyone
@@ -543,7 +537,7 @@ class Server:
             "data": {
                 "room_id": selected_room.id,
                 "current_players": len(selected_room.clients),
-                "max_players": selected_room.nb_clients_max,
+                "max_players": selected_room.nb_players_max,
             },
         }
         self.server_socket.sendto((json.dumps(response) + "\n").encode(), addr)
@@ -555,7 +549,7 @@ class Server:
             "data": {
                 "room_id": selected_room.id,
                 "players": list(selected_room.clients.values()),
-                "nb_players": selected_room.nb_clients_max,
+                "nb_players": selected_room.nb_players_max,
                 "game_started": selected_room.game_thread is not None,
                 "waiting_time": int(
                     max(

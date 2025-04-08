@@ -48,11 +48,11 @@ class Room:
     ):
         self.config = config
         self.id = room_id
-        self.nb_clients_max = nb_players_max
+        self.nb_players_max = nb_players_max
         self.server_socket = server_socket
         send_cooldown_notification
 
-        self.game = Game(config, send_cooldown_notification, self.nb_clients_max)
+        self.game = Game(config, send_cooldown_notification, self.nb_players_max)
         # TODO(alok): why not put room_id and server in Game's __init__ method?
         self.running = running
 
@@ -354,10 +354,14 @@ class Room:
         close_thread.start()
 
     def is_full(self):
-        return len(self.clients) >= self.nb_clients_max
+        nb_players = self.get_player_count()
+        return nb_players >= self.nb_players_max
 
     def get_player_count(self):
-        return len(self.clients)
+        return len([mode for mode in self.client_game_modes.values() if mode != "observer"])
+
+    def get_observer_count(self):
+        return len([mode for mode in self.client_game_modes.values() if mode == "observer"])
 
     def broadcast_waiting_room(self):
         """Broadcast waiting room data to all clients"""
@@ -399,7 +403,7 @@ class Room:
                         "data": {
                             "room_id": self.id,
                             "players": list(self.clients.values()),
-                            "nb_players": self.nb_clients_max,
+                            "nb_players": self.nb_players_max,
                             "game_started": self.game_thread is not None,
                             "waiting_time": int(remaining_time),
                         },
@@ -502,9 +506,8 @@ class Room:
     def fill_with_bots(self):
         """Fill the room with bots and start the game"""
         logger.debug(f"Filling room {self.id} with bots")
-        nb_observers = len([mode for mode in self.client_game_modes.values() if mode == "observer"])
-        current_players = len(self.clients) - nb_observers
-        nb_bots_needed = self.nb_clients_max - current_players
+        current_players = self.get_player_count()
+        nb_bots_needed = self.nb_players_max - current_players
 
         if nb_bots_needed <= 0:
             return
@@ -512,21 +515,25 @@ class Room:
         logger.info(f"Adding {nb_bots_needed} bots to room {self.id}")
 
         # Add bots to the room
-        for i in range(nb_bots_needed):
-
+        used_nicknames = set(self.clients.keys())
+        for _ in range(nb_bots_needed):
             # We randomly chose an agent to use from agents in the config
             # We create a new AI client with the chosen agent and increment the counter
             # If the nickname is already use, we increment a counter
             chosen_agent_index = random.randint(0, len(self.config.agents) - 1)
-            ai_agent_file_name = self.config.agents[chosen_agent_index]["agent_file_name"]
-            
+            ai_agent_file_name = self.config.agents[chosen_agent_index][
+                "agent_file_name"
+            ]
+
             attempt_for_nickname = 0
             nickname_already_in_use = True
             while nickname_already_in_use:
                 ai_nickname = f"AI_{attempt_for_nickname}"
                 attempt_for_nickname += 1
-                if ai_nickname not in self.clients:
+                if ai_nickname not in used_nicknames:
                     nickname_already_in_use = False
+
+            used_nicknames.add(ai_nickname)
 
             self.create_ai_for_train(
                 ai_nickname=ai_nickname, ai_agent_file_name=ai_agent_file_name

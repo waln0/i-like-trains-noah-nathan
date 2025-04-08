@@ -362,13 +362,13 @@ class NetworkManager:
             logger.error(f"Error verifying connection: {e}")
             return False
 
-    def send_agent_ids(self, nickname, agent_sciper):
+    def send_agent_ids(self, nickname, agent_sciper, game_mode):
         """Send agent name and sciper to server"""
         message = {
             "type": "agent_ids",
             "nickname": nickname,
             "agent_sciper": agent_sciper,
-            "game_mode": ("observer" if self.client.game_mode == GameMode.OBSERVER else "manual" if self.client.game_mode == GameMode.MANUAL else "agent"),
+            "game_mode": game_mode,
         }
         return self.send_message(message)
 
